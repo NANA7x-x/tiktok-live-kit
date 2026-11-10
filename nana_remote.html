@@ -121,6 +121,11 @@
           </div>
           <div class="note">テスト中はアニメーションやルーレットが全部動きますが、残額・回転数・投げ銭王はテスト終了時に元へ戻ります。テストは配信前がおすすめ（テスト中に届いた本物ギフトも巻き戻されます）。</div>
           <div class="row" style="margin-top:10px;">
+            <span>効果音： <b id="stMuted">-</b></span>
+            <button id="muteToggleBtn" onclick="toggleMuteRemote()">🔊 音 ON／OFF 切替</button>
+          </div>
+          <div class="note">オーバーレイの効果音をミュート／解除します。表示はオーバーレイの実際の状態と自動で同期します。</div>
+          <div class="row" style="margin-top:10px;">
             <span>TikTok接続方式： <b id="ttMode">-</b></span>
             <button onclick="send({type:'connectMode', auto:true})">自動でつなぐ</button>
             <button onclick="send({type:'connectMode', auto:false})">ボタンでつなぐ（手動）</button>
@@ -473,6 +478,24 @@
   }
   renderTheme();
 
+  let mutedState = null; // null = 状態未取得（オーバーレイからの state が届くまで実状態を表示しない）
+  function renderMuted(){
+    const st = document.getElementById("stMuted");
+    const btn = document.getElementById("muteToggleBtn");
+    if(st) st.textContent = mutedState === null ? "-" : (mutedState ? "ミュート中" : "ON");
+    if(btn) btn.textContent = mutedState === null ? "🔊 音 ON／OFF 切替" : (mutedState ? "🔊 音を出す" : "🔇 ミュートする");
+  }
+  function toggleMuteRemote(){
+    const next = mutedState !== true;
+    mutedState = next;
+    renderMuted();
+    sendControl({ action: "setMuted", value: next });
+  }
+  function adoptMuted(m){
+    if(typeof m === "boolean" && m !== mutedState){ mutedState = m; renderMuted(); }
+  }
+  renderMuted();
+
   function fmtLeft(until){
     if(!until) return "";
     const s = Math.max(0, Math.ceil((until - Date.now()) / 1000));
@@ -490,6 +513,7 @@
     if(st.label && !document.getElementById("setLabel").value) document.getElementById("setLabel").value = st.label;
     if(st.target && !document.getElementById("setTarget").value) document.getElementById("setTarget").value = st.target;
     if(st.theme) adoptTheme(st.theme);
+    if(typeof st.muted === "boolean") adoptMuted(st.muted);
     if(st.simple) adoptSimple(st.simple);
     if(Array.isArray(st.hiddenItems)){
       const joined = st.hiddenItems.slice().sort().join(",");

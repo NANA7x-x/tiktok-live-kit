@@ -653,7 +653,7 @@
     } catch(e) {}
   }
   function missSound(){ tone(392, 0, .18, "triangle", .06); tone(330, .16, .2, "triangle", .06); tone(262, .34, .3, "triangle", .06); }
-  function toggleMute(){ muted = !muted; if($("muteBtn")) $("muteBtn").textContent = muted ? "音 OFF" : "音 ON"; if(!muted) coinSound(); }
+  function toggleMute(){ muted = !muted; if($("muteBtn")) $("muteBtn").textContent = muted ? "音 OFF" : "音 ON"; if(!muted) coinSound(); broadcastState(); }
 
   /* ---------- 表示 ---------- */
   function renderGoal(){
@@ -1486,7 +1486,7 @@
     wsSend({ type: "state", state: {
       spins: spins, remain: remain, target: goalCfg.target, label: goalCfg.label,
       mode: inKakuhen() ? "確変" : (inChance() ? "チャンスゾーン" : "通常"),
-      combo: combo, testMode: testMode, playCfg: playCfg,
+      combo: combo, testMode: testMode, muted: muted, playCfg: playCfg,
       fx: activeFxList.map(f => ({ id: f.id, name: f.name, until: f.until, state: f.state })),
       hiddenItems: safeHidden(),
       simple: safeSimple(),
