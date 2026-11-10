@@ -90,7 +90,11 @@ const clients = new Set();
 // --- レイアウトの正本はブリッジが持つ（編集画面と配信画面の見た目を一致させる） ---
 //   受け取った layout は layout.json に保存し、再起動後も復元する。
 //   接続したクライアントには正本を送る。正本がまだ無い時だけ requestLayout を出し、
-//   各クライアントの手持ち（layoutOffer）の中で一番項目が多いものを正本に採用する。
+//   各クライアントの手持ち（layoutOffer）の中で「一番新しく保存されたもの」を正本に採用する
+//   （savedAt の新しい順。同点なら項目数が多い方、それも同点なら先着。
+//     旧仕様は項目数→先着だけだったため、古いコピーを持つOBS側が先に接続すると
+//     その古い配置が正本になって新しい編集を上書きしてしまう事故があった）
+//   空の layout は誤送信で正本を消さないよう無視する（配置リセットは reset:true の時だけ）。
 const LAYOUT_FILE = path.join(__dirname, 'layout.json');
 let savedLayout = null;
 try { const j = JSON.parse(fs.readFileSync(LAYOUT_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedLayout = j; } catch (e) { /* 無ければ未設定 */ }
@@ -186,14 +190,19 @@ wss.on('connection', (ws) => {
       return;
     }
     // 正本が無い間だけ、手持ちレイアウトの提示（layoutOffer）を集める
+    // 採用は「保存時刻（savedAt）が最新」を最優先する。古いコピーが接続順で勝つ事故の防止
     if (msg.type === 'layoutOffer') {
       if (!savedLayout && msg.layout && typeof msg.layout === 'object' && !Array.isArray(msg.layout)) {
         const n = Object.keys(msg.layout).length;
-        if (n > 0 && (!layoutCandidate || n > Object.keys(layoutCandidate).length)) layoutCandidate = msg.layout;
+        const at = (typeof msg.savedAt === 'number' && isFinite(msg.savedAt)) ? msg.savedAt : 0;
+        if (n > 0 && (!layoutCandidate || at > layoutCandidate.savedAt ||
+            (at === layoutCandidate.savedAt && n > Object.keys(layoutCandidate.layout).length))) {
+          layoutCandidate = { layout: msg.layout, savedAt: at };
+        }
         if (!layoutCandidateTimer) {
           layoutCandidateTimer = setTimeout(() => {
             layoutCandidateTimer = null;
-            if (layoutCandidate && !savedLayout) { setCanonicalLayout(layoutCandidate); broadcast({ type: 'layout', layout: savedLayout }); }
+            if (layoutCandidate && !savedLayout) { setCanonicalLayout(layoutCandidate.layout); broadcast({ type: 'layout', layout: savedLayout }); }
             layoutCandidate = null;
           }, 1500);
         }
@@ -211,11 +220,14 @@ wss.on('connection', (ws) => {
       setCanonicalHidden(msg.hidden.filter(x => typeof x === 'string').slice(0, 50));
     }
     // レイアウトの編集は正本として保持する（中継は下の共通処理で行う）
+    // 空の layout は、正本を消してしまう誤送信を防ぐため reset:true の時だけ受け付ける
+    let skipRelay = false;
     if (msg.type === 'layout' && msg.layout && typeof msg.layout === 'object' && !Array.isArray(msg.layout)) {
-      setCanonicalLayout(msg.layout);
+      if (Object.keys(msg.layout).length > 0 || msg.reset === true) setCanonicalLayout(msg.layout);
+      else skipRelay = true;
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme'].includes(msg.type)) {
+    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });
