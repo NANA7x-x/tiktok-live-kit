@@ -1862,6 +1862,16 @@
     themeMode = m;
     try { localStorage.setItem("overlayThemeV1", m); } catch(e) {}
     applyTheme();
+  /* ---------- 自動リロード: キットの版が変わったら（Pull後など）自動で読み直す ---------- */
+  let kitVer = (typeof window.__kitVersion === "string") ? window.__kitVersion : null;
+  if(!EMBED_MODE && kitVer){
+    setInterval(() => {
+      fetch("/version", { cache: "no-store" }).then(r => r.json()).then(j => {
+        const mine = j && j[location.pathname];
+        if(mine && mine !== kitVer) location.reload();
+      }).catch(() => {});
+    }, 20000);
+  }
     broadcastState();
   }
   applyTheme();

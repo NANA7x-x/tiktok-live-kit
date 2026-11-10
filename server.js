@@ -48,21 +48,44 @@ const FILES = {
   '/transparent.html': ['nana_overlay_toumei.html', 'TikTokLIVE_画面オーバーレイ_透過.html'],
   '/remote.html': ['nana_remote.html', 'TikTokLIVE_リモコン.html'],
 };
+function kitFileStamp(rel) { try { return Math.floor(fs.statSync(path.join(__dirname, rel)).mtimeMs); } catch (e) { return 0; } }
+function servedNameFor(p) {
+  const names = FILES[p];
+  if (!names) return null;
+  return names.find((n) => fs.existsSync(path.join(__dirname, n))) || names[0];
+}
+function kitVersionFor(p) {
+  const n = servedNameFor(p);
+  if (!n) return '';
+  return kitFileStamp(n) + '.' + kitFileStamp('server.js') + '.' + kitFileStamp('nana_server.js');
+}
 const httpServer = http.createServer((req, res) => {
   const p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p === '/version') {
+    const out = {};
+    for (const k of Object.keys(FILES)) out[k] = kitVersionFor(k);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(out));
+    return;
+  }
   const names = FILES[p];
   if (!names) { res.writeHead(404); res.end('not found'); return; }
   const name = names.find((n) => fs.existsSync(path.join(__dirname, n)));
   if (!name) { res.writeHead(500); res.end('file not found: ' + names.join(' / ')); return; }
   fs.readFile(path.join(__dirname, name), (err, data) => {
     if (err) { res.writeHead(500); res.end('file error'); return; }
+    let html = data.toString('utf8');
+    const stampScript = '<script>window.__kitVersion="' + kitVersionFor(p) + '";</script>';
+    if (html.includes('<head>')) html = html.replace('<head>', '<head>' + stampScript);
+    else html = stampScript + html;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(data);
+    res.end(html);
   });
 });
 
 // --- ローカルWebSocketサーバー（オーバーレイ/リモコン向け） ---
 const wss = new WebSocketServer({ server: httpServer });
+wss.on('error', () => { /* ポート使用中などのエラーは httpServer 側のハンドラで処理する（未処理だとプロセスが落ちる） */ });
 const clients = new Set();
 // --- レイアウトの正本はブリッジが持つ（編集画面と配信画面の見た目を一致させる） ---
 //   受け取った layout は layout.json に保存し、再起動後も復元する。
@@ -198,10 +221,41 @@ wss.on('connection', (ws) => {
   });
   ws.on('close', () => { clients.delete(ws); console.log(`[bridge] クライアント切断 (${clients.size}件)`); });
 });
+let listenTries = 0;
+httpServer.on('error', (e) => {
+  if (e && e.code === 'EADDRINUSE' && process.env.KIT_RESTARTED === '1' && listenTries < 15) {
+    listenTries++;
+    setTimeout(() => { try { httpServer.listen(PORT); } catch (err) { /* ignore */ } }, 700);
+  } else if (e && e.code === 'EADDRINUSE') {
+    console.log('[bridge] ポート21213は使用中です。先に起動しているサーバー（黒画面）が残っていないか確認してください。');
+  } else {
+    console.log('[bridge] サーバーエラー: ' + (e && e.message ? e.message : e));
+  }
+});
 httpServer.listen(PORT, () => {
   console.log(`[bridge] 起動: http://localhost:${PORT}/  (リモコン: /remote.html)`);
   console.log(`[bridge] WebSocket待受中: ws://localhost:${PORT}`);
 });
+// --- 自動再起動: このファイル自体が差し替わったら（GitHub Desktop の Pull 後など）、
+//     文法チェックを通った場合に限って後継プロセスを起動して自分は終了する。
+//     オーバーレイ側も版の変化を検知して自動リロードするので、OBSのキャッシュ更新も不要になる。
+let selfRestarting = false;
+try {
+  fs.watchFile(__filename, { interval: 2000 }, (cur, prev) => {
+    if (selfRestarting || !prev || cur.mtimeMs === prev.mtimeMs) return;
+    selfRestarting = true;
+    try { require('child_process').execFileSync(process.execPath, ['--check', __filename], { stdio: 'pipe' }); }
+    catch (e) { console.log('[bridge] 新しい server.js に文法エラーがあるため再起動を中止しました（今の版で継続します）'); selfRestarting = false; return; }
+    console.log('[bridge] server.js の更新を検知しました。自動で再起動します…');
+    try {
+      const child = require('child_process').spawn(process.execPath, [__filename].concat(process.argv.slice(2)), {
+        detached: true, stdio: 'inherit', env: Object.assign({}, process.env, { KIT_RESTARTED: '1' })
+      });
+      child.unref();
+    } catch (e) { selfRestarting = false; return; }
+    setTimeout(() => process.exit(0), 500);
+  });
+} catch (e) { /* 監視できなくても本処理は継続 */ }
 
 // ============================================================
 // Discord連携（ウェブフック）
