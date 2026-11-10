@@ -329,7 +329,8 @@
   #lamps span { display:inline-block; }
   #lamps span.new { animation:lampPulse .45s ease 3; }
   @keyframes lampPulse { 50%{ transform:scale(1.6); } }
-  #roulette.show { animation:rouletteGlow .45s linear infinite alternate; }
+  @keyframes roulettePop { from { transform:scale(.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+  #roulette.show { animation:roulettePop .3s ease, rouletteGlow .45s linear infinite alternate; }
   @keyframes rouletteGlow { from{ box-shadow:0 0 8px #ff5f9e; } to{ box-shadow:0 0 28px #ffd94d; } }
   #spinReel { position:absolute; left:8%; right:8%; top:57%; text-align:center; font-weight:900;
     font-size:clamp(20px,4.4cqw,42px); color:#fff7ae; opacity:0; pointer-events:none; z-index:41;
@@ -1420,6 +1421,9 @@
       if(i >= total){ finish(); return; }
       setTimeout(step, delay);
     }
+    function hideRouletteSoon(ms){
+      setTimeout(() => { if(!rouletteBusy) box.classList.remove("show"); }, ms || 2500);
+    }
     function finish(){
       reach.style.display = "none";
       $("rWheel").classList.remove("spin");
@@ -1439,10 +1443,12 @@
           addEffect("ピアノ1曲リクエスト権（耳コピ可／ピアノ配信で演奏）");
           enterKakuhen();
           rouletteBusy = false;
+          hideRouletteSoon(3200);
         } else {
           item.textContent = "→ 大当たり！確変突入";
           enterKakuhen();
           rouletteBusy = false;
+          hideRouletteSoon(3200);
         }
       } else if(r < cfg.up + cfg.fx){
         const pool = (playCfg["fx" + tier] && playCfg["fx" + tier].length ? playCfg["fx" + tier] : cfg.effects);
@@ -1451,18 +1457,22 @@
         rouletteBusy = false;
         if(eff === "確変突入") enterKakuhen();
         else addEffect(eff);
+        hideRouletteSoon(3000);
       } else {
         item.textContent = "→ ハズレ";
         missSound();
         rouletteBusy = false;
-        if(Math.random() < 0.08){
+        const revive = Math.random() < 0.08;
+        if(revive){
           setTimeout(()=>{
             item.textContent = "→ 復活！裏大当たり";
             fanfare();
             flash("復活！裏大当たり", "名前入り手書きメッセージ");
             addEffect("名前入り手書きメッセージ（裏大当たり）");
+            hideRouletteSoon(2800);
           }, 1600);
         }
+        if(!revive) hideRouletteSoon(2400);
       }
     }
     step();
