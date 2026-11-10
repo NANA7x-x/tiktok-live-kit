@@ -2641,6 +2641,9 @@
      B. 中ティア帯（playCfg.themePickMin〜Max、既定300〜999コイン）の実ギフトを送った人は、
         制限時間内に自分のコメントで画面テーマ（バキバキ/ぽわぽわ）を選べる。
         選んだテーマは一定時間だけ適用され、過ぎたら元のテーマ（base）に戻る。
+     C. テーマが実際に切り替わる瞬間は、カーテンの目隠し＋機械の組み換え音（ガシャンガシャン）
+        ＋ライティングスイープのトランジション（約1.7秒）で「組み替えている」ように見せる。
+        手動切替・ギフト選択・自動復帰のすべてが対象。初回読み込み・接続直後は鳴らさない。
         base の管理のため setTheme を包む：上書き中は表示を維持し、base だけ更新する。
         テーマ選択はサーバーの正本テーマには送らない（各オーバーレイが同じギフト/コメントから自律的に揃う）。 */
   (function(){
@@ -2728,17 +2731,95 @@
       let tpPending = null;     // { name, until } 選択受付中
       let tpOverride = null;    // { name, theme, until } 一時適用中
       const _setThemeOrig = setTheme;
+
+      /* ----- テーマ切替トランジション（カーテン目隠し＋機械の組み換え音＋ライティング） -----
+         実際にテーマが変わる時だけ発火する。初回読み込み・接続直後の同値適用では鳴らさない
+         （transArmed は起動後しばらくしてから有効化）。表示レイヤーだけの話で、ギフト等の処理は止めない。
+         実行中に別の切替が来たら、終わった直後に最新分だけを続けて実行する（再入整理）。 */
+      const THEME_LABELS = { baki: "⚡バキバキ", powa: "🌸ぽわぽわ", normal: "通常" };
+      let transArmed = false;
+      setTimeout(() => { transArmed = true; }, 2000);
+      const trans = { running: false, pendingApply: null };
+      const transStyle = document.createElement("style");
+      transStyle.textContent =
+        "#themeCover{position:absolute;inset:0;z-index:300;display:none;pointer-events:none;overflow:hidden}" +
+        "#themeCover.show{display:block}" +
+        "#themeCover .tcCurL,#themeCover .tcCurR{position:absolute;top:0;bottom:0;width:52%;background:repeating-linear-gradient(45deg,#17141f 0 26px,#1f1a2c 26px 52px);transition:transform .45s cubic-bezier(.7,0,.3,1)}" +
+        "#themeCover .tcCurL{left:0;transform:translateX(-103%);border-right:4px solid #c77dff}" +
+        "#themeCover .tcCurR{right:0;transform:translateX(103%);border-left:4px solid #c77dff}" +
+        "#themeCover.in .tcCurL,#themeCover.in .tcCurR{transform:translateX(0)}" +
+        "#themeCover .tcBadge{position:absolute;top:43%;left:50%;transform:translate(-50%,-50%) scale(.8);text-align:center;opacity:0;transition:opacity .25s,transform .25s;z-index:2}" +
+        "#themeCover.in .tcBadge{opacity:1;transform:translate(-50%,-50%) scale(1)}" +
+        "#themeCover .tcGear{font-size:9cqw;animation:tcSpin 1s linear infinite}" +
+        "@keyframes tcSpin{to{transform:rotate(360deg)}}" +
+        "#themeCover .tcLabel{font-weight:900;font-size:clamp(18px,4.8cqw,46px);color:#fff;text-shadow:0 0 18px rgba(160,80,255,.85);white-space:nowrap}" +
+        "#themeCover .tcSweep{position:absolute;top:-10%;bottom:-10%;left:-30%;width:34%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);opacity:0;z-index:1}" +
+        "#themeCover.sweep .tcSweep{opacity:1;animation:tcSweepMove .7s ease-in-out}" +
+        "@keyframes tcSweepMove{from{left:-30%}to{left:110%}}";
+      document.head.appendChild(transStyle);
+      const tpCover = document.createElement("div");
+      tpCover.id = "themeCover";
+      tpCover.innerHTML = '<div class="tcCurL"></div><div class="tcCurR"></div><div class="tcSweep"></div><div class="tcBadge"><div class="tcGear">⚙️</div><div class="tcLabel">テーマ組み換え中…</div></div>';
+      $("stage").appendChild(tpCover);
+      const tcLabel = tpCover.querySelector(".tcLabel");
+      function transClank(t0, f, vol){
+        tone(f, t0, .07, "square", vol);
+        tone(Math.round(f * 1.5), t0, .05, "square", vol * .6);
+        tone(140, t0, .09, "square", vol * .8);
+      }
+      function transSound(){ /* ガシャンガシャン（金属ヒット＋ラチェット＋決めの一撃）。tone 経由なのでミュートに従う */
+        transClank(0, 2400, .05);
+        transClank(.13, 1900, .055);
+        transClank(.29, 2600, .05);
+        for(let i = 0; i < 8; i++) tone(2900, .45 + i * .045, .02, "square", .035);
+        transClank(.86, 1700, .07);
+        tone(3200, .86, .12, "square", .04);
+        tone(90, 1.15, .2, "triangle", .05);
+      }
+      function runTransition(doApply, m){
+        trans.running = true;
+        tcLabel.textContent = "テーマ組み換え中…";
+        tpCover.classList.add("show");
+        setTimeout(() => tpCover.classList.add("in"), 20);
+        try { transSound(); } catch(e) {}
+        setTimeout(() => {
+          doApply();
+          tcLabel.textContent = "✨ " + (THEME_LABELS[m] || m);
+          tpCover.classList.add("sweep");
+          setTimeout(() => tpCover.classList.remove("sweep"), 750);
+          setTimeout(() => {
+            tpCover.classList.remove("in");
+            setTimeout(() => {
+              tpCover.classList.remove("show");
+              trans.running = false;
+              if(trans.pendingApply){ const pa = trans.pendingApply; trans.pendingApply = null; pa(); }
+            }, 470);
+          }, 720);
+        }, 500);
+      }
+      /* テーマの実適用をトランジション経由にする。同値・未武装（起動直後）は即時適用のみ */
+      function requestThemeFx(m, afterApply){
+        const doApply = () => {
+          _setThemeOrig(m); // 表示と state 送信は通常通り（実効テーマとして伝わる）
+          try { if(afterApply) afterApply(); } catch(e) {}
+          bgmStep = 0; // BGMは新しいテーマのパターンで仕切り直す
+        };
+        if(m === themeMode || !transArmed){ doApply(); return; }
+        if(trans.running){ trans.pendingApply = () => requestThemeFx(m, afterApply); return; }
+        runTransition(doApply, m);
+      }
+      window.__transState = function(){ return { running: trans.running, armed: transArmed, queued: !!trans.pendingApply }; };
+
       function tpApplyTheme(m){
-        _setThemeOrig(m); // 表示と state 送信は通常通り（実効テーマとして伝わる）
-        try { localStorage.setItem("overlayThemeV1", tpBase); } catch(e) {} // 保存上のテーマは base のままにする
-        bgmStep = 0; // BGMは新しいテーマのパターンで仕切り直す
+        requestThemeFx(m, () => {
+          try { localStorage.setItem("overlayThemeV1", tpBase); } catch(e) {} // 保存上のテーマは base のままにする
+        });
       }
       setTheme = function(m){
         if(m !== "baki" && m !== "powa" && m !== "normal") return;
         tpBase = m;
         if(tpOverride && Date.now() < tpOverride.until) return; // 上書き中は base だけ更新し、表示は維持
-        _setThemeOrig(m);
-        bgmStep = 0;
+        requestThemeFx(m, null);
       };
 
       const style = document.createElement("style");
