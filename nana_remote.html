@@ -204,6 +204,22 @@
           <div class="note">バキバキ：カットインが激しくなり、画面シェイクと太い発光枠でパチンコ全開の見た目になります。ぽわぽわ：パステルの丸いパネルで柔らかく、点滅（ストロボ）は止まって目に優しい見た目になります。カットインはどちらのテーマでも出ます（リーチ／昇格／大当たり／確変／777／特大ギフト）。設定はサーバーに保存されます。</div>
         </div>
       </details>
+      <details class="folder" data-folder="frame" open>
+        <summary>🖼 枠デザイン（パネルの枠）</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>枠： <b id="frState">-</b></span>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="setFrameStyle('standard')">⬜ 標準</button>
+            <button onclick="setFrameStyle('rainbow')">🌈 虹色アニメーション</button>
+            <button onclick="setFrameStyle('metal')">🏆 メタル（ゴールド）</button>
+            <button onclick="setFrameStyle('neon')">💜 ネオン紫</button>
+            <button onclick="setFrameStyle('simple')">▫️ シンプル細枠</button>
+          </div>
+          <div class="note">パネル類の「枠」だけを差し替えます。画面テーマ（通常／バキバキ／ぽわぽわ）とは別々に選べる別軸です（テーマの背景や色はそのまま）。スロット枠の差し色も連動します。設定はサーバーに保存され、全画面に反映されます。</div>
+        </div>
+      </details>
 
       <details class="folder" data-folder="special">
         <summary>🎂 特別演出</summary>
@@ -478,6 +494,23 @@
   }
   renderTheme();
 
+  /* ---------- 枠デザイン（テーマとは別軸） ---------- */
+  let frameStyle = "standard";
+  const FRAME_LABELS = { standard: "標準", rainbow: "🌈 虹色アニメーション", metal: "🏆 メタル（ゴールド）", neon: "💜 ネオン紫", simple: "シンプル細枠" };
+  function renderFrame(){
+    const el = document.getElementById("frState");
+    if(el) el.textContent = FRAME_LABELS[frameStyle] || frameStyle;
+  }
+  function setFrameStyle(s){
+    frameStyle = s;
+    renderFrame();
+    send({ type: "frame", style: s });
+  }
+  function adoptFrame(s){
+    if(FRAME_LABELS[s] && s !== frameStyle){ frameStyle = s; renderFrame(); }
+  }
+  renderFrame();
+
   let mutedState = null; // null = 状態未取得（オーバーレイからの state が届くまで実状態を表示しない）
   function renderMuted(){
     const st = document.getElementById("stMuted");
@@ -513,6 +546,7 @@
     if(st.label && !document.getElementById("setLabel").value) document.getElementById("setLabel").value = st.label;
     if(st.target && !document.getElementById("setTarget").value) document.getElementById("setTarget").value = st.target;
     if(st.theme) adoptTheme(st.theme);
+    if(st.frame) adoptFrame(st.frame);
     if(typeof st.muted === "boolean") adoptMuted(st.muted);
     if(st.simple) adoptSimple(st.simple);
     if(Array.isArray(st.hiddenItems)){
@@ -545,6 +579,7 @@
         if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
       }
       if(msg && msg.type === "theme" && msg.mode) adoptTheme(msg.mode);
+      if(msg && msg.type === "frame" && msg.style) adoptFrame(msg.style);
       if(msg && msg.type === "simple" && msg.simple) adoptSimple(msg.simple);
       if(msg && msg.type === "connectMode"){
         const el = document.getElementById("ttMode");

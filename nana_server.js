@@ -122,6 +122,12 @@ const THEME_FILE = path.join(__dirname, 'theme.json');
 let savedTheme = null;
 try { const j = JSON.parse(fs.readFileSync(THEME_FILE, 'utf8')); if (j && (j.mode === 'baki' || j.mode === 'powa' || j.mode === 'normal')) savedTheme = j.mode; } catch (e) { /* 無ければ未設定 */ }
 function setCanonicalTheme(m) { savedTheme = m; try { fs.writeFileSync(THEME_FILE, JSON.stringify({ mode: savedTheme })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+// --- 枠デザイン（パネルの枠プリセット）の正本もブリッジが持つ ---
+const FRAME_FILE = path.join(__dirname, 'frame.json');
+const FRAME_STYLES = ['standard', 'rainbow', 'metal', 'neon', 'simple'];
+let savedFrame = null;
+try { const j = JSON.parse(fs.readFileSync(FRAME_FILE, 'utf8')); if (j && FRAME_STYLES.includes(j.style)) savedFrame = j.style; } catch (e) { /* 無ければ未設定 */ }
+function setCanonicalFrame(s) { savedFrame = s; try { fs.writeFileSync(FRAME_FILE, JSON.stringify({ style: savedFrame })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
 function broadcast(obj, except) {
   const data = JSON.stringify(obj);
   for (const ws of clients) {
@@ -145,6 +151,7 @@ wss.on('connection', (ws) => {
   try { if (savedHidden) ws.send(JSON.stringify({ type: 'visibility', hidden: savedHidden })); } catch (e) { /* ignore */ }
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
   try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
+  try { if (savedFrame) ws.send(JSON.stringify({ type: 'frame', style: savedFrame })); } catch (e) { /* ignore */ }
   ws.on('message', (raw) => {
     let msg = null;
     try { msg = JSON.parse(raw.toString()); } catch (e) { return; }
@@ -204,6 +211,10 @@ wss.on('connection', (ws) => {
     if (msg.type === 'theme' && (msg.mode === 'baki' || msg.mode === 'powa' || msg.mode === 'normal')) {
       setCanonicalTheme(msg.mode);
     }
+    if (msg.type === 'frame') {
+      if (FRAME_STYLES.includes(msg.style)) setCanonicalFrame(msg.style);
+      else return; // 不正な枠は保存も中継もしない
+    }
     if (msg.type === 'simple' && msg.simple && typeof msg.simple === 'object' && !Array.isArray(msg.simple)) {
       setCanonicalSimple(msg.simple);
     }
@@ -215,7 +226,7 @@ wss.on('connection', (ws) => {
       setCanonicalLayout(msg.layout);
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme'].includes(msg.type)) {
+    if (['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'frame'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });
