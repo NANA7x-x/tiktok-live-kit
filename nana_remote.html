@@ -185,6 +185,21 @@
         </div>
       </details>
 
+      <details class="folder" data-folder="theme" open>
+        <summary>🎨 画面テーマ（パチンコ感の切り替え）</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>テーマ： <b id="thState">-</b></span>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="setThemeMode('normal')">😐 通常</button>
+            <button onclick="setThemeMode('baki')">⚡ バキバキ（パチンコ全開）</button>
+            <button onclick="setThemeMode('powa')">🌸 ぽわぽわ（かわいい・見やすい）</button>
+          </div>
+          <div class="note">バキバキ：カットインが激しくなり、画面シェイクと太い発光枠でパチンコ全開の見た目になります。ぽわぽわ：パステルの丸いパネルで柔らかく、点滅（ストロボ）は止まって目に優しい見た目になります。カットインはどちらのテーマでも出ます（リーチ／昇格／大当たり／確変／777／特大ギフト）。設定はサーバーに保存されます。</div>
+        </div>
+      </details>
+
       <details class="folder" data-folder="special">
         <summary>🎂 特別演出</summary>
         <div class="folderBody">
@@ -432,6 +447,23 @@
   }
   renderSimple();
 
+  /* ---------- 画面テーマ ---------- */
+  let themeMode = "normal";
+  const THEME_LABELS = { normal: "通常", baki: "⚡ バキバキ", powa: "🌸 ぽわぽわ" };
+  function renderTheme(){
+    const el = document.getElementById("thState");
+    if(el) el.textContent = THEME_LABELS[themeMode] || themeMode;
+  }
+  function setThemeMode(m){
+    themeMode = m;
+    renderTheme();
+    send({ type: "theme", mode: m });
+  }
+  function adoptTheme(m){
+    if((m === "baki" || m === "powa" || m === "normal") && m !== themeMode){ themeMode = m; renderTheme(); }
+  }
+  renderTheme();
+
   function fmtLeft(until){
     if(!until) return "";
     const s = Math.max(0, Math.ceil((until - Date.now()) / 1000));
@@ -448,6 +480,7 @@
     document.body.classList.toggle("testing", !!st.testMode);
     if(st.label && !document.getElementById("setLabel").value) document.getElementById("setLabel").value = st.label;
     if(st.target && !document.getElementById("setTarget").value) document.getElementById("setTarget").value = st.target;
+    if(st.theme) adoptTheme(st.theme);
     if(st.simple) adoptSimple(st.simple);
     if(Array.isArray(st.hiddenItems)){
       const joined = st.hiddenItems.slice().sort().join(",");
@@ -478,6 +511,7 @@
         const joined = msg.hidden.slice().sort().join(",");
         if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
       }
+      if(msg && msg.type === "theme" && msg.mode) adoptTheme(msg.mode);
       if(msg && msg.type === "simple" && msg.simple) adoptSimple(msg.simple);
       if(msg && msg.type === "connectMode"){
         const el = document.getElementById("ttMode");

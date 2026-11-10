@@ -94,6 +94,11 @@ const SIMPLE_FILE = path.join(__dirname, 'simple.json');
 let savedSimple = null;
 try { const j = JSON.parse(fs.readFileSync(SIMPLE_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedSimple = j; } catch (e) { /* 無ければ未設定 */ }
 function setCanonicalSimple(v) { savedSimple = v; try { fs.writeFileSync(SIMPLE_FILE, JSON.stringify(savedSimple)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+// --- 画面テーマ（通常/バキバキ/ぽわぽわ）の正本もブリッジが持つ ---
+const THEME_FILE = path.join(__dirname, 'theme.json');
+let savedTheme = null;
+try { const j = JSON.parse(fs.readFileSync(THEME_FILE, 'utf8')); if (j && (j.mode === 'baki' || j.mode === 'powa' || j.mode === 'normal')) savedTheme = j.mode; } catch (e) { /* 無ければ未設定 */ }
+function setCanonicalTheme(m) { savedTheme = m; try { fs.writeFileSync(THEME_FILE, JSON.stringify({ mode: savedTheme })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
 function broadcast(obj, except) {
   const data = JSON.stringify(obj);
   for (const ws of clients) {
@@ -116,6 +121,7 @@ wss.on('connection', (ws) => {
   // 表示ON/OFFの正本を新規接続クライアントへ送る
   try { if (savedHidden) ws.send(JSON.stringify({ type: 'visibility', hidden: savedHidden })); } catch (e) { /* ignore */ }
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
+  try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
   ws.on('message', (raw) => {
     let msg = null;
     try { msg = JSON.parse(raw.toString()); } catch (e) { return; }
@@ -172,6 +178,9 @@ wss.on('connection', (ws) => {
       return;
     }
     // 表示ON/OFFは正本として保持する（中継は下の共通処理で行う）
+    if (msg.type === 'theme' && (msg.mode === 'baki' || msg.mode === 'powa' || msg.mode === 'normal')) {
+      setCanonicalTheme(msg.mode);
+    }
     if (msg.type === 'simple' && msg.simple && typeof msg.simple === 'object' && !Array.isArray(msg.simple)) {
       setCanonicalSimple(msg.simple);
     }
@@ -183,7 +192,7 @@ wss.on('connection', (ws) => {
       setCanonicalLayout(msg.layout);
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple'].includes(msg.type)) {
+    if (['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });
