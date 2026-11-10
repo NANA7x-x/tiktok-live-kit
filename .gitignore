@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+layout.json
+visibility.json
+simple.json
+connect_mode.json
+discord_webhook.txt

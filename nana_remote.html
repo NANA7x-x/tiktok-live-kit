@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NANA オーバーレイ リモコン v3</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; }
+  body { background:#14101f; color:#fff; padding:14px; max-width:1460px; margin:0 auto; font-size:16px; }
+  h1 { font-size:21px; }
+  .card { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:12px; }
+  #wsStatus { font-weight:900; }
+  .ok { color:#a5ffb0; } .ng { color:#ff8080; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button { background:#2b2b3d; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:10px; padding:12px 16px; font-size:16px; cursor:pointer; }
+  button:hover { background:#45455e; }
+  button.big { font-size:18px; font-weight:900; padding:16px 20px; }
+  button.g1 { border-color:#a5ffb0; } button.g2 { border-color:#7be0ff; } button.g3 { border-color:#ffb3ec; } button.g4 { border-color:#ffd94d; }
+  input { background:#1c1c28; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:10px; font-size:15px; }
+  textarea { background:#1c1c28; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; font-size:14px; padding:8px; }
+  .stat { font-size:16px; line-height:1.9; } .stat b { color:#ffd94d; font-size:21px; }
+  .fxItem { display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
+  .fxItem:last-child { border-bottom:none; }
+  .fxName { flex:1; font-weight:700; }
+  .fxTime { color:#ffd94d; font-weight:900; white-space:nowrap; }
+  .fxEnd { padding:6px 12px; font-size:13px; }
+  .note { font-size:13px; opacity:.8; margin-top:6px; line-height:1.6; }
+  #testBanner { display:none; background:repeating-linear-gradient(45deg,#ff4040,#ff4040 14px,#ffd94d 14px,#ffd94d 28px); color:#111; font-weight:900; border-radius:10px; padding:8px 12px; margin:10px 0; text-align:center; }
+  #testBanner.show { display:block; }
+  body.testing { background:#2a0f16; }
+  /* レイアウト: 左=常時プレビュー / 右=操作パネル */
+  .layout { display:grid; grid-template-columns:433px 1fr; gap:14px; align-items:start; margin-top:12px; }
+  .previewCol { position:sticky; top:12px; }
+  iframe { width:405px; height:720px; border:2px solid rgba(255,255,255,.3); border-radius:12px; background:#111; display:block; margin:0 auto; }
+  .editBtns { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .editBtns .nudgeRow { display:flex; gap:6px; }
+  .editBtns .nudgeRow button { flex:1; }
+  .editBtns textarea { width:100%; font-size:12px; }
+  .headBar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .headBar .spacer { flex:1; }
+  /* フォルダ（アコーディオン） */
+  details.folder { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.2); border-radius:14px; margin-bottom:12px; overflow:hidden; }
+  details.folder > summary { list-style:none; cursor:pointer; padding:14px 16px; font-size:18px; font-weight:900; background:linear-gradient(90deg, rgba(123,224,255,.22), rgba(255,217,77,.10)); display:flex; align-items:center; gap:8px; }
+  details.folder > summary::-webkit-details-marker { display:none; }
+  details.folder > summary::after { content:"▸"; margin-left:auto; font-size:20px; opacity:.85; }
+  details.folder[open] > summary::after { content:"▾"; }
+  details.folder > .folderBody { padding:14px; }
+  /* パネル選択チップ */
+  .chipGrid { display:flex; flex-wrap:wrap; gap:6px; }
+  .chipGrid button { padding:9px 12px; font-size:14px; border-radius:999px; }
+  /* 表示ON/OFFの行 */
+  .visRow { display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px dashed rgba(255,255,255,.18); }
+  .visRow:last-child { border-bottom:none; }
+  .visName { flex:1; font-size:16px; font-weight:700; }
+  .visBtn { min-width:104px; font-weight:900; border-radius:999px; padding:9px 14px; }
+  .visBtn.on { background:#1d4d2b; border-color:#a5ffb0; color:#a5ffb0; }
+  .visBtn.off { background:#4d1d1d; border-color:#ff8080; color:#ff8080; }
+  @media (max-width: 920px) {
+    .layout { grid-template-columns:1fr; }
+    .previewCol { position:static; }
+  }
+</style>
+</head>
+<body>
+  <div class="headBar">
+    <h1>🎛️ NANA オーバーレイ リモコン <span style="font-size:13px;color:#7be0ff;">v3（フォルダ分け版）</span></h1>
+    <span class="spacer"></span>
+    <span>サーバー接続： <span id="wsStatus" class="ng">未接続</span></span>
+  </div>
+  <div id="testBanner">🧪 テストモード中：ギフトを押しても本番の数字には反映されません</div>
+
+  <div class="layout">
+    <!-- 左：常時表示のプレビュー＋配置操作 -->
+    <div class="previewCol">
+      <div class="card">
+        <iframe id="editorFrame" title="プレビュー兼レイアウト編集"></iframe>
+        <div class="editBtns">
+          <button onclick="editCmd('toggleEdit')">🧩 レイアウト編集 切替</button>
+          <div>
+            <div style="font-size:13px;opacity:.85;margin-bottom:6px;">動かしたいパネルを選ぶ（選ぶとプレビューで赤枠になります）：</div>
+            <div class="chipGrid" id="panelChips"></div>
+          </div>
+          <div class="nudgeRow">
+            <button onclick="editCmd('nudgeSel', [0,-1])">▲ 上へ</button>
+            <button onclick="editCmd('nudgeSel', [0,1])">▼ 下へ</button>
+            <button onclick="editCmd('nudgeSel', [-1,0])">◀ 左へ</button>
+            <button onclick="editCmd('nudgeSel', [1,0])">▶ 右へ</button>
+          </div>
+          <div class="nudgeRow">
+            <button onclick="editCmd('scaleSel', [0.1])">選択中を大きく</button>
+            <button onclick="editCmd('scaleSel', [-0.1])">選択中を小さく</button>
+          </div>
+          <div class="nudgeRow">
+            <button onclick="editCmd('applyPreset', ['tiktok'])">配置：コメント回避</button>
+            <button onclick="editCmd('applyPreset', ['standard'])">配置：標準</button>
+          </div>
+          <button onclick="editCmd('resetLayout')">配置リセット</button>
+          <textarea id="layoutCodeRemote" rows="3" placeholder="配置コード（出力→コピー／貼り付け→取込）"></textarea>
+          <div class="nudgeRow">
+            <button onclick="exportCode()">配置コード出力</button>
+            <button onclick="importCode()">配置コード取込</button>
+          </div>
+        </div>
+        <div class="note">プレビューの中でパネルを直接ドラッグでも動かせます（縦横は画面に対する％で保存）。右下の黄色いハンドルで拡縮。編集内容はOBS側にも自動で反映・保存されます（配置の保存はサーバー担当）。非表示にした項目は、編集中だけ半透明で見えます。</div>
+      </div>
+    </div>
+
+    <!-- 右：フォルダ分けした操作パネル -->
+    <div class="controlCol">
+      <details class="folder" data-folder="status" open>
+        <summary>📊 状態・テストモード</summary>
+        <div class="folderBody">
+          <div class="stat">
+            総回転数 <b id="stSpins">-</b> ／ 残額 <b id="stRemain">-</b><br>
+            状態 <b id="stMode">-</b> ／ コンボ <b id="stCombo">-</b>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <span>テストモード： <b id="stTest">-</b></span>
+            <button onclick="sendControl({action:'setTest', value:true})">🧪 テスト開始</button>
+            <button onclick="sendControl({action:'setTest', value:false})">テスト終了（本番に戻す）</button>
+          </div>
+          <div class="note">テスト中はアニメーションやルーレットが全部動きますが、残額・回転数・投げ銭王はテスト終了時に元へ戻ります。テストは配信前がおすすめ（テスト中に届いた本物ギフトも巻き戻されます）。</div>
+          <div class="row" style="margin-top:10px;">
+            <span>TikTok接続方式： <b id="ttMode">-</b></span>
+            <button onclick="send({type:'connectMode', auto:true})">自動でつなぐ</button>
+            <button onclick="send({type:'connectMode', auto:false})">ボタンでつなぐ（手動）</button>
+          </div>
+          <div class="note">手動にすると、サーバーを起動しても勝手には接続しに行かず、下のボタンを押した時だけ接続します（リクエストは最小限）。押し忘れるとギフトが記録されないので注意。配信中に切れた時は、どちらの方式でも自動で繋ぎ直しを試みます。</div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="send({type:'connectNow'})">📡 TikTokに今すぐ接続</button>
+          </div>
+          <div class="note">配信を始めたら押すと、待たずにTikTokへ接続しに行きます。押さなくても自動で繋がりますが、未接続が続くと再試行は最大3分に1回まで間隔が広がります（リクエストし過ぎ防止）。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="gift" open>
+        <summary>🎁 ギフトを送る（手動）</summary>
+        <div class="folderBody">
+          <div class="row" style="margin-bottom:10px;">
+            <input id="gifterName" type="text" placeholder="投げた人の名前" style="width:220px">
+          </div>
+          <div class="row">
+            <button class="big g1" onclick="sendGift(1)">🌹 小ギフト</button>
+            <button class="big g2" onclick="sendGift(2)">🍩 中ギフト</button>
+            <button class="big g3" onclick="sendGift(3)">🕶 大ギフト</button>
+            <button class="big g4" onclick="sendGift(4)">🦁 特大ギフト</button>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="sendControl({action:'death'})">デス+1</button>
+            <button onclick="sendControl({action:'roulette', tier:1})">小ルーレット</button>
+            <button onclick="sendControl({action:'roulette', tier:2})">中ルーレット</button>
+            <button onclick="sendControl({action:'roulette', tier:3})">大ルーレット</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="visibility" open>
+        <summary>👁️ 画面表示 ON / OFF（項目ごと）</summary>
+        <div class="folderBody">
+          <div id="visList"></div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="showAllItems()">全部表示に戻す</button>
+          </div>
+          <div class="note">配信画面に出す／出さないを項目ごとに選べます。設定はサーバーに保存されるので、OBSを開き直してもそのままです。レイアウト編集中は、非表示の項目も半透明で見えるので移動できます。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="simple" open>
+        <summary>✨ かんたん表示（ローテーション）</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>かんたん表示： <b id="smState">-</b></span>
+            <button onclick="setSimpleOn(true)">ON にする</button>
+            <button onclick="setSimpleOn(false)">OFF にする</button>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-size:14px;opacity:.9;margin-bottom:4px;">順番に出す項目（候補）：</div>
+            <div id="simpleList"></div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <span>切り替え間隔：</span>
+            <span id="simpleSecs"></span>
+          </div>
+          <div class="note">ONにすると、選んだ項目が1つずつフリップして順番に表示されます。同時に見える情報が減るので、初めての人にも「簡単そう」に見えます。配信画面だけに効きます（レイアウト編集中は全項目が見えます。今の担当じゃない項目は薄く表示）。ルーレットとあおり文句は演出の都合で候補に入りません。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="special">
+        <summary>🎂 特別演出</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>バースデーモード： <b id="bdState">-</b></span>
+            <button onclick="sendControl({action:'birthday', value:true})">🎂 バースデー ON</button>
+            <button onclick="sendControl({action:'birthday', value:false})">バースデー OFF</button>
+          </div>
+          <div class="note">ONにすると配信画面が誕生日仕様の飾りになり、ギフトの紙吹雪が増え、大ギフトでお祝いコールが出ます。状態は表示側に保存されるので、リロードしても続きます。</div>
+          <div class="row" style="margin-top:10px;">
+            <button class="big g4" onclick="sendControl({action:'mvp'})">🏆 MVP発表</button>
+          </div>
+          <div class="note">今日のMVP（この配信で一番コインを投げた方）を画面中央で発表します。まだギフトが無いときは何も起きません。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="fx">
+        <summary>⏱️ 発動中・獲得</summary>
+        <div class="folderBody">
+          <div id="fxList"><div style="opacity:.75">まだ何も当たってません</div></div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="goal">
+        <summary>🎯 目標の文字・金額</summary>
+        <div class="folderBody">
+          <div class="row">
+            <input id="setLabel" type="text" placeholder="目標の文字" style="width:220px">
+            <input id="setRemain" type="number" placeholder="残額（円）" style="width:130px">
+            <input id="setTarget" type="number" placeholder="目標額（円）" style="width:140px">
+            <button onclick="sendGoal()">適用</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="vrc">
+        <summary>🥽 VRChat連携</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>VRChat連携（チャットボックス送信）： <b id="vrcState">-</b></span>
+            <button onclick="sendVrcTest()">VRCテスト送信</button>
+          </div>
+          <div class="note">ONのとき、ギフト到着・大当たり（確変/777/超大当たり）・効果当選が VRChat のチャットボックスに自動で流れます（金額は流れません）。ON/OFF はキットのフォルダの <b>vrc_osc.txt</b> の1行目で切り替え、サーバー再起動で反映されます。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="config">
+        <summary>⚙️ 詳細設定：抽選（コイン数・回転数・文言）</summary>
+        <div class="folderBody">
+          <div class="note" style="margin-bottom:8px">コイン数の境目と、当たった時の文言などを自由に変えられます。変更は表示側へ即反映され、保存されます。</div>
+          <div class="row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span>コイン帯の境目：</span>
+            <label>中は <input id="cCoin2" type="number" style="width:80px"> コインから</label>
+            <label>大は <input id="cCoin3" type="number" style="width:90px"> コインから</label>
+            <label>特大は <input id="cCoin4" type="number" style="width:100px"> コインから</label>
+          </div>
+          <div class="row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px">
+            <span>金額換算：</span>
+            <label>1コイン = <input id="cYenPerCoin" type="number" step="0.01" style="width:80px"> 円（ダイヤ換金の目安。初期値0.39）</label>
+          </div>
+          <div class="row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px">
+            <span>回転数：</span>
+            <label>小 <input id="cSpin1" type="number" style="width:70px"></label>
+            <label>中 <input id="cSpin2" type="number" style="width:70px"></label>
+            <label>大 <input id="cSpin3" type="number" style="width:70px"></label>
+            <label>特大 <input id="cSpin4" type="number" style="width:70px"></label>
+          </div>
+          <div style="margin-top:10px">
+            <label>ギフト表の説明文（&lt;b&gt;太字&lt;/b&gt; 可）</label>
+            <textarea id="cHowto" rows="2" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>あおり文句（1行に1つ。順番に切り替わります）</label>
+            <textarea id="cTeaser" rows="4" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>小ルーレットの当たり演出（1行に1つ）</label>
+            <textarea id="cFx1" rows="3" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>中ルーレットの当たり演出（1行に1つ）</label>
+            <textarea id="cFx2" rows="3" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>大ルーレットの当たり演出（1行に1つ）</label>
+            <textarea id="cFx3" rows="3" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>セリフ集（「ランダムセリフ」が当たると、この中から1つ表示されます。1行に1つ）</label>
+            <textarea id="cSerif" rows="3" style="width:100%"></textarea>
+          </div>
+          <div class="note">演出の文言に「○分間」「○時間」と書くと、その時間だけ発動タイマーが付きます（例：語尾「にゃん」3分間）。語尾・一人称・口調の演出は同時に1つずつ順番に発動します。</div>
+          <div class="row" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button onclick="applyCfg()">✅ 設定を反映</button>
+            <button onclick="fillCfgForm(null, true)">↩️ 現在の設定を読み直す</button>
+            <button onclick="resetCfg()">初期値に戻す</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+<script>
+  const WS_URL = "ws://localhost:21213";
+  let ws = null, wsTimer = null;
+  let lastState = null;
+
+  document.getElementById("editorFrame").src =
+    location.protocol.indexOf("http") === 0 ? "overlay.html#embed" : "nana_overlay.html#embed";
+
+  /* ---------- パネル定義（配置選択・表示ON/OFF 共通） ---------- */
+  const PANEL_DEFS = [
+    { id: "goal", label: "目標バー" },
+    { id: "menu", label: "ギフト表" },
+    { id: "stats", label: "回転数・ステータス" },
+    { id: "teaser", label: "あおり文句" },
+    { id: "roulette", label: "ルーレット" },
+    { id: "activeFx", label: "発動中の効果" },
+    { id: "vipPanel", label: "VIP・称号" },
+    { id: "tokudaiBoard", label: "特大ボード" },
+    { id: "mileBar", label: "マイルストーン" },
+    { id: "likeBar", label: "いいねバー" },
+    { id: "topGift", label: "本日の最大ギフト" },
+    { id: "attendPanel", label: "出席簿" },
+    { id: "zukanPanel", label: "ギフト図鑑" }
+  ];
+
+  /* 配置：パネル選択チップ */
+  document.getElementById("panelChips").innerHTML = PANEL_DEFS.map(p =>
+    '<button onclick="editCmd(\'selectPanelById\', [\'' + p.id + '\'])">' + p.label + '</button>'
+  ).join("");
+
+  /* レイアウト編集（左プレビュー下のボタン）→ 編集枠への操作送信 */
+  function editCmd(fn, args){
+    const f = document.getElementById("editorFrame");
+    if(f && f.contentWindow){ try { f.contentWindow.postMessage({ type: "editCmd", fn: fn, args: args || [] }, "*"); } catch(e) {} }
+  }
+  function exportCode(){ editCmd("exportLayoutCode"); }
+  function importCode(){ editCmd("importLayoutCode", [document.getElementById("layoutCodeRemote").value]); }
+  window.addEventListener("message", (ev) => {
+    const d = ev.data;
+    if(d && d.type === "layoutCode"){ document.getElementById("layoutCodeRemote").value = d.value || ""; }
+  });
+
+  /* フォルダの開閉状態を保存 */
+  document.querySelectorAll("details.folder").forEach(d => {
+    const key = d.getAttribute("data-folder");
+    try {
+      const saved = JSON.parse(localStorage.getItem("remoteFoldersV1") || "{}");
+      if(key in saved) d.open = !!saved[key];
+    } catch(e) {}
+    d.addEventListener("toggle", () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("remoteFoldersV1") || "{}");
+        saved[key] = d.open;
+        localStorage.setItem("remoteFoldersV1", JSON.stringify(saved));
+      } catch(e) {}
+    });
+  });
+
+  function setStatus(ok){
+    const el = document.getElementById("wsStatus");
+    el.textContent = ok ? "接続中" : "未接続";
+    el.className = ok ? "ok" : "ng";
+  }
+  function send(obj){
+    if(ws && ws.readyState === 1){ try { ws.send(JSON.stringify(obj)); } catch(e) {} }
+  }
+  function sendControl(partial){
+    send(Object.assign({ type: "control" }, partial));
+  }
+  function sendGift(tier){
+    const name = document.getElementById("gifterName").value.trim();
+    sendControl({ action: "gift", tier: tier, name: name });
+  }
+  function sendGoal(){
+    const label = document.getElementById("setLabel").value.trim();
+    const target = parseInt(document.getElementById("setTarget").value);
+    const remain = parseInt(document.getElementById("setRemain").value);
+    const goal = {};
+    if(label) goal.label = label;
+    if(!isNaN(target) && target > 0) goal.target = target;
+    if(!isNaN(remain) && remain >= 0) goal.remain = remain;
+    if(Object.keys(goal).length) send({ type: "goal", goal: goal });
+  }
+  function endFx(id){ sendControl({ action: "endEffect", id: id }); }
+  function sendVrcTest(){ send({ type: "vrcTest" }); }
+
+  /* ---------- 画面表示 ON/OFF ---------- */
+  let currentHidden = [];
+  function renderVisList(){
+    document.getElementById("visList").innerHTML = PANEL_DEFS.map(p => {
+      const hidden = currentHidden.indexOf(p.id) >= 0;
+      return '<div class="visRow"><span class="visName">' + p.label + '</span>' +
+        '<button class="visBtn ' + (hidden ? "off" : "on") + '" onclick="toggleVis(\'' + p.id + '\')">' +
+        (hidden ? "非表示" : "表示中") + '</button></div>';
+    }).join("");
+  }
+  function toggleVis(id){
+    let next;
+    if(currentHidden.indexOf(id) >= 0) next = currentHidden.filter(x => x !== id);
+    else next = currentHidden.concat([id]);
+    currentHidden = next;
+    renderVisList();
+    send({ type: "visibility", hidden: next });
+  }
+  function showAllItems(){
+    currentHidden = [];
+    renderVisList();
+    send({ type: "visibility", hidden: [] });
+  }
+  renderVisList();
+
+  /* ---------- かんたん表示（ローテーション） ---------- */
+  const SIMPLE_DEFS = PANEL_DEFS.filter(p => p.id !== "roulette" && p.id !== "teaser");
+  let simpleCfg = { on: false, items: ["menu", "vipPanel", "tokudaiBoard", "attendPanel", "zukanPanel"], sec: 8 };
+  function renderSimple(){
+    const st = document.getElementById("smState");
+    if(st) st.textContent = simpleCfg.on ? "ON" : "OFF";
+    document.getElementById("simpleList").innerHTML = SIMPLE_DEFS.map(p => {
+      const inList = simpleCfg.items.indexOf(p.id) >= 0;
+      return '<div class="visRow"><span class="visName">' + p.label + '</span>' +
+        '<button class="visBtn ' + (inList ? "on" : "off") + '" onclick="toggleSimpleItem(\'' + p.id + '\')">' +
+        (inList ? "候補に入ってる" : "入れない") + '</button></div>';
+    }).join("");
+    document.getElementById("simpleSecs").innerHTML = [5, 8, 12, 20].map(sec =>
+      '<button class="visBtn ' + (simpleCfg.sec === sec ? "on" : "off") + '" style="min-width:64px;margin-right:6px;" onclick="setSimpleSec(' + sec + ')">' + sec + '秒</button>'
+    ).join("");
+  }
+  function sendSimple(){
+    send({ type: "simple", simple: { on: simpleCfg.on, items: simpleCfg.items.slice(), sec: simpleCfg.sec } });
+    renderSimple();
+  }
+  function setSimpleOn(on){ simpleCfg.on = !!on; sendSimple(); }
+  function setSimpleSec(sec){ simpleCfg.sec = sec; sendSimple(); }
+  function toggleSimpleItem(id){
+    if(simpleCfg.items.indexOf(id) >= 0) simpleCfg.items = simpleCfg.items.filter(x => x !== id);
+    else simpleCfg.items = simpleCfg.items.concat([id]);
+    sendSimple();
+  }
+  function adoptSimple(v){
+    if(!v || typeof v !== "object") return;
+    const next = { on: !!v.on, items: Array.isArray(v.items) ? v.items.slice() : [], sec: [5,8,12,20].indexOf(v.sec) >= 0 ? v.sec : 8 };
+    if(JSON.stringify(next) !== JSON.stringify(simpleCfg)){ simpleCfg = next; renderSimple(); }
+  }
+  renderSimple();
+
+  function fmtLeft(until){
+    if(!until) return "";
+    const s = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    return "残り" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function renderState(st){
+    lastState = st;
+    document.getElementById("stSpins").textContent = (st.spins || 0).toLocaleString();
+    document.getElementById("stRemain").textContent = "¥" + (st.remain || 0).toLocaleString();
+    document.getElementById("stMode").textContent = st.mode || "-";
+    document.getElementById("stCombo").textContent = "×" + (st.combo || 0);
+    document.getElementById("stTest").textContent = st.testMode ? "ON" : "OFF";
+    document.getElementById("testBanner").classList.toggle("show", !!st.testMode);
+    document.body.classList.toggle("testing", !!st.testMode);
+    if(st.label && !document.getElementById("setLabel").value) document.getElementById("setLabel").value = st.label;
+    if(st.target && !document.getElementById("setTarget").value) document.getElementById("setTarget").value = st.target;
+    if(st.simple) adoptSimple(st.simple);
+    if(Array.isArray(st.hiddenItems)){
+      const joined = st.hiddenItems.slice().sort().join(",");
+      if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = st.hiddenItems.slice(); renderVisList(); }
+    }
+    renderFx();
+  }
+  function renderFx(){
+    const box = document.getElementById("fxList");
+    const fx = (lastState && lastState.fx) || [];
+    if(!fx.length){ box.innerHTML = '<div style="opacity:.75">まだ何も当たってません</div>'; return; }
+    box.innerHTML = fx.map(f =>
+      '<div class="fxItem"><span class="fxName">' + f.name + '</span>' +
+      '<span class="fxTime">' + (f.state === "wait" ? "待機中" : (f.until ? fmtLeft(f.until) : "獲得")) + '</span>' +
+      '<button class="fxEnd" onclick="endFx(' + f.id + ')">終了</button></div>'
+    ).join("");
+  }
+  setInterval(()=>{ if(lastState) renderFx(); }, 1000);
+
+  function connect(){
+    try { ws = new WebSocket(WS_URL); } catch(e) { schedule(); return; }
+    ws.onopen = ()=>{ setStatus(true); send({ type: "requestState" }); };
+    ws.onmessage = (ev)=>{
+      let msg = null;
+      try { msg = JSON.parse(ev.data); } catch(e) { return; }
+      if(msg && msg.type === "state" && msg.state){ renderState(msg.state); if(msg.state.playCfg) fillCfgForm(msg.state.playCfg, false); }
+      if(msg && msg.type === "visibility" && Array.isArray(msg.hidden)){
+        const joined = msg.hidden.slice().sort().join(",");
+        if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
+      }
+      if(msg && msg.type === "simple" && msg.simple) adoptSimple(msg.simple);
+      if(msg && msg.type === "connectMode"){
+        const el = document.getElementById("ttMode");
+        if(el) el.textContent = msg.auto ? "自動" : "手動（ボタンの時だけ）";
+      }
+      if(msg && msg.type === "vrcStatus"){
+        const el = document.getElementById("vrcState");
+        if(el){ el.textContent = msg.enabled ? "ON" : "OFF"; el.className = msg.enabled ? "ok" : "ng"; }
+      }
+      if(msg && msg.type === "birthday"){
+        const el = document.getElementById("bdState");
+        if(el) el.textContent = msg.value ? "ON" : "OFF";
+      }
+    };
+    ws.onclose = ()=>{ setStatus(false); schedule(); };
+    ws.onerror = ()=>{ try { ws.close(); } catch(e) {} };
+  }
+  function schedule(){
+    if(wsTimer) return;
+    wsTimer = setTimeout(()=>{ wsTimer = null; connect(); }, 3000);
+  }
+  /* ---------- 詳細設定フォーム ---------- */
+  let cfgFormLoaded = false;
+  function fillCfgForm(cfg, force){
+    if(!cfg){ if(lastState && lastState.playCfg) fillCfgForm(lastState.playCfg, true); return; }
+    if(cfgFormLoaded && !force) return;
+    const set = (id, v)=>{ document.getElementById(id).value = v; };
+    set("cCoin2", cfg.coin2); set("cCoin3", cfg.coin3); set("cCoin4", cfg.coin4);
+    set("cYenPerCoin", cfg.yenPerCoin != null ? cfg.yenPerCoin : 0.39);
+    set("cSpin1", cfg.spins[1]); set("cSpin2", cfg.spins[2]); set("cSpin3", cfg.spins[3]); set("cSpin4", cfg.spins[4]);
+    set("cHowto", cfg.howto);
+    set("cTeaser", (cfg.teaserLines || []).join("\n"));
+    set("cFx1", (cfg.fx1 || []).join("\n")); set("cFx2", (cfg.fx2 || []).join("\n")); set("cFx3", (cfg.fx3 || []).join("\n"));
+    set("cSerif", (cfg.serifLines || []).join("\n"));
+    cfgFormLoaded = true;
+  }
+  function lines(id){ return document.getElementById(id).value.split("\n").map(s => s.trim()).filter(Boolean); }
+  function applyCfg(){
+    const num = (id)=> parseInt(document.getElementById(id).value, 10);
+    send({ type: "config", cfg: {
+      coin2: num("cCoin2"), coin3: num("cCoin3"), coin4: num("cCoin4"),
+      yenPerCoin: parseFloat(document.getElementById("cYenPerCoin").value),
+      spins: { 1: num("cSpin1"), 2: num("cSpin2"), 3: num("cSpin3"), 4: num("cSpin4") },
+      howto: document.getElementById("cHowto").value,
+      teaserLines: lines("cTeaser"), fx1: lines("cFx1"), fx2: lines("cFx2"), fx3: lines("cFx3"), serifLines: lines("cSerif")
+    }});
+    cfgFormLoaded = false;
+    alert("設定を送りました。表示側のギフト表と抽選に反映されます。");
+  }
+  function resetCfg(){
+    if(!confirm("抽選の設定を初期値に戻しますか？")) return;
+    send({ type: "config", cfg: "RESET" });
+    cfgFormLoaded = false;
+  }
+
+  connect();
+  setInterval(()=> send({ type: "requestState" }), 8000);
+</script>
+</body>
+</html>
