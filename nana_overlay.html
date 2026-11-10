@@ -504,41 +504,6 @@
 
   <div id="teaser" class="panel movable"><span id="teaserText">大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転</span></div>
 
-  <div id="controls">
-    <input id="gifterName" type="text" placeholder="投げた人の名前">
-    <button onclick="gift(1)">小ギフト</button>
-    <button onclick="gift(2)">中ギフト</button>
-    <button onclick="gift(3)">大ギフト</button>
-    <button onclick="gift(4)">特大ギフト</button>
-    <button onclick="addDeath()">デス+1 [D]</button>
-    <button onclick="spinRoulette(1)">演出ルーレット [R]</button>
-    <button onclick="adjust()">残額を調整</button>
-    <button onclick="toggleTest()" id="testBtn">テストモード OFF</button>
-    <input id="setLabel" type="text" placeholder="目標の文字" style="width:200px">
-    <input id="setRemain" type="number" placeholder="残額（円）" style="width:110px">
-    <input id="setTarget" type="number" placeholder="目標額（円）" style="width:120px">
-    <button onclick="applyGoalSettings()">金額・文字を適用</button>
-    <button onclick="toggleMute()" id="muteBtn">音 ON</button>
-    <button onclick="toggleBg()">背景 切替 [T]</button>
-    <button onclick="toggleControls()">操作バー隠す [H]</button>
-    <button onclick="toggleDock()" id="dockBtn">操作バー：下（画面内）</button>
-    <button onclick="toggleEdit()">レイアウト編集 [L]</button>
-    <button onclick="applyPreset('tiktok')">配置：コメント回避</button>
-    <button onclick="applyPreset('standard')">配置：標準</button>
-    <button onclick="scaleSel(0.1)">選択中を大きく</button>
-    <button onclick="scaleSel(-0.1)">選択中を小さく</button>
-    <button onclick="nudgeSel(0,-1)">▲ 上へ</button>
-    <button onclick="nudgeSel(0,1)">▼ 下へ</button>
-    <button onclick="nudgeSel(-1,0)">◀ 左へ</button>
-    <button onclick="nudgeSel(1,0)">▶ 右へ</button>
-    <button onclick="resetLayout()">配置リセット</button>
-    <textarea id="layoutCode" rows="2" placeholder="配置コード（出力→コピー／貼り付け→取込）" style="width:280px;background:#1c1c28;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;font-size:11px;"></textarea>
-    <button onclick="exportLayout()">配置コード出力</button>
-    <button onclick="importLayout()">配置コード取込</button>
-    <div class="hint" id="editState"></div>
-    <div class="hint">キーボード：1〜4=ギフト / D=デス / R=小ルーレット / T=背景透過 / H=操作バー表示切替。名前欄に入れた名前でギフトを記録します。</div>
-    <div class="hint">自動連動（tiktok-bridge）： <span id="wsStatus" style="color:#ff8080;font-weight:700;">未接続</span> <button onclick="wsConnect()">再接続</button></div>
-  </div>
 </div>
 
 <script>
@@ -572,6 +537,8 @@
     yenPerCoin: 0.39,
     spins: {1:100, 2:50, 3:2, 4:1},
     howto: "🎁 ギフトでルーレットが回ります！<br>あたりが出たら<b>何か起こる</b>かも！",
+    missionTitle: "🎯 協力ミッション",
+    missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
       "大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転",
@@ -615,9 +582,12 @@
       playCfg.fx1 = arr(nc.fx1, playCfg.fx1); playCfg.fx2 = arr(nc.fx2, playCfg.fx2); playCfg.fx3 = arr(nc.fx3, playCfg.fx3);
       playCfg.serifLines = arr(nc.serifLines, playCfg.serifLines);
       if(typeof nc.howto === "string" && nc.howto.trim()) playCfg.howto = nc.howto;
+      if(typeof nc.missionTitle === "string" && nc.missionTitle.trim()) playCfg.missionTitle = nc.missionTitle;
+      if(typeof nc.missionText === "string" && nc.missionText.trim()) playCfg.missionText = nc.missionText;
     }
     teaserIdx = 0;
     savePlayCfg(); renderTierRows();
+    if(window.__renderMission){ try { window.__renderMission(); } catch(e) {} }
     const tb = $("teaserEditBox"); if(tb) tb.value = "";
     broadcastState();
   }
@@ -683,7 +653,7 @@
     } catch(e) {}
   }
   function missSound(){ tone(392, 0, .18, "triangle", .06); tone(330, .16, .2, "triangle", .06); tone(262, .34, .3, "triangle", .06); }
-  function toggleMute(){ muted = !muted; $("muteBtn").textContent = muted ? "音 OFF" : "音 ON"; if(!muted) coinSound(); }
+  function toggleMute(){ muted = !muted; if($("muteBtn")) $("muteBtn").textContent = muted ? "音 OFF" : "音 ON"; if(!muted) coinSound(); broadcastState(); }
 
   /* ---------- 表示 ---------- */
   function renderGoal(){
@@ -694,9 +664,9 @@
     $("barInner").style.width = Math.min(100, Math.max(3, done / goalCfg.target * 100)) + "%";
   }
   window.applyGoalSettings = function(){
-    const l = $("setLabel").value.trim(); if(l) goalCfg.label = l;
-    const t = parseInt($("setTarget").value); if(!isNaN(t) && t > 0) goalCfg.target = t;
-    const r = parseInt($("setRemain").value); if(!isNaN(r) && r >= 0) remain = r;
+    const l = ($("setLabel") ? $("setLabel").value : "").trim(); if(l) goalCfg.label = l;
+    const t = parseInt($("setTarget") ? $("setTarget").value : ""); if(!isNaN(t) && t > 0) goalCfg.target = t;
+    const r = parseInt($("setRemain") ? $("setRemain").value : ""); if(!isNaN(r) && r >= 0) remain = r;
     saveGoalCfg(); renderGoal();
     wsSend({ type: "goal", goal: { label: goalCfg.label, target: goalCfg.target, remain: remain } });
     broadcastState();
@@ -1337,7 +1307,7 @@
   }
   function gift(tier, fromName, count, coinsPerUnit){
     count = Math.max(1, Math.min(20, count || 1));
-    const name = (fromName !== undefined ? fromName : ($("gifterName").value || "").trim());
+    const name = (fromName !== undefined ? fromName : ((($("gifterName") || {}).value) || "").trim());
     // v14追加: 本日の最大ギフト表示用のギフト名（ブリッジが直前にセットした実名を優先、無ければ段名）
     const giftLabel = ((window.__pendingGiftName || "") + "").trim() || tierName[tier];
     window.__pendingGiftName = "";
@@ -1516,7 +1486,7 @@
     wsSend({ type: "state", state: {
       spins: spins, remain: remain, target: goalCfg.target, label: goalCfg.label,
       mode: inKakuhen() ? "確変" : (inChance() ? "チャンスゾーン" : "通常"),
-      combo: combo, testMode: testMode, playCfg: playCfg,
+      combo: combo, testMode: testMode, muted: muted, playCfg: playCfg,
       fx: activeFxList.map(f => ({ id: f.id, name: f.name, until: f.until, state: f.state })),
       hiddenItems: safeHidden(),
       simple: safeSimple(),
@@ -1535,7 +1505,7 @@
       topGiftRec: topGiftRec ? Object.assign({}, topGiftRec) : null };
     testMode = true;
     $("testBadge").classList.add("show");
-    $("testBtn").textContent = "テストモード ON（押すと終了）";
+    if($("testBtn")) $("testBtn").textContent = "テストモード ON（押すと終了）";
     flash("テストモード開始", "本番には反映されません");
     broadcastState();
   }
@@ -1552,7 +1522,7 @@
     $("comboGauge").style.width = "0%";
     testMode = false; testSnapshot = null;
     $("testBadge").classList.remove("show");
-    $("testBtn").textContent = "テストモード OFF";
+    if($("testBtn")) $("testBtn").textContent = "テストモード OFF";
     $("spinNum").textContent = spins.toLocaleString();
     $("deathNum").textContent = deaths;
     $("comboNum").textContent = "×0";
@@ -1624,7 +1594,7 @@
   }, 500);
 
   /* ---------- v7: レイアウト編集（ドラッグ移動・拡縮・プリセット・保存） ---------- */
-  const movableIds = ["goal", "menu", "stats", "teaser", "roulette", "activeFx", "vipPanel", "tokudaiBoard", "mileBar", "likeBar", "topGift", "attendPanel", "zukanPanel"];
+  const movableIds = ["goal", "menu", "stats", "teaser", "roulette", "activeFx", "vipPanel", "tokudaiBoard", "mileBar", "likeBar", "topGift", "attendPanel", "zukanPanel", "missionBar"];
   let layoutMap = {};
   try { layoutMap = JSON.parse(localStorage.getItem("overlayLayoutV7") || "{}"); } catch(e) { layoutMap = {}; }
   let editMode = false, selPanel = null, dragCtx = null;
@@ -1668,7 +1638,8 @@
       likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
       attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" }
+      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" },
+      missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
     },
     standard: {
       goal:   { top:"2%",  left:"4%",  right:"4%",  bottom:"auto" },
@@ -1683,7 +1654,8 @@
       likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
       attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" }
+      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" },
+      missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
     }
   };
   window.applyPreset = function(name){
@@ -1699,16 +1671,16 @@
   window.resetLayout = function(){
     layoutMap = {}; saveLayout(); location.reload();
   };
+  function setEditState(t){ const e = $("editState"); if(e) e.textContent = t; }
   window.exportLayout = function(){
-    const ta = $("layoutCode");
-    ta.value = JSON.stringify(layoutMap);
-    ta.focus(); ta.select();
+    return JSON.stringify(layoutMap);
   };
-  window.importLayout = function(){
+  window.importLayout = function(code){
     try {
-      const v = JSON.parse($("layoutCode").value);
-      if(v && typeof v === "object"){ layoutMap = v; saveLayout(); applyLayout(); $("editState").textContent = "配置コードを取り込みました"; }
-    } catch(e){ $("editState").textContent = "配置コードの読み込みに失敗しました"; }
+      const v = JSON.parse(typeof code === "string" ? code : "");
+      if(v && typeof v === "object"){ layoutMap = v; saveLayout(); applyLayout(); setEditState("配置コードを取り込みました"); return true; }
+    } catch(e){ setEditState("配置コードの読み込みに失敗しました"); }
+    return false;
   };
   /* リモコン右側の編集パネルからの操作（postMessage）。埋め込み編集時は画面内の操作バーを
      使わないので、編集系の関数はここから呼ばれる。配置コードは値を返信する。 */
@@ -1716,12 +1688,9 @@
     const d = ev.data; if (!d || d.type !== "editCmd") return;
     try {
       if (d.fn === "exportLayoutCode") {
-        window.exportLayout();
-        const v = $("layoutCode") ? $("layoutCode").value : JSON.stringify(layoutMap);
-        if (ev.source) ev.source.postMessage({ type: "layoutCode", value: v }, "*");
+        if (ev.source) ev.source.postMessage({ type: "layoutCode", value: JSON.stringify(layoutMap) }, "*");
       } else if (d.fn === "importLayoutCode") {
-        if ($("layoutCode")) $("layoutCode").value = (d.args && d.args[0]) || "";
-        window.importLayout();
+        window.importLayout((d.args && d.args[0]) || "");
       } else if (typeof window[d.fn] === "function") {
         window[d.fn].apply(null, d.args || []);
       }
@@ -1731,14 +1700,14 @@
     document.querySelectorAll(".movable").forEach(e => e.classList.remove("sel"));
     selPanel = el;
     if(el) el.classList.add("sel");
-    $("editState").textContent = editMode ? ("編集中：選択中=" + (el ? el.id : "なし") + " ／ ドラッグで移動、大きさボタンで拡縮、Lで終了") : "";
+    setEditState(editMode ? ("編集中：選択中=" + (el ? el.id : "なし") + " ／ ドラッグで移動、大きさボタンで拡縮、Lで終了") : "");
   }
   window.toggleEdit = function(){
     editMode = !editMode;
     document.body.classList.toggle("editing", editMode);
     applyVisibility();
     if(!editMode) selectPanel(null);
-    else $("editState").textContent = "編集中：パネルをドラッグで移動、クリックで選択、大きさボタンで拡縮、Lで終了";
+    else setEditState("編集中：パネルをドラッグで移動、クリックで選択、大きさボタンで拡縮、Lで終了");
   };
   window.scaleSel = function(d){
     if(!selPanel) return;
@@ -1749,8 +1718,7 @@
     selPanel.style.transformOrigin = "top left";
     saveLayout();
   };
-  movableIds.forEach(id => {
-    const el = $(id); if(!el) return;
+  function bindMovableDrag(el){
     el.addEventListener("pointerdown", e => {
       if(!editMode) return;
       e.preventDefault();
@@ -1775,7 +1743,23 @@
       layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { l: Math.round(l * 10) / 10, t: Math.round(t * 10) / 10 });
     });
     el.addEventListener("pointerup", () => { if(dragCtx){ dragCtx = null; saveLayout(); } });
-  });
+  }
+  movableIds.forEach(id => { const el = $(id); if(el) bindMovableDrag(el); });
+  /* あとから生成されるパネル（協力ミッションバー等）をレイアウト編集へ登録する */
+  window.registerMovablePanel = function(el){
+    if(!el || el.__mvReg) return; el.__mvReg = true;
+    el.classList.add("movable");
+    bindMovableDrag(el);
+    if(typeof attachResizeHandle === "function") attachResizeHandle(el);
+    const s = layoutMap[el.id];
+    if(s){
+      if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
+      if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
+      if(s.w != null){ el.style.width = s.w + "%"; }
+      if(s.sc){ el.style.transform = "scale(" + s.sc + ")"; el.style.transformOrigin = "top left"; }
+    }
+    try { applyVisibility(); } catch(e) {}
+  };
   applyLayout();
 
   /* ---------- v16: 項目ごとの表示ON/OFF（リモコンから切替・サーバーが正本を保持） ---------- */
@@ -1919,8 +1903,7 @@
     selPanel.style.left = l + "%"; selPanel.style.top = t + "%"; selPanel.style.right = "auto"; selPanel.style.bottom = "auto";
     saveLayout();
   };
-  movableIds.forEach(id => {
-    const el = $(id); if(!el) return;
+  function attachResizeHandle(el){
     const h = document.createElement("div");
     h.className = "rz";
     el.appendChild(h);
@@ -1941,50 +1924,24 @@
       window.addEventListener("pointermove", mv);
       window.addEventListener("pointerup", up);
     });
-  });
+  }
+  movableIds.forEach(id => { const el = $(id); if(el) attachResizeHandle(el); });
 
   /* ---------- 操作 ---------- */
   function adjust(){
     if(editMode) return;
     const v = prompt("残額を入力（円）", remain);
-    if(v !== null && !isNaN(parseInt(v))) { remain = parseInt(v); renderGoal(); saveGoalCfg(); $("setRemain").value = remain; }
+    if(v !== null && !isNaN(parseInt(v))) { remain = parseInt(v); renderGoal(); saveGoalCfg(); if($("setRemain")) $("setRemain").value = remain; }
   }
   function toggleBg(){ document.body.classList.toggle("transparent"); }
-  function toggleControls(){ $("controls").classList.toggle("hidden"); }
 
-  /* ---------- v10.1: 操作バーのドック（ブラウザ操作時に画面へ重ねない） ---------- */
-  let dockManual = null; // null=自動 / true=ドック / false=下
-  function setDock(on){
-    const c = $("controls");
-    if(on){
-      document.body.appendChild(c);       // stageの外（body直下）へ逃がす
-      c.classList.add("docked");
-    } else {
-      $("stage").appendChild(c);
-      c.classList.remove("docked");
-    }
-    $("dockBtn").textContent = on ? "操作バー：右（ドック中）" : "操作バー：下（画面内）";
-  }
-  function autoDock(){
-    if(dockManual !== null) return;
-    const space = window.innerWidth - $("stage").clientWidth;
-    setDock(space > 380);
-  }
-  window.toggleDock = function(){
-    const on = !$("controls").classList.contains("docked");
-    dockManual = on;
-    setDock(on);
-  };
-  window.addEventListener("resize", autoDock);
 
   /* ---------- v10.2: 埋め込み編集モード（リモコンの編集枠専用） ---------- */
   const EMBED_MODE = /[?&]embed=1/.test(location.search) || /#embed/.test(location.hash);
   if(EMBED_MODE) document.body.classList.add("embed");
-  if(EMBED_MODE){ const c = document.getElementById("controls"); if(c) c.style.display = "none"; } // 念のためJSでも隠す（操作はリモコン右パネルから）
   const CLEAN_MODE = /[?&]clean=1/.test(location.search);
   if(CLEAN_MODE) document.body.classList.add("clean");
   setTimeout(() => {
-    autoDock();
     if(EMBED_MODE && !editMode) toggleEdit();  // 編集枠では最初から配置いじりモード
   }, 80);
 
@@ -2072,7 +2029,6 @@
     else if(e.key === "d" || e.key === "D") addDeath();
     else if(e.key === "r" || e.key === "R") spinRoulette(1);
     else if(e.key === "t" || e.key === "T") toggleBg();
-    else if(e.key === "h" || e.key === "H") toggleControls();
     else if(e.key === "l" || e.key === "L") toggleEdit();
     else if(editMode && selPanel && e.key.indexOf("Arrow") === 0){
       e.preventDefault();
@@ -2081,9 +2037,9 @@
     }
   });
   $("remain").addEventListener("click", adjust);
-  $("setLabel").value = goalCfg.label;
-  $("setTarget").value = goalCfg.target;
-  $("setRemain").value = remain;
+  if($("setLabel")) $("setLabel").value = goalCfg.label;
+  if($("setTarget")) $("setTarget").value = goalCfg.target;
+  if($("setRemain")) $("setRemain").value = remain;
   renderGoal(); renderMode(); renderLamps();
 </script>
 <script>
@@ -2291,7 +2247,7 @@
         "#comboRoll{position:absolute;top:16.2%;left:0;right:0;z-index:42;overflow:hidden;display:none;pointer-events:none}" +
         "#comboRoll .crIn{display:inline-block;white-space:nowrap;font-weight:900;font-size:clamp(14px,3.4cqw,32px);color:#7be0ff;text-shadow:0 0 14px rgba(0,180,255,.8);animation:crScroll 6.5s linear forwards;padding-left:100%}" +
         "@keyframes crScroll{to{transform:translateX(-100%)}}" +
-        "#missionBar{position:absolute;bottom:26%;left:50%;transform:translateX(-50%);z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:nowrap;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
+        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:nowrap;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
         "#slotMachine.zen .smStrip{animation:zenSpin .28s linear infinite}" +
         "@keyframes zenSpin{from{transform:translateY(0)}to{transform:translateY(-38%)}}";
       document.head.appendChild(style);
@@ -2355,9 +2311,18 @@
         return r;
       };
       /* 8. 協力ミッション（無料ルーレット参加人数） */
-      const mbar = mk("missionBar", "");
+      const mbar = mk("missionBar", '<span class="mbText"></span>');
+      const mbText = mbar.querySelector(".mbText");
+      if(window.registerMovablePanel) window.registerMovablePanel(mbar);
       let missionGoal = 3, missionDone = 0; const missionUsers = new Set();
-      function renderMission(){ mbar.textContent = "🎯 協力ミッション：無料ルーレット あと" + Math.max(0, missionGoal - missionUsers.size) + "人で 全員+50回転！"; }
+      const MISSION_REWARD = 50;
+      function renderMission(){
+        const title = playCfg.missionTitle || "🎯 協力ミッション";
+        let body = playCfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！";
+        body = body.replace(/\{remaining\}/g, Math.max(0, missionGoal - missionUsers.size)).replace(/\{target\}/g, missionGoal).replace(/\{reward\}/g, MISSION_REWARD);
+        mbText.textContent = title + "：" + body;
+      }
+      window.__renderMission = renderMission;
       renderMission();
       const _hcf13 = handleChatFree;
       handleChatFree = function(name, comment){
