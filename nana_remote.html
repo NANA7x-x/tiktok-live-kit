@@ -272,6 +272,14 @@
             <textarea id="cHowto" rows="2" style="width:100%"></textarea>
           </div>
           <div style="margin-top:8px">
+            <label>協力ミッションの見出し</label>
+            <input id="cMissionTitle" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label>協力ミッションの本文（{remaining}=あと何人、{target}=必要な人数、{reward}=報酬の回転数 に置き換わります）</label>
+            <input id="cMissionText" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
             <label>あおり文句（1行に1つ。順番に切り替わります）</label>
             <textarea id="cTeaser" rows="4" style="width:100%"></textarea>
           </div>
@@ -324,7 +332,8 @@
     { id: "likeBar", label: "いいねバー" },
     { id: "topGift", label: "本日の最大ギフト" },
     { id: "attendPanel", label: "出席簿" },
-    { id: "zukanPanel", label: "ギフト図鑑" }
+    { id: "zukanPanel", label: "ギフト図鑑" },
+    { id: "missionBar", label: "協力ミッション" }
   ];
 
   /* 配置：パネル選択チップ */
@@ -543,6 +552,8 @@
     set("cYenPerCoin", cfg.yenPerCoin != null ? cfg.yenPerCoin : 0.39);
     set("cSpin1", cfg.spins[1]); set("cSpin2", cfg.spins[2]); set("cSpin3", cfg.spins[3]); set("cSpin4", cfg.spins[4]);
     set("cHowto", cfg.howto);
+    set("cMissionTitle", cfg.missionTitle || "🎯 協力ミッション");
+    set("cMissionText", cfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！");
     set("cTeaser", (cfg.teaserLines || []).join("\n"));
     set("cFx1", (cfg.fx1 || []).join("\n")); set("cFx2", (cfg.fx2 || []).join("\n")); set("cFx3", (cfg.fx3 || []).join("\n"));
     set("cSerif", (cfg.serifLines || []).join("\n"));
@@ -556,6 +567,7 @@
       yenPerCoin: parseFloat(document.getElementById("cYenPerCoin").value),
       spins: { 1: num("cSpin1"), 2: num("cSpin2"), 3: num("cSpin3"), 4: num("cSpin4") },
       howto: document.getElementById("cHowto").value,
+      missionTitle: document.getElementById("cMissionTitle").value, missionText: document.getElementById("cMissionText").value,
       teaserLines: lines("cTeaser"), fx1: lines("cFx1"), fx2: lines("cFx2"), fx3: lines("cFx3"), serifLines: lines("cSerif")
     }});
     cfgFormLoaded = false;
