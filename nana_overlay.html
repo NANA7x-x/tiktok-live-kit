@@ -540,7 +540,6 @@
     missionTitle: "🎯 協力ミッション",
     missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
     themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
-    kakuhenBgm: true,
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
       "大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転",
@@ -591,7 +590,6 @@
       playCfg.themePickMax = Math.max(playCfg.themePickMin, num(nc.themePickMax, playCfg.themePickMax || 999));
       playCfg.themePickWindowSec = Math.min(300, Math.max(10, num(nc.themePickWindowSec, playCfg.themePickWindowSec || 60)));
       playCfg.themePickMinutes = Math.min(60, Math.max(1, num(nc.themePickMinutes, playCfg.themePickMinutes || 5)));
-      if(nc.kakuhenBgm != null) playCfg.kakuhenBgm = !!nc.kakuhenBgm;
     }
     teaserIdx = 0;
     savePlayCfg(); renderTierRows();
@@ -2634,10 +2632,9 @@
     } catch(e) {}
   })();
 
-  /* ============ v16 pack: テーマ連動サウンド（効果音セット＋確変BGM） / ギフトでテーマ選択権 ============
+  /* ============ v16 pack: テーマ連動サウンド（効果音セット） / ギフトでテーマ選択権 ============
      A. 効果音はテーマごとに音色セットが切り替わる（tone の波形をテーマ別に読み替え）。
-        確変中はテーマ別のBGMループが流れる（normal=標準 / baki=鋸波で激しく / powa=正弦波で柔らかく）。
-        テーマが切り替わると、BGMは次のステップから新しいテーマの音になる。
+        ※確変BGMは PR #5 側の実装に一本化したため、本パックには含まない（2026-11-11 本人決定）。
      B. 中ティア帯（playCfg.themePickMin〜Max、既定300〜999コイン）の実ギフトを送った人は、
         制限時間内に自分のコメントで画面テーマ（バキバキ/ぽわぽわ）を選べる。
         選んだテーマは一定時間だけ適用され、過ぎたら元のテーマ（base）に戻る。
@@ -2689,42 +2686,6 @@
         }
         return _reachOrig();
       };
-
-      /* ---------- A-2. 確変BGM（テーマ別ループ、WebAudio生成のみ） ---------- */
-      const BGM_SETS = {
-        normal: { tempo: 138, root: 110, bassWave: "triangle", arpWave: "square", bassVol: .06, arpVol: .032,
-          bass: [0, null, 0, null, 0, null, 0, null, -2, null, -2, null, 3, null, 5, null],
-          arp:  [12, null, 19, null, 24, null, 19, null, 12, null, 19, null, 24, null, 27, null] },
-        baki:   { tempo: 158, root: 98, bassWave: "sawtooth", arpWave: "sawtooth", bassVol: .055, arpVol: .03,
-          bass: [0, 0, null, 0, 0, 0, 12, 0, 0, 0, null, 0, 13, 12, 10, 7],
-          arp:  [12, 18, 19, 18, 12, 18, 19, 22, 12, 18, 19, 18, 25, 22, 19, 18] },
-        powa:   { tempo: 102, root: 130.81, bassWave: "sine", arpWave: "sine", bassVol: .05, arpVol: .03,
-          bass: [0, null, null, null, 7, null, null, null, 9, null, null, null, 5, null, 7, null],
-          arp:  [12, 16, 19, 24, 19, null, 16, null, 14, 17, 21, 26, 21, null, 19, null] }
-      };
-      let bgmOn = false, bgmTimer = null, bgmStep = 0, bgmPlayed = 0;
-      function bgmParams(){ return BGM_SETS[themeMode] || BGM_SETS.normal; }
-      function bgmTick(){
-        if(!bgmOn) return;
-        const p = bgmParams();
-        const stepDur = 60 / p.tempo / 2; // 8分音符
-        if(!muted){
-          const i = bgmStep % 16;
-          const semi2freq = s => Math.round(p.root * Math.pow(2, s / 12) * 100) / 100;
-          if(p.bass[i] != null){ tone(semi2freq(p.bass[i]), 0, stepDur * 1.8, p.bassWave, p.bassVol); bgmPlayed++; }
-          if(p.arp[i] != null){ tone(semi2freq(p.arp[i]), 0, stepDur * 1.5, p.arpWave, p.arpVol); bgmPlayed++; }
-        }
-        bgmStep++;
-        bgmTimer = setTimeout(bgmTick, stepDur * 1000);
-      }
-      function bgmStart(){ if(bgmOn) return; bgmOn = true; bgmStep = 0; bgmTick(); }
-      function bgmStop(){ bgmOn = false; if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer = null; } }
-      setInterval(() => {
-        const want = !EMBED_MODE && playCfg.kakuhenBgm !== false && inKakuhen();
-        if(want && !bgmOn) bgmStart();
-        if(!want && bgmOn) bgmStop();
-      }, 400);
-      window.__bgmState = function(){ return { playing: bgmOn, theme: themeMode, step: bgmStep, played: bgmPlayed }; };
 
       /* ---------- B. テーマ選択権（base / 上書き の分離） ---------- */
       let tpBase = themeMode;   // 本来のテーマ（リモコン等で選ばれたもの）
@@ -2802,7 +2763,6 @@
         const doApply = () => {
           _setThemeOrig(m); // 表示と state 送信は通常通り（実効テーマとして伝わる）
           try { if(afterApply) afterApply(); } catch(e) {}
-          bgmStep = 0; // BGMは新しいテーマのパターンで仕切り直す
         };
         if(m === themeMode || !transArmed){ doApply(); return; }
         if(trans.running){ trans.pendingApply = () => requestThemeFx(m, afterApply); return; }
