@@ -540,6 +540,8 @@
     howto: "🎁 ギフトでルーレットが回ります！<br>あたりが出たら<b>何か起こる</b>かも！",
     missionTitle: "🎯 協力ミッション",
     missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
+    themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
+    kakuhenBgm: true,
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
       "大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転",
@@ -585,6 +587,12 @@
       if(typeof nc.howto === "string" && nc.howto.trim()) playCfg.howto = nc.howto;
       if(typeof nc.missionTitle === "string" && nc.missionTitle.trim()) playCfg.missionTitle = nc.missionTitle;
       if(typeof nc.missionText === "string" && nc.missionText.trim()) playCfg.missionText = nc.missionText;
+      if(nc.themePickEnabled != null) playCfg.themePickEnabled = !!nc.themePickEnabled;
+      playCfg.themePickMin = Math.max(1, num(nc.themePickMin, playCfg.themePickMin || 300));
+      playCfg.themePickMax = Math.max(playCfg.themePickMin, num(nc.themePickMax, playCfg.themePickMax || 999));
+      playCfg.themePickWindowSec = Math.min(300, Math.max(10, num(nc.themePickWindowSec, playCfg.themePickWindowSec || 60)));
+      playCfg.themePickMinutes = Math.min(60, Math.max(1, num(nc.themePickMinutes, playCfg.themePickMinutes || 5)));
+      if(nc.kakuhenBgm != null) playCfg.kakuhenBgm = !!nc.kakuhenBgm;
     }
     teaserIdx = 0;
     savePlayCfg(); renderTierRows();
@@ -2623,6 +2631,202 @@
         if(a === "birthdayToggle"){ setBirthday(!birthdayMode); return; }
         if(a === "mvp"){ window.announceMvp(); return; }
         return _hc15(msg);
+      };
+    } catch(e) {}
+  })();
+
+  /* ============ v16 pack: テーマ連動サウンド（効果音セット＋確変BGM） / ギフトでテーマ選択権 ============
+     A. 効果音はテーマごとに音色セットが切り替わる（tone の波形をテーマ別に読み替え）。
+        確変中はテーマ別のBGMループが流れる（normal=標準 / baki=鋸波で激しく / powa=正弦波で柔らかく）。
+        テーマが切り替わると、BGMは次のステップから新しいテーマの音になる。
+     B. 中ティア帯（playCfg.themePickMin〜Max、既定300〜999コイン）の実ギフトを送った人は、
+        制限時間内に自分のコメントで画面テーマ（バキバキ/ぽわぽわ）を選べる。
+        選んだテーマは一定時間だけ適用され、過ぎたら元のテーマ（base）に戻る。
+        base の管理のため setTheme を包む：上書き中は表示を維持し、base だけ更新する。
+        テーマ選択はサーバーの正本テーマには送らない（各オーバーレイが同じギフト/コメントから自律的に揃う）。 */
+  (function(){
+    try {
+      /* ---------- A-1. 効果音のテーマ別波形マップ ---------- */
+      const WAVE_MAP = {
+        normal: {},
+        baki:   { square: "sawtooth", triangle: "sawtooth", sine: "square" },
+        powa:   { square: "sine", sawtooth: "triangle", triangle: "sine" }
+      };
+      function mapWave(type){
+        const t = type || "square";
+        const m = WAVE_MAP[themeMode] || {};
+        return m[t] || t;
+      }
+      const _toneOrig = tone;
+      tone = function(freq, t0, dur, type, vol){
+        return _toneOrig(freq, t0, dur, mapWave(type), vol);
+      };
+      const _sirenOrig = sirenSound;
+      sirenSound = function(){
+        if(themeMode === "powa"){
+          if(muted) return;
+          [1319, 1568, 2093].forEach((f, i) => tone(f, i * .14, .3, "sine", .05));
+          return;
+        }
+        return _sirenOrig();
+      };
+      const _reachOrig = reachSound;
+      reachSound = function(){
+        if(themeMode === "powa"){
+          if(muted) return;
+          try {
+            const c = ac(), o = c.createOscillator(), g = c.createGain();
+            o.type = "triangle";
+            o.frequency.setValueAtTime(392, c.currentTime);
+            o.frequency.exponentialRampToValueAtTime(1175, c.currentTime + 1.0);
+            g.gain.setValueAtTime(.045, c.currentTime);
+            g.gain.exponentialRampToValueAtTime(.001, c.currentTime + 1.1);
+            o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 1.1);
+          } catch(e) {}
+          return;
+        }
+        return _reachOrig();
+      };
+
+      /* ---------- A-2. 確変BGM（テーマ別ループ、WebAudio生成のみ） ---------- */
+      const BGM_SETS = {
+        normal: { tempo: 138, root: 110, bassWave: "triangle", arpWave: "square", bassVol: .06, arpVol: .032,
+          bass: [0, null, 0, null, 0, null, 0, null, -2, null, -2, null, 3, null, 5, null],
+          arp:  [12, null, 19, null, 24, null, 19, null, 12, null, 19, null, 24, null, 27, null] },
+        baki:   { tempo: 158, root: 98, bassWave: "sawtooth", arpWave: "sawtooth", bassVol: .055, arpVol: .03,
+          bass: [0, 0, null, 0, 0, 0, 12, 0, 0, 0, null, 0, 13, 12, 10, 7],
+          arp:  [12, 18, 19, 18, 12, 18, 19, 22, 12, 18, 19, 18, 25, 22, 19, 18] },
+        powa:   { tempo: 102, root: 130.81, bassWave: "sine", arpWave: "sine", bassVol: .05, arpVol: .03,
+          bass: [0, null, null, null, 7, null, null, null, 9, null, null, null, 5, null, 7, null],
+          arp:  [12, 16, 19, 24, 19, null, 16, null, 14, 17, 21, 26, 21, null, 19, null] }
+      };
+      let bgmOn = false, bgmTimer = null, bgmStep = 0, bgmPlayed = 0;
+      function bgmParams(){ return BGM_SETS[themeMode] || BGM_SETS.normal; }
+      function bgmTick(){
+        if(!bgmOn) return;
+        const p = bgmParams();
+        const stepDur = 60 / p.tempo / 2; // 8分音符
+        if(!muted){
+          const i = bgmStep % 16;
+          const semi2freq = s => Math.round(p.root * Math.pow(2, s / 12) * 100) / 100;
+          if(p.bass[i] != null){ tone(semi2freq(p.bass[i]), 0, stepDur * 1.8, p.bassWave, p.bassVol); bgmPlayed++; }
+          if(p.arp[i] != null){ tone(semi2freq(p.arp[i]), 0, stepDur * 1.5, p.arpWave, p.arpVol); bgmPlayed++; }
+        }
+        bgmStep++;
+        bgmTimer = setTimeout(bgmTick, stepDur * 1000);
+      }
+      function bgmStart(){ if(bgmOn) return; bgmOn = true; bgmStep = 0; bgmTick(); }
+      function bgmStop(){ bgmOn = false; if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer = null; } }
+      setInterval(() => {
+        const want = !EMBED_MODE && playCfg.kakuhenBgm !== false && inKakuhen();
+        if(want && !bgmOn) bgmStart();
+        if(!want && bgmOn) bgmStop();
+      }, 400);
+      window.__bgmState = function(){ return { playing: bgmOn, theme: themeMode, step: bgmStep, played: bgmPlayed }; };
+
+      /* ---------- B. テーマ選択権（base / 上書き の分離） ---------- */
+      let tpBase = themeMode;   // 本来のテーマ（リモコン等で選ばれたもの）
+      let tpPending = null;     // { name, until } 選択受付中
+      let tpOverride = null;    // { name, theme, until } 一時適用中
+      const _setThemeOrig = setTheme;
+      function tpApplyTheme(m){
+        _setThemeOrig(m); // 表示と state 送信は通常通り（実効テーマとして伝わる）
+        try { localStorage.setItem("overlayThemeV1", tpBase); } catch(e) {} // 保存上のテーマは base のままにする
+        bgmStep = 0; // BGMは新しいテーマのパターンで仕切り直す
+      }
+      setTheme = function(m){
+        if(m !== "baki" && m !== "powa" && m !== "normal") return;
+        tpBase = m;
+        if(tpOverride && Date.now() < tpOverride.until) return; // 上書き中は base だけ更新し、表示は維持
+        _setThemeOrig(m);
+        bgmStep = 0;
+      };
+
+      const style = document.createElement("style");
+      style.textContent =
+        "#themePick{position:absolute;top:27%;left:50%;transform:translateX(-50%);z-index:66;display:none;text-align:center;background:rgba(8,4,20,.88);border:3px solid #c77dff;border-radius:18px;padding:2.4cqw 4.5cqw;box-shadow:0 0 30px rgba(160,80,255,.55);pointer-events:none;max-width:92%}" +
+        "#themePick.show{display:block;animation:tpPop .3s cubic-bezier(.34,1.56,.64,1)}" +
+        "@keyframes tpPop{from{transform:translateX(-50%) scale(.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}" +
+        "#themePick .tpMain{font-weight:900;font-size:clamp(18px,4.6cqw,44px);color:#fff;text-shadow:0 2px 0 #5b21b6;white-space:nowrap}" +
+        "#themePick .tpOpts{margin-top:1cqw;font-weight:900;font-size:clamp(15px,3.8cqw,36px);color:#fff;white-space:nowrap}" +
+        "#themePick .tpBaki{color:#ffd94d}#themePick .tpPowa{color:#ff9ecd}" +
+        "#themePick .tpCount{margin-top:.6cqw;font-weight:700;font-size:clamp(12px,2.8cqw,26px);color:#d6bcff}" +
+        "#themePickInfo{position:absolute;top:15.8%;left:50%;transform:translateX(-50%);z-index:45;display:none;background:rgba(20,10,35,.85);border:2px solid #c77dff;border-radius:999px;padding:.6cqw 2.6cqw;font-weight:900;font-size:clamp(11px,2.5cqw,24px);color:#ecd9ff;white-space:nowrap;pointer-events:none}" +
+        "#themePickInfo.show{display:block}";
+      document.head.appendChild(style);
+      const stageEl = $("stage");
+      const tpBanner = document.createElement("div"); tpBanner.id = "themePick"; stageEl.appendChild(tpBanner);
+      const tpInfo = document.createElement("div"); tpInfo.id = "themePickInfo"; stageEl.appendChild(tpInfo);
+      const escHtml = s => String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      function tpRender(){
+        const now = Date.now();
+        if(tpPending && now < tpPending.until){
+          tpBanner.innerHTML = '<div class="tpMain">🎨 ' + escHtml(tpPending.name) + 'さん テーマを選んで！</div>' +
+            '<div class="tpOpts"><span class="tpBaki">⚡バキバキ</span> か <span class="tpPowa">🌸ぽわぽわ</span> をコメントで送ってね</div>' +
+            '<div class="tpCount">あと ' + Math.ceil((tpPending.until - now) / 1000) + ' 秒</div>';
+          tpBanner.classList.add("show");
+        } else tpBanner.classList.remove("show");
+        if(tpOverride && now < tpOverride.until){
+          tpInfo.textContent = "🎨 " + tpOverride.name + "さんのテーマ選択：" + (tpOverride.theme === "baki" ? "⚡バキバキ" : "🌸ぽわぽわ") + " あと " + fmtLeft(tpOverride.until);
+          tpInfo.classList.add("show");
+        } else tpInfo.classList.remove("show");
+      }
+      function tpOnGift(name, count, coinsPerUnit, wasReal){
+        if(!wasReal || EMBED_MODE || testMode) return;
+        if(playCfg.themePickEnabled === false) return;
+        if(tpPending || tpOverride) return;
+        if(!name || !coinsPerUnit || coinsPerUnit <= 0) return;
+        if(coinsPerUnit < (playCfg.coin2 || 100)) return; // 小ティア単体は対象外（コンボ合算での誤爆防止）
+        const total = coinsPerUnit * Math.max(1, Math.min(20, count || 1));
+        const mn = playCfg.themePickMin || 300, mx = playCfg.themePickMax || 999;
+        if(total < mn || total > mx) return;
+        tpPending = { name: name, until: Date.now() + (playCfg.themePickWindowSec || 60) * 1000 };
+        tpRender();
+        try { flash(name + "さん テーマ選択権ゲット！", "コメントで「バキバキ」か「ぽわぽわ」を送ってね"); } catch(e) {}
+        broadcastState();
+      }
+      function tpOnChat(name, comment){
+        if(!tpPending) return;
+        if(Date.now() > tpPending.until){ tpPending = null; tpRender(); return; }
+        if((name || "") !== tpPending.name) return; // 送った本人だけ
+        const c = comment || "";
+        let pick = null;
+        if(/バキバキ|ドパ/.test(c)) pick = "baki";
+        else if(/ぽわぽわ|ぽわ/.test(c)) pick = "powa";
+        if(!pick) return;
+        const by = tpPending.name;
+        tpPending = null;
+        tpOverride = { name: by, theme: pick, until: Date.now() + (playCfg.themePickMinutes || 5) * 60 * 1000 };
+        tpApplyTheme(pick);
+        try { showCutin("テーマ変更！", by + "さんが「" + (pick === "baki" ? "⚡バキバキ" : "🌸ぽわぽわ") + "」を選んだ！"); } catch(e) {}
+        tpRender();
+      }
+      const _giftTp = gift;
+      gift = function(tier, fromName, count, coinsPerUnit){
+        const wasReal = !!window.__pendingRealGift;
+        const r = _giftTp(tier, fromName, count, coinsPerUnit);
+        try { tpOnGift((fromName || "").trim(), count, coinsPerUnit, wasReal); } catch(e) {}
+        return r;
+      };
+      const _hcfTp = handleChatFree;
+      handleChatFree = function(name, comment){
+        try { tpOnChat(name, comment); } catch(e) {}
+        return _hcfTp(name, comment);
+      };
+      setInterval(() => {
+        const now = Date.now();
+        if(tpPending && now >= tpPending.until) tpPending = null;
+        if(tpOverride && now >= tpOverride.until){
+          tpOverride = null;
+          tpApplyTheme(tpBase);
+          try { flash("テーマが元に戻りました", ""); } catch(e) {}
+        }
+        tpRender();
+      }, 500);
+      window.__themePickState = function(){
+        return { pending: tpPending ? { name: tpPending.name, until: tpPending.until } : null,
+                 override: tpOverride ? { name: tpOverride.name, theme: tpOverride.theme, until: tpOverride.until } : null,
+                 base: tpBase, effective: themeMode };
       };
     } catch(e) {}
   })();
