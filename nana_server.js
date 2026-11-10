@@ -122,6 +122,55 @@ const THEME_FILE = path.join(__dirname, 'theme.json');
 let savedTheme = null;
 try { const j = JSON.parse(fs.readFileSync(THEME_FILE, 'utf8')); if (j && (j.mode === 'baki' || j.mode === 'powa' || j.mode === 'normal')) savedTheme = j.mode; } catch (e) { /* 無ければ未設定 */ }
 function setCanonicalTheme(m) { savedTheme = m; try { fs.writeFileSync(THEME_FILE, JSON.stringify({ mode: savedTheme })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+// ============================================================
+// 特大特典の受け渡し管理ログ
+//   特大ギフトの特典（手書きメッセージ／デジタル色紙／スマホ壁紙）は配信後に
+//   ユーザーごとに個別で渡す必要があるため、付与の記録を tokudai_log.json
+//   （このフォルダ内）に永続保存し、リモコンで「渡し済み」管理ができるようにする。
+//   記録はオーバーレイが「ブリッジ経由の実ギフトで特大特典を付与した」時に送る
+//   { type:'tokudaiGrant' } を受けて行う（attend / highlight と同じ作法）。
+//   テストモード中・手動ギフトではオーバーレイが送らないので記録されない。
+//   このログは外部送信しない（Discord等へは送らない）。ファイルは .gitignore 対象。
+// ============================================================
+const TOKUDAI_LOG_FILE = path.join(__dirname, 'tokudai_log.json');
+const TOKUDAI_PERKS = ['特別・名前入り手書きメッセージ', '名前入りデジタル色紙', '名前入りスマホ壁紙'];
+let tokudaiLog = [];
+try { const j = JSON.parse(fs.readFileSync(TOKUDAI_LOG_FILE, 'utf8')); if (Array.isArray(j)) tokudaiLog = j.filter((e) => e && typeof e === 'object' && typeof e.id === 'string'); } catch (e) { /* 無ければ空 */ }
+function saveTokudaiLog() { try { fs.writeFileSync(TOKUDAI_LOG_FILE, JSON.stringify(tokudaiLog, null, 1)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+function tokudaiLogMsg() { return { type: 'tokudaiLog', list: tokudaiLog }; }
+let tokudaiSeq = 0;
+function handleTokudaiGrant(msg) {
+  const name = String((msg && msg.name) || '').slice(0, 40);
+  if (!name) return;
+  const giftName = String((msg && msg.giftName) || '').slice(0, 60);
+  const cv = toPosNum(msg && msg.coins);
+  const coins = cv ? Math.floor(cv) : 0;
+  let perks = TOKUDAI_PERKS.slice();
+  if (Array.isArray(msg.perks) && msg.perks.length) {
+    const p = msg.perks.map((x) => String(x || '').slice(0, 60)).filter(Boolean).slice(0, 6);
+    if (p.length) perks = p;
+  }
+  const d = new Date();
+  tokudaiLog.push({
+    id: 't' + d.getTime().toString(36) + (tokudaiSeq++).toString(36),
+    ts: d.getTime(),
+    date: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`,
+    name, giftName, coins, perks, done: false
+  });
+  saveTokudaiLog();
+  console.log(`[bridge] 特大特典を記録しました: ${name}さん（${giftName || 'ギフト名不明'} / ${coins}コイン）`);
+  broadcast(tokudaiLogMsg());
+}
+function handleTokudaiDone(msg) {
+  const id = String((msg && msg.id) || '');
+  if (!id) return;
+  const e = tokudaiLog.find((x) => x.id === id);
+  if (!e) return;
+  e.done = !!(msg && msg.done);
+  saveTokudaiLog();
+  broadcast(tokudaiLogMsg());
+}
 function broadcast(obj, except) {
   const data = JSON.stringify(obj);
   for (const ws of clients) {
@@ -145,6 +194,8 @@ wss.on('connection', (ws) => {
   try { if (savedHidden) ws.send(JSON.stringify({ type: 'visibility', hidden: savedHidden })); } catch (e) { /* ignore */ }
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
   try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
+  // 特大特典ログの現在値を新規接続クライアントへ送る（リモコンの一覧表示用）
+  try { ws.send(JSON.stringify(tokudaiLogMsg())); } catch (e) { /* ignore */ }
   ws.on('message', (raw) => {
     let msg = null;
     try { msg = JSON.parse(raw.toString()); } catch (e) { return; }
@@ -183,6 +234,16 @@ wss.on('connection', (ws) => {
     // ハイライトはブリッジが集計・記録する（他クライアントへは中継しない）
     if (msg.type === 'highlight') {
       handleHighlight(msg);
+      return;
+    }
+    // 特大特典の付与通知はブリッジが記録する（他クライアントへは中継しない。更新後のログを全員へ配る）
+    if (msg.type === 'tokudaiGrant') {
+      handleTokudaiGrant(msg);
+      return;
+    }
+    // 特大特典の「渡し済み」状態の変更もブリッジが保存する（同上）
+    if (msg.type === 'tokudaiDone') {
+      handleTokudaiDone(msg);
       return;
     }
     // 正本が無い間だけ、手持ちレイアウトの提示（layoutOffer）を集める
