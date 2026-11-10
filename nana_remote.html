@@ -285,6 +285,13 @@
             <input id="cMissionText" type="text" style="width:100%">
           </div>
           <div style="margin-top:8px">
+            <label>ルーレットでハズレた時の煽り文</label>
+            <input id="cRouletteMiss" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label><input id="cKakuhenBgm" type="checkbox"> 確変中にBGMを流す</label>
+          </div>
+          <div style="margin-top:8px">
             <label>あおり文句（1行に1つ。順番に切り替わります）</label>
             <textarea id="cTeaser" rows="4" style="width:100%"></textarea>
           </div>
@@ -578,6 +585,8 @@
     set("cHowto", cfg.howto);
     set("cMissionTitle", cfg.missionTitle || "🎯 協力ミッション");
     set("cMissionText", cfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！");
+    set("cRouletteMiss", cfg.rouletteMissText || "再チャレンジまってる！");
+    document.getElementById("cKakuhenBgm").checked = cfg.kakuhenBgm !== false;
     set("cTeaser", (cfg.teaserLines || []).join("\n"));
     set("cFx1", (cfg.fx1 || []).join("\n")); set("cFx2", (cfg.fx2 || []).join("\n")); set("cFx3", (cfg.fx3 || []).join("\n"));
     set("cSerif", (cfg.serifLines || []).join("\n"));
@@ -592,6 +601,7 @@
       spins: { 1: num("cSpin1"), 2: num("cSpin2"), 3: num("cSpin3"), 4: num("cSpin4") },
       howto: document.getElementById("cHowto").value,
       missionTitle: document.getElementById("cMissionTitle").value, missionText: document.getElementById("cMissionText").value,
+      rouletteMissText: document.getElementById("cRouletteMiss").value, kakuhenBgm: document.getElementById("cKakuhenBgm").checked,
       teaserLines: lines("cTeaser"), fx1: lines("cFx1"), fx2: lines("cFx2"), fx3: lines("cFx3"), serifLines: lines("cSerif")
     }});
     cfgFormLoaded = false;
