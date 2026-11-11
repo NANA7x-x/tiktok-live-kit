@@ -1597,6 +1597,12 @@
   const movableIds = ["goal", "menu", "stats", "teaser", "roulette", "activeFx", "vipPanel", "tokudaiBoard", "mileBar", "likeBar", "topGift", "attendPanel", "zukanPanel", "missionBar"];
   let layoutMap = {};
   try { layoutMap = JSON.parse(localStorage.getItem("overlayLayoutV7") || "{}"); } catch(e) { layoutMap = {}; }
+  /* 配置の保存時刻。サーバーに正本が無い時、どのクライアントの手持ちを正本にするかの判定に使う
+     （一番新しく保存されたものを採用する。古いコピーが接続順で勝ってしまう事故の防止） */
+  let layoutSavedAt = 0;
+  try { layoutSavedAt = parseInt(localStorage.getItem("overlayLayoutV7Time") || "0", 10) || 0; } catch(e) { layoutSavedAt = 0; }
+  let layoutSendReset = false;
+  function stampLayoutTime(){ layoutSavedAt = Date.now(); try { localStorage.setItem("overlayLayoutV7Time", String(layoutSavedAt)); } catch(e) {} }
   let editMode = false, selPanel = null, dragCtx = null;
   function applyLayout(){
     movableIds.forEach(id => {
@@ -1609,8 +1615,11 @@
     });
   }
   function saveLayout(){
+    stampLayoutTime();
     try { localStorage.setItem("overlayLayoutV7", JSON.stringify(layoutMap)); } catch(e) {}
-    wsSend({ type: "layout", layout: layoutMap });
+    const msg = { type: "layout", layout: layoutMap, savedAt: layoutSavedAt };
+    if(layoutSendReset) msg.reset = true;
+    wsSend(msg);
   }
   function captureLayout(){
     const sr = $("stage").getBoundingClientRect();
@@ -1669,7 +1678,7 @@
     requestAnimationFrame(()=>{ captureLayout(); saveLayout(); applyLayout(); });
   };
   window.resetLayout = function(){
-    layoutMap = {}; saveLayout(); location.reload();
+    layoutMap = {}; layoutSendReset = true; saveLayout(); layoutSendReset = false; location.reload();
   };
   function setEditState(t){ const e = $("editState"); if(e) e.textContent = t; }
   window.exportLayout = function(){
@@ -2170,10 +2179,11 @@
       else if(msg.type === "control") handleControl(msg);
       else if(msg.type === "requestLayout"){
         // ブリッジに正本が無い時だけ、手持ちの配置を候補として差し出す（空なら出さない）
-        if(layoutMap && Object.keys(layoutMap).length) wsSend({ type: "layoutOffer", layout: layoutMap });
+        if(layoutMap && Object.keys(layoutMap).length) wsSend({ type: "layoutOffer", layout: layoutMap, savedAt: layoutSavedAt });
       }
       else if(msg.type === "layout" && msg.layout){
         layoutMap = msg.layout;
+        stampLayoutTime(); // 正本を取り込んだ = このクライアントの手持ちも最新になった
         try { localStorage.setItem("overlayLayoutV7", JSON.stringify(layoutMap)); } catch(e){}
         applyLayout();
       }
