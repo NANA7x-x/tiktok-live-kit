@@ -1356,6 +1356,11 @@
     if(tier >= 4 || c >= 8){
       setTimeout(enterKakuhen, 900);
       if(tier >= 4){
+        // 特大特典の受け渡しログ: ブリッジ経由の実ギフトで特典が付与された時だけ、サーバーへ記録を依頼する。
+        // テストモード中と手動ギフト（リモコン）は「渡す義務」が発生しないので送らない。
+        if(isRealGift && !testMode && name){
+          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"] }); } catch(e) {}
+        }
         // 特大特典（確定）: 特別・名前入り手書きメッセージ＋名前入りデジタル色紙＋名前入りスマホ壁紙。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
         setTimeout(()=>{
           addEffect("特別・名前入り手書きメッセージ（特大特典）");
