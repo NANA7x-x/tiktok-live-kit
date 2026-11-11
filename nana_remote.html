@@ -300,6 +300,15 @@
             <label>協力ミッションの本文（{remaining}=あと何人、{target}=必要な人数、{reward}=報酬の回転数 に置き換わります）</label>
             <input id="cMissionText" type="text" style="width:100%">
           </div>
+          <div style="margin-top:10px">
+            <label><input id="cThemePickEnabled" type="checkbox"> 🎨 ギフトでテーマ選択権（対象コイン帯の実ギフトを送った人が、自分のコメントで画面テーマを選べます）</label>
+          </div>
+          <div style="margin-top:6px; display:flex; gap:10px; flex-wrap:wrap">
+            <label>対象コイン（最小） <input id="cThemePickMin" type="number" style="width:80px"></label>
+            <label>（最大） <input id="cThemePickMax" type="number" style="width:80px"></label>
+            <label>選択の受付（秒） <input id="cThemePickWindow" type="number" style="width:70px"></label>
+            <label>テーマ適用（分） <input id="cThemePickMinutes" type="number" style="width:70px"></label>
+          </div>
           <div style="margin-top:8px">
             <label>ルーレットでハズレた時の煽り文</label>
             <input id="cRouletteMiss" type="text" style="width:100%">
@@ -631,6 +640,11 @@
     set("cMissionText", cfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！");
     set("cRouletteMiss", cfg.rouletteMissText || "再チャレンジまってる！");
     document.getElementById("cKakuhenBgm").checked = cfg.kakuhenBgm !== false;
+    document.getElementById("cThemePickEnabled").checked = cfg.themePickEnabled !== false;
+    set("cThemePickMin", cfg.themePickMin != null ? cfg.themePickMin : 300);
+    set("cThemePickMax", cfg.themePickMax != null ? cfg.themePickMax : 999);
+    set("cThemePickWindow", cfg.themePickWindowSec != null ? cfg.themePickWindowSec : 60);
+    set("cThemePickMinutes", cfg.themePickMinutes != null ? cfg.themePickMinutes : 5);
     set("cTeaser", (cfg.teaserLines || []).join("\n"));
     set("cFx1", (cfg.fx1 || []).join("\n")); set("cFx2", (cfg.fx2 || []).join("\n")); set("cFx3", (cfg.fx3 || []).join("\n"));
     set("cSerif", (cfg.serifLines || []).join("\n"));
@@ -646,6 +660,9 @@
       howto: document.getElementById("cHowto").value,
       missionTitle: document.getElementById("cMissionTitle").value, missionText: document.getElementById("cMissionText").value,
       rouletteMissText: document.getElementById("cRouletteMiss").value, kakuhenBgm: document.getElementById("cKakuhenBgm").checked,
+      themePickEnabled: document.getElementById("cThemePickEnabled").checked,
+      themePickMin: num("cThemePickMin"), themePickMax: num("cThemePickMax"),
+      themePickWindowSec: num("cThemePickWindow"), themePickMinutes: num("cThemePickMinutes"),
       teaserLines: lines("cTeaser"), fx1: lines("cFx1"), fx2: lines("cFx2"), fx3: lines("cFx3"), serifLines: lines("cSerif")
     }});
     cfgFormLoaded = false;

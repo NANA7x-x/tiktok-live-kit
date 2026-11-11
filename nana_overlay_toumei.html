@@ -127,27 +127,54 @@
   #flash .what { font-size:clamp(15px,3.2cqw,30px); color:#fff7ae; }
   @keyframes pop { 0%{opacity:0;transform:scale(.6)} 12%{opacity:1;transform:scale(1.08)} 22%{transform:scale(1)} 82%{opacity:1} 100%{opacity:0;transform:scale(1.02)} }
 
-  /* v10: 本物スロットマシン（3リール） */
+  /* v11: ゴリゴリに凝った本物スロットマシン（金属×紫フレーム／看板／ガラス反射／ペイライン） */
   #slotMachine { position:absolute; left:50%; top:28%; transform:translateX(-50%); z-index:60; display:none; text-align:center; pointer-events:none; transition:transform .35s ease; }
   #slotMachine.show { display:block; }
   #slotMachine.jackpot { transform:translateX(-50%) scale(1.24); }
-  .smFrame { position:relative; display:flex; gap:2.2cqw; background:linear-gradient(180deg,#6d0a18,#2b020a 60%,#12000a); border:6px solid #ffd94d; border-radius:20px; padding:3.8cqw 4.2cqw; box-shadow:0 0 54px rgba(255,60,60,.85), 0 0 130px rgba(255,180,0,.5), inset 0 0 26px rgba(255,217,77,.4), inset 0 -18px 34px rgba(0,0,0,.65); }
+  .smFrame { position:relative; display:flex; flex-direction:column; align-items:center; gap:1.7cqw;
+    background:linear-gradient(180deg,#4a1038,#2b0218 55%,#15000f);
+    border:5px solid #d9a441; border-radius:22px; padding:2.6cqw 3.8cqw 3.4cqw;
+    box-shadow:0 0 54px rgba(168,85,247,.55), 0 0 130px rgba(255,180,0,.35), inset 0 0 0 2px rgba(255,242,176,.55), inset 0 0 26px rgba(168,85,247,.35), inset 0 -18px 34px rgba(0,0,0,.65); }
   .smFrame::before { content:""; position:absolute; inset:-15px; border-radius:26px; pointer-events:none;
-    background:radial-gradient(circle, #fff7ae 0 5px, rgba(255,180,0,.9) 6px, transparent 8px) 0 0/30px 30px;
+    background:
+      radial-gradient(circle, #fff7ae 0 4px, rgba(255,180,0,.95) 5px, transparent 7px) 0 0/28px 28px,
+      radial-gradient(circle, #e9d5ff 0 4px, rgba(168,85,247,.95) 5px, transparent 7px) 14px 14px/28px 28px;
     animation:smChase .7s steps(2) infinite; opacity:.95; }
-  @keyframes smChase { 50% { background-position:15px 15px; filter:brightness(1.7); } }
+  @keyframes smChase { 50% { background-position:14px 14px; filter:brightness(1.7); } }
+  .smFrame::after { content:""; position:absolute; inset:0; border-radius:22px; pointer-events:none;
+    background:linear-gradient(115deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.04) 30%, transparent 46%); }
   #slotMachine.jackpot .smFrame { animation:smGlow .28s ease-in-out infinite alternate; }
-  @keyframes smGlow { from{ box-shadow:0 0 24px rgba(255,180,0,.7);} to{ box-shadow:0 0 64px rgba(255,80,200,.95); border-color:#ff80d0; } }
-  .smReel { width:19.5cqw; height:19.5cqw; overflow:hidden; border-radius:12px; background:linear-gradient(180deg,#ffffff,#d7dcff 55%,#ffffff); box-shadow:inset 0 0 16px rgba(0,0,0,.55), 0 0 0 3px rgba(0,0,0,.45); }
+  @keyframes smGlow { from{ box-shadow:0 0 24px rgba(255,180,0,.7);} to{ box-shadow:0 0 64px rgba(168,85,247,.95); border-color:#e9d5ff; } }
+  .smSign { background:rgba(10,0,16,.72); border:2px solid rgba(255,217,77,.7); border-radius:999px; padding:.3cqw 4.5cqw;
+    box-shadow:inset 0 0 12px rgba(255,180,0,.35), 0 0 16px rgba(255,180,0,.30); }
+  .smSign span { font-weight:900; letter-spacing:.16em; font-size:clamp(15px,3.8cqw,36px);
+    background:linear-gradient(180deg,#fffbe8,#ffd94d 55%,#d18a06); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .smReels { display:flex; gap:2.2cqw; position:relative; }
+  .smReels::before, .smReels::after { position:absolute; top:50%; transform:translateY(-50%); z-index:2;
+    color:#ffd94d; font-size:3.2cqw; text-shadow:0 0 10px rgba(255,180,0,.95); pointer-events:none; }
+  .smReels::before { content:"\25B6"; left:-3.4cqw; }
+  .smReels::after { content:"\25C0"; right:-3.4cqw; }
+  .smReel { width:19.5cqw; height:19.5cqw; overflow:hidden; border-radius:12px;
+    background:linear-gradient(180deg,#fdfdff,#ccd1f2 16%,#ffffff 50%,#ccd1f2 84%,#fdfdff);
+    box-shadow:inset 0 0 16px rgba(0,0,0,.55), inset 0 15px 18px rgba(0,0,0,.30), inset 0 -15px 18px rgba(0,0,0,.30), 0 0 0 3px #0b0b14, 0 0 0 5px rgba(217,164,65,.85); }
   .smStrip { display:flex; flex-direction:column; will-change:transform; }
   .smCell { height:19.5cqw; line-height:19.5cqw; font-size:13.5cqw; text-align:center; }
+  .smCell .smXXSvg { width:15.5cqw; height:15.5cqw; vertical-align:middle; filter:drop-shadow(0 0 7px rgba(168,85,247,.85)); }
+  .smBase { width:92%; height:1.9cqw; border-radius:6px; background:linear-gradient(180deg,#9a742a,#5e430e);
+    box-shadow:inset 0 2px 3px rgba(255,242,176,.65), inset 0 -3px 6px rgba(0,0,0,.6); }
   #smLabel { margin-top:2.8cqw; font-weight:900; font-size:clamp(20px,5.4cqw,52px); color:#ffd94d; text-shadow:0 2px 18px rgba(255,120,0,.95); min-height:1.3em; }
   #slotMachine.jackpot #smLabel { color:#fff; font-size:clamp(30px,8.4cqw,80px); animation:blink2 .3s steps(2) infinite; }
+  #slotMachine.xxjackpot #smLabel { color:#e9d5ff; text-shadow:0 2px 18px rgba(168,85,247,.95); }
 
-  /* v10: ルーレットの回るホイール */
-  #rWheel { font-size:11cqw; line-height:1; display:inline-block; }
-  #rWheel.spin { animation:rSpin .45s linear infinite; }
+  /* v11: 本物ルーレット風ホイール（SVG描画：セグメント＋ハブ＋金リム＋ポインター） */
+  #rWheel { position:relative; width:24cqw; height:24cqw; margin:0 auto; }
+  #rWheel .rWheelSpin { width:100%; height:100%; filter:drop-shadow(0 4px 14px rgba(0,0,0,.6)); }
+  #rWheel.spin .rWheelSpin { animation:rSpin .45s linear infinite; }
   @keyframes rSpin { to { transform:rotate(360deg); } }
+  #rWheelSvg { width:100%; height:100%; display:block; }
+  #rWheel .rPointer { position:absolute; top:-1cqw; left:50%; transform:translateX(-50%); z-index:2; width:0; height:0;
+    border-left:1.7cqw solid transparent; border-right:1.7cqw solid transparent; border-top:2.8cqw solid #ffd94d;
+    filter:drop-shadow(0 0 6px rgba(255,180,0,.85)); }
 
   /* ルーレット */
   #roulette { position:absolute; left:8%; right:8%; bottom:31%; text-align:center; display:none; }
@@ -415,10 +442,30 @@
   body.editing .movable .rz { display:block; }
   #controls button { padding:9px 13px; font-size:14px; }
   #controls input { font-size:14px; padding:7px 9px; }
+  /* ---------- 枠デザイン（パネルの枠プリセット／テーマとは別軸・サーバー保存） ---------- */
+  /* standard は既定の .panel / テーマ側の見た目をそのまま使う（上書きなし） */
+  body[data-frame="rainbow"] .panel { border:2px solid #ff5f9e; animation:frameRainbow 3.2s linear infinite; }
+  @keyframes frameRainbow {
+    0% { border-color:#ff5f9e; box-shadow:0 0 14px rgba(255,95,158,.75); }
+    25% { border-color:#ffd94d; box-shadow:0 0 14px rgba(255,217,77,.75); }
+    50% { border-color:#7be0ff; box-shadow:0 0 14px rgba(123,224,255,.75); }
+    75% { border-color:#b26bff; box-shadow:0 0 14px rgba(178,107,255,.75); }
+    100% { border-color:#ff5f9e; box-shadow:0 0 14px rgba(255,95,158,.75); }
+  }
+  body[data-frame="metal"] .panel { border:3px solid #caa437; box-shadow:inset 0 0 0 1px #fff2b0, inset 0 0 12px rgba(212,175,55,.35), 0 0 14px rgba(212,175,55,.40); }
+  body[data-frame="neon"] .panel { border:2px solid #b26bff; box-shadow:0 0 14px rgba(168,85,247,.85), inset 0 0 10px rgba(168,85,247,.40); }
+  body[data-frame="simple"] .panel { border:1px solid rgba(255,255,255,.5); box-shadow:none; border-radius:8px; }
+  /* スロット枠の差し色も枠プリセットに連動（統一感） */
+  body[data-frame="rainbow"] .smFrame { animation:frameRainbowBorder 3.2s linear infinite; }
+  @keyframes frameRainbowBorder { 0%{border-color:#ff5f9e;} 25%{border-color:#ffd94d;} 50%{border-color:#7be0ff;} 75%{border-color:#b26bff;} 100%{border-color:#ff5f9e;} }
+  body[data-frame="metal"] .smFrame { border-color:#e8c766; }
+  body[data-frame="neon"] .smFrame { border-color:#b26bff; box-shadow:0 0 54px rgba(168,85,247,.85), 0 0 130px rgba(168,85,247,.4), inset 0 0 0 2px rgba(233,213,255,.5), inset 0 0 26px rgba(168,85,247,.5), inset 0 -18px 34px rgba(0,0,0,.65); }
+  body[data-frame="simple"] .smFrame { border-width:3px; box-shadow:0 0 24px rgba(0,0,0,.5), inset 0 -18px 34px rgba(0,0,0,.65); }
 </style>
 </head>
   <style> html, body { background:transparent !important; } body.transparent .panel { background:rgba(0,0,0,.38); } </style>
 <body class="transparent">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="smXXGrad" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#f3e8ff"/><stop offset="55%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6d28d9"/></radialGradient></defs></svg>
 <div id="stage">
   <div id="particles"></div>
   <div id="goal" class="panel movable">
@@ -517,15 +564,19 @@
 
   <div id="slotMachine">
     <div class="smFrame">
-      <div class="smReel"><div class="smStrip"></div></div>
-      <div class="smReel"><div class="smStrip"></div></div>
-      <div class="smReel"><div class="smStrip"></div></div>
+      <div class="smSign"><span>✦ NANA SLOT ✦</span></div>
+      <div class="smReels">
+        <div class="smReel"><div class="smStrip"></div></div>
+        <div class="smReel"><div class="smStrip"></div></div>
+        <div class="smReel"><div class="smStrip"></div></div>
+      </div>
+      <div class="smBase"></div>
     </div>
     <div id="smLabel"></div>
   </div>
 
   <div id="roulette" class="panel movable">
-    <div id="rWheel">🎡</div>
+    <div id="rWheel"><div class="rWheelSpin"><svg id="rWheelSvg" viewBox="0 0 200 200" aria-hidden="true"></svg></div><div class="rPointer"></div></div>
     <div class="title" id="rouletteTitle">小ルーレット</div>
     <div id="reach">リーチ！</div>
     <div id="rouletteItem">…</div>
@@ -571,6 +622,7 @@
     missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
     rouletteMissText: "再チャレンジまってる！",
     kakuhenBgm: true,
+    themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
       "大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転",
@@ -618,6 +670,11 @@
       if(typeof nc.missionText === "string" && nc.missionText.trim()) playCfg.missionText = nc.missionText;
       if(typeof nc.rouletteMissText === "string" && nc.rouletteMissText.trim()) playCfg.rouletteMissText = nc.rouletteMissText;
       if(typeof nc.kakuhenBgm === "boolean") playCfg.kakuhenBgm = nc.kakuhenBgm;
+      if(nc.themePickEnabled != null) playCfg.themePickEnabled = !!nc.themePickEnabled;
+      playCfg.themePickMin = Math.max(1, num(nc.themePickMin, playCfg.themePickMin || 300));
+      playCfg.themePickMax = Math.max(playCfg.themePickMin, num(nc.themePickMax, playCfg.themePickMax || 999));
+      playCfg.themePickWindowSec = Math.min(300, Math.max(10, num(nc.themePickWindowSec, playCfg.themePickWindowSec || 60)));
+      playCfg.themePickMinutes = Math.min(60, Math.max(1, num(nc.themePickMinutes, playCfg.themePickMinutes || 5)));
     }
     teaserIdx = 0;
     savePlayCfg(); renderTierRows();
@@ -1129,16 +1186,27 @@
     r.textContent = text;
     r.classList.remove("go"); void r.offsetWidth; r.classList.add("go");
   }
-  /* v10: 本物スロット（3リールが回って順に止まる／大当たり時は777で揃う） */
+  /* v11: 本物スロット（3リールが回って順に止まる／最上位は 777 と x_x の2種・同格） */
   const SM_SYMBOLS = ["🍒","⭐","💰","🌈","🪙","✨","🍀","🎰"];
+  const SM_SPIN = SM_SYMBOLS.concat(["XX"]);      // 回転中の帯にも x_x が流れる
+  const SM_FINALS = SM_SYMBOLS.concat(["XX"]);    // 通常停止図柄（x_x は最上位図柄として混ざる）
+  const SM_TOPS = [["7️⃣","7️⃣","7️⃣"], ["XX","XX","XX"]]; // 最上位揃い（確率は従来通り jackpot 時にどちらか）
+  /* x_x マーク（彼女のマーク：X型の目＋紫グラデ＋金の縁。絵文字ではなくSVG描画） */
+  const SM_XX_SVG = '<svg viewBox="0 0 100 100" class="smXXSvg" aria-hidden="true">' +
+    '<circle cx="50" cy="50" r="45" fill="url(#smXXGrad)" stroke="#ffd94d" stroke-width="5"/>' +
+    '<g stroke="#2a0a3a" stroke-width="9" stroke-linecap="round">' +
+    '<path d="M21 33 L37 49 M37 33 L21 49"/>' +
+    '<path d="M63 33 L79 49 M79 33 L63 49"/></g>' +
+    '<path d="M41 73 L59 73" stroke="#2a0a3a" stroke-width="7" stroke-linecap="round"/></svg>';
+  function smCellHTML(v){ return v === "XX" ? SM_XX_SVG : v; }
   let slotBusy = false, slot777Queued = false;
   function smFinals(jackpot){
-    if(jackpot) return ["7️⃣","7️⃣","7️⃣"];
-    const pick = () => SM_SYMBOLS[Math.floor(Math.random()*SM_SYMBOLS.length)];
+    if(jackpot) return SM_TOPS[Math.floor(Math.random()*SM_TOPS.length)].slice();
+    const pick = () => SM_FINALS[Math.floor(Math.random()*SM_FINALS.length)];
     let a = pick(), b = pick(), c = pick();
     if(Math.random() < 0.35) b = a;                 // 2つ揃いのリーチ感を出す
-    if(a === b && b === c) c = pick() === a ? "🍒" : pick(); // 通常時に3つ揃いは出さない
-    if(a === b && b === c) c = "⭐";
+    if(a === b && b === c) c = pick() === a ? "🍒" : pick(); // 通常時に3つ揃いは出さない（x_x も同様）
+    if(a === b && b === c) c = (a === "🍒" ? "⭐" : "🍒"); // 最終ガード：必ず別の図柄にする（従来の⭐固定だと a=⭐ の時に揃ってしまう穴があった）
     return [a, b, c];
   }
   function miniSlot(finalText, jackpot){
@@ -1150,7 +1218,7 @@
     }
     slotBusy = true;
     if(jackpot) window.__slotJackpotAt = Date.now();
-    box.classList.remove("jackpot");
+    box.classList.remove("jackpot", "xxjackpot");
     box.classList.add("show");
     $("smLabel").textContent = "🎰 回転中…";
     const finals = smFinals(jackpot);
@@ -1160,8 +1228,8 @@
     reels.forEach((reelEl, i) => {
       const strip = reelEl.firstElementChild;
       let html = "";
-      for(let k = 0; k < SPINS; k++) html += '<div class="smCell">' + SM_SYMBOLS[Math.floor(Math.random()*SM_SYMBOLS.length)] + "</div>";
-      html += '<div class="smCell">' + finals[i] + "</div>";
+      for(let k = 0; k < SPINS; k++) html += '<div class="smCell">' + smCellHTML(SM_SPIN[Math.floor(Math.random()*SM_SPIN.length)]) + "</div>";
+      html += '<div class="smCell">' + smCellHTML(finals[i]) + "</div>";
       strip.innerHTML = html;
       strip.style.transition = "none";
       strip.style.transform = "translateY(0px)";
@@ -1175,14 +1243,20 @@
     setTimeout(() => {
       if(jackpot){
         box.classList.add("jackpot");
-        $("smLabel").textContent = "🎉 777！！ 大当たり 🎉";
-        showCutin("777！", "ジャックポット");
+        if(finals[0] === "XX"){
+          box.classList.add("xxjackpot");
+          $("smLabel").textContent = "💜 x_x揃い！！ 大当たり 💜";
+          showCutin("x_x揃い！", "ジャックポット");
+        } else {
+          $("smLabel").textContent = "🎉 777！！ 大当たり 🎉";
+          showCutin("777！", "ジャックポット");
+        }
         strobe(true); sirenSound();
       } else {
         $("smLabel").textContent = finalText;
       }
       setTimeout(() => {
-        box.classList.remove("show", "jackpot");
+        box.classList.remove("show", "jackpot", "xxjackpot");
         slotBusy = false;
         if(slot777Queued){ slot777Queued = false; miniSlot("🎉 777！！", true); }
       }, jackpot ? 1900 : 1200);
@@ -1527,6 +1601,40 @@
     step();
   }
 
+  /* ---------- v11: 本物ルーレット風ホイール描画（SVG・見た目専用／当選判定には無関係） ---------- */
+  (function buildRouletteWheel(){
+    const svg = document.getElementById("rWheelSvg");
+    if(!svg) return;
+    const NS = "http://www.w3.org/2000/svg";
+    const CX = 100, CY = 100;
+    function el(name, attrs){ const e = document.createElementNS(NS, name); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+    function polar(r, deg){ const a = (deg - 90) * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 99, fill: "#12081f" }));
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 97, fill: "none", stroke: "#d9a441", "stroke-width": 4 }));
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 93, fill: "#1d0b33" }));
+    const N = 12, R1 = 88, R2 = 40;
+    const cols = ["#caa437", "#4c1d95", "#1e1b4b", "#7e22ce", "#1e1b4b", "#4c1d95", "#1e1b4b", "#7e22ce", "#1e1b4b", "#4c1d95", "#1e1b4b", "#7e22ce"];
+    for(let i = 0; i < N; i++){
+      const a0 = i * 360 / N, a1 = (i + 1) * 360 / N, mid = a0 + 180 / N;
+      const p0 = polar(R1, a0), p1 = polar(R1, a1), p2 = polar(R2, a1), p3 = polar(R2, a0);
+      svg.appendChild(el("path", { d: "M" + p0[0] + " " + p0[1] + " A" + R1 + " " + R1 + " 0 0 1 " + p1[0] + " " + p1[1] + " L" + p2[0] + " " + p2[1] + " A" + R2 + " " + R2 + " 0 0 0 " + p3[0] + " " + p3[1] + " Z", fill: cols[i], stroke: "#d9a441", "stroke-width": 1.2 }));
+      const tp = polar(74, mid);
+      const t = el("text", { x: tp[0], y: tp[1], fill: i === 0 ? "#2a1503" : "#ffffff", "font-size": 11, "font-weight": 900, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + mid + " " + tp[0] + " " + tp[1] + ")" });
+      t.textContent = i === 0 ? "★" : String(i);
+      svg.appendChild(t);
+      const bp = polar(90.5, a0);
+      svg.appendChild(el("circle", { cx: bp[0], cy: bp[1], r: 2.2, fill: i % 2 ? "#b26bff" : "#ffd94d" }));
+    }
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 38, fill: "none", stroke: "#d9a441", "stroke-width": 2.5 }));
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 30, fill: "url(#smXXGrad)" }));
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 30, fill: "none", stroke: "#ffd94d", "stroke-width": 1.5 }));
+    const star = el("text", { x: CX, y: CY + 1, fill: "#ffffff", "font-size": 26, "font-weight": 900, "text-anchor": "middle", "dominant-baseline": "middle" });
+    star.textContent = "✦";
+    svg.appendChild(star);
+    const ball = polar(90.5, 40);
+    svg.appendChild(el("circle", { cx: ball[0], cy: ball[1], r: 3.4, fill: "#ffffff", stroke: "#c9c9d4", "stroke-width": 0.8 }));
+  })();
+
   /* ---------- v9: リモコン連携（状態の送信） ---------- */
   function wsSend(o){ if(window.__bridgeSend) window.__bridgeSend(o); }
   function safeHidden(){ try { return hiddenItems.slice(); } catch(e) { return []; } }
@@ -1540,7 +1648,8 @@
       fx: activeFxList.map(f => ({ id: f.id, name: f.name, until: f.until, state: f.state })),
       hiddenItems: safeHidden(),
       simple: safeSimple(),
-      theme: safeTheme()
+      theme: safeTheme(),
+      frame: safeFrame()
     }});
   }
 
@@ -1918,6 +2027,21 @@
     broadcastState();
   }
   applyTheme();
+  /* ---------- 枠デザイン（テーマとは別軸／サーバー保存・全クライアント同期） ---------- */
+  const FRAME_STYLES = ["standard", "rainbow", "metal", "neon", "simple"];
+  let frameStyle = "standard";
+  try { const f = localStorage.getItem("overlayFrameV1"); if(FRAME_STYLES.indexOf(f) >= 0) frameStyle = f; } catch(e) {}
+  function applyFrame(){ document.body.dataset.frame = frameStyle; }
+  function safeFrame(){ try { return frameStyle; } catch(e) { return "standard"; } }
+  function setFrame(s){
+    if(FRAME_STYLES.indexOf(s) < 0) return;
+    frameStyle = s;
+    try { localStorage.setItem("overlayFrameV1", s); } catch(e) {}
+    applyFrame();
+    broadcastState();
+  }
+  applyFrame();
+
   let cutinTimer = null;
   function cutinSound(){
     if(muted) return;
@@ -2239,6 +2363,9 @@
       }
       else if(msg.type === "theme" && msg.mode){
         setTheme(msg.mode);
+      }
+      else if(msg.type === "frame" && msg.style){
+        setFrame(msg.style);
       }
       else if(msg.type === "simple" && msg.simple){
         setSimple(msg.simple);
@@ -2682,6 +2809,245 @@
         if(a === "birthdayToggle"){ setBirthday(!birthdayMode); return; }
         if(a === "mvp"){ window.announceMvp(); return; }
         return _hc15(msg);
+      };
+    } catch(e) {}
+  })();
+
+  /* ============ v16 pack: テーマ連動サウンド（効果音セット） / ギフトでテーマ選択権 ============
+     A. 効果音はテーマごとに音色セットが切り替わる（tone の波形をテーマ別に読み替え）。
+        ※確変BGMは PR #5 側の実装に一本化したため、本パックには含まない（2026-11-11 本人決定）。
+     B. 中ティア帯（playCfg.themePickMin〜Max、既定300〜999コイン）の実ギフトを送った人は、
+        制限時間内に自分のコメントで画面テーマ（バキバキ/ぽわぽわ）を選べる。
+        選んだテーマは一定時間だけ適用され、過ぎたら元のテーマ（base）に戻る。
+     C. テーマが実際に切り替わる瞬間は、カーテンの目隠し＋機械の組み換え音（ガシャンガシャン）
+        ＋ライティングスイープのトランジション（約1.7秒）で「組み替えている」ように見せる。
+        手動切替・ギフト選択・自動復帰のすべてが対象。初回読み込み・接続直後は鳴らさない。
+        base の管理のため setTheme を包む：上書き中は表示を維持し、base だけ更新する。
+        テーマ選択はサーバーの正本テーマには送らない（各オーバーレイが同じギフト/コメントから自律的に揃う）。 */
+  (function(){
+    try {
+      /* ---------- A-1. 効果音のテーマ別波形マップ ---------- */
+      const WAVE_MAP = {
+        normal: {},
+        baki:   { square: "sawtooth", triangle: "sawtooth", sine: "square" },
+        powa:   { square: "sine", sawtooth: "triangle", triangle: "sine" }
+      };
+      function mapWave(type){
+        const t = type || "square";
+        const m = WAVE_MAP[themeMode] || {};
+        return m[t] || t;
+      }
+      const _toneOrig = tone;
+      tone = function(freq, t0, dur, type, vol){
+        return _toneOrig(freq, t0, dur, mapWave(type), vol);
+      };
+      const _sirenOrig = sirenSound;
+      sirenSound = function(){
+        if(themeMode === "powa"){
+          if(muted) return;
+          [1319, 1568, 2093].forEach((f, i) => tone(f, i * .14, .3, "sine", .05));
+          return;
+        }
+        return _sirenOrig();
+      };
+      const _reachOrig = reachSound;
+      reachSound = function(){
+        if(themeMode === "powa"){
+          if(muted) return;
+          try {
+            const c = ac(), o = c.createOscillator(), g = c.createGain();
+            o.type = "triangle";
+            o.frequency.setValueAtTime(392, c.currentTime);
+            o.frequency.exponentialRampToValueAtTime(1175, c.currentTime + 1.0);
+            g.gain.setValueAtTime(.045, c.currentTime);
+            g.gain.exponentialRampToValueAtTime(.001, c.currentTime + 1.1);
+            o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 1.1);
+          } catch(e) {}
+          return;
+        }
+        return _reachOrig();
+      };
+
+      /* ---------- B. テーマ選択権（base / 上書き の分離） ---------- */
+      let tpBase = themeMode;   // 本来のテーマ（リモコン等で選ばれたもの）
+      let tpPending = null;     // { name, until } 選択受付中
+      let tpOverride = null;    // { name, theme, until } 一時適用中
+      const _setThemeOrig = setTheme;
+
+      /* ----- テーマ切替トランジション（カーテン目隠し＋機械の組み換え音＋ライティング） -----
+         実際にテーマが変わる時だけ発火する。初回読み込み・接続直後の同値適用では鳴らさない
+         （transArmed は起動後しばらくしてから有効化）。表示レイヤーだけの話で、ギフト等の処理は止めない。
+         実行中に別の切替が来たら、終わった直後に最新分だけを続けて実行する（再入整理）。 */
+      const THEME_LABELS = { baki: "⚡バキバキ", powa: "🌸ぽわぽわ", normal: "通常" };
+      let transArmed = false;
+      setTimeout(() => { transArmed = true; }, 2000);
+      const trans = { running: false, pendingApply: null };
+      const transStyle = document.createElement("style");
+      transStyle.textContent =
+        "#themeCover{position:absolute;inset:0;z-index:300;display:none;pointer-events:none;overflow:hidden}" +
+        "#themeCover.show{display:block}" +
+        "#themeCover .tcCurL,#themeCover .tcCurR{position:absolute;top:0;bottom:0;width:52%;background:repeating-linear-gradient(45deg,#17141f 0 26px,#1f1a2c 26px 52px);transition:transform .45s cubic-bezier(.7,0,.3,1)}" +
+        "#themeCover .tcCurL{left:0;transform:translateX(-103%);border-right:4px solid #c77dff}" +
+        "#themeCover .tcCurR{right:0;transform:translateX(103%);border-left:4px solid #c77dff}" +
+        "#themeCover.in .tcCurL,#themeCover.in .tcCurR{transform:translateX(0)}" +
+        "#themeCover .tcBadge{position:absolute;top:43%;left:50%;transform:translate(-50%,-50%) scale(.8);text-align:center;opacity:0;transition:opacity .25s,transform .25s;z-index:2}" +
+        "#themeCover.in .tcBadge{opacity:1;transform:translate(-50%,-50%) scale(1)}" +
+        "#themeCover .tcGear{font-size:9cqw;animation:tcSpin 1s linear infinite}" +
+        "@keyframes tcSpin{to{transform:rotate(360deg)}}" +
+        "#themeCover .tcLabel{font-weight:900;font-size:clamp(18px,4.8cqw,46px);color:#fff;text-shadow:0 0 18px rgba(160,80,255,.85);white-space:nowrap}" +
+        "#themeCover .tcSweep{position:absolute;top:-10%;bottom:-10%;left:-30%;width:34%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);opacity:0;z-index:1}" +
+        "#themeCover.sweep .tcSweep{opacity:1;animation:tcSweepMove .7s ease-in-out}" +
+        "@keyframes tcSweepMove{from{left:-30%}to{left:110%}}";
+      document.head.appendChild(transStyle);
+      const tpCover = document.createElement("div");
+      tpCover.id = "themeCover";
+      tpCover.innerHTML = '<div class="tcCurL"></div><div class="tcCurR"></div><div class="tcSweep"></div><div class="tcBadge"><div class="tcGear">⚙️</div><div class="tcLabel">テーマ組み換え中…</div></div>';
+      $("stage").appendChild(tpCover);
+      const tcLabel = tpCover.querySelector(".tcLabel");
+      function transClank(t0, f, vol){
+        tone(f, t0, .07, "square", vol);
+        tone(Math.round(f * 1.5), t0, .05, "square", vol * .6);
+        tone(140, t0, .09, "square", vol * .8);
+      }
+      function transSound(){ /* ガシャンガシャン（金属ヒット＋ラチェット＋決めの一撃）。tone 経由なのでミュートに従う */
+        transClank(0, 2400, .05);
+        transClank(.13, 1900, .055);
+        transClank(.29, 2600, .05);
+        for(let i = 0; i < 8; i++) tone(2900, .45 + i * .045, .02, "square", .035);
+        transClank(.86, 1700, .07);
+        tone(3200, .86, .12, "square", .04);
+        tone(90, 1.15, .2, "triangle", .05);
+      }
+      function runTransition(doApply, m){
+        trans.running = true;
+        tcLabel.textContent = "テーマ組み換え中…";
+        tpCover.classList.add("show");
+        setTimeout(() => tpCover.classList.add("in"), 20);
+        try { transSound(); } catch(e) {}
+        setTimeout(() => {
+          doApply();
+          tcLabel.textContent = "✨ " + (THEME_LABELS[m] || m);
+          tpCover.classList.add("sweep");
+          setTimeout(() => tpCover.classList.remove("sweep"), 750);
+          setTimeout(() => {
+            tpCover.classList.remove("in");
+            setTimeout(() => {
+              tpCover.classList.remove("show");
+              trans.running = false;
+              if(trans.pendingApply){ const pa = trans.pendingApply; trans.pendingApply = null; pa(); }
+            }, 470);
+          }, 720);
+        }, 500);
+      }
+      /* テーマの実適用をトランジション経由にする。同値・未武装（起動直後）は即時適用のみ */
+      function requestThemeFx(m, afterApply){
+        const doApply = () => {
+          _setThemeOrig(m); // 表示と state 送信は通常通り（実効テーマとして伝わる）
+          try { if(afterApply) afterApply(); } catch(e) {}
+        };
+        if(m === themeMode || !transArmed){ doApply(); return; }
+        if(trans.running){ trans.pendingApply = () => requestThemeFx(m, afterApply); return; }
+        runTransition(doApply, m);
+      }
+      window.__transState = function(){ return { running: trans.running, armed: transArmed, queued: !!trans.pendingApply }; };
+
+      function tpApplyTheme(m){
+        requestThemeFx(m, () => {
+          try { localStorage.setItem("overlayThemeV1", tpBase); } catch(e) {} // 保存上のテーマは base のままにする
+        });
+      }
+      setTheme = function(m){
+        if(m !== "baki" && m !== "powa" && m !== "normal") return;
+        tpBase = m;
+        if(tpOverride && Date.now() < tpOverride.until) return; // 上書き中は base だけ更新し、表示は維持
+        requestThemeFx(m, null);
+      };
+
+      const style = document.createElement("style");
+      style.textContent =
+        "#themePick{position:absolute;top:27%;left:50%;transform:translateX(-50%);z-index:66;display:none;text-align:center;background:rgba(8,4,20,.88);border:3px solid #c77dff;border-radius:18px;padding:2.4cqw 4.5cqw;box-shadow:0 0 30px rgba(160,80,255,.55);pointer-events:none;max-width:92%}" +
+        "#themePick.show{display:block;animation:tpPop .3s cubic-bezier(.34,1.56,.64,1)}" +
+        "@keyframes tpPop{from{transform:translateX(-50%) scale(.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}" +
+        "#themePick .tpMain{font-weight:900;font-size:clamp(18px,4.6cqw,44px);color:#fff;text-shadow:0 2px 0 #5b21b6;white-space:nowrap}" +
+        "#themePick .tpOpts{margin-top:1cqw;font-weight:900;font-size:clamp(15px,3.8cqw,36px);color:#fff;white-space:nowrap}" +
+        "#themePick .tpBaki{color:#ffd94d}#themePick .tpPowa{color:#ff9ecd}" +
+        "#themePick .tpCount{margin-top:.6cqw;font-weight:700;font-size:clamp(12px,2.8cqw,26px);color:#d6bcff}" +
+        "#themePickInfo{position:absolute;top:15.8%;left:50%;transform:translateX(-50%);z-index:45;display:none;background:rgba(20,10,35,.85);border:2px solid #c77dff;border-radius:999px;padding:.6cqw 2.6cqw;font-weight:900;font-size:clamp(11px,2.5cqw,24px);color:#ecd9ff;white-space:nowrap;pointer-events:none}" +
+        "#themePickInfo.show{display:block}";
+      document.head.appendChild(style);
+      const stageEl = $("stage");
+      const tpBanner = document.createElement("div"); tpBanner.id = "themePick"; stageEl.appendChild(tpBanner);
+      const tpInfo = document.createElement("div"); tpInfo.id = "themePickInfo"; stageEl.appendChild(tpInfo);
+      const escHtml = s => String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      function tpRender(){
+        const now = Date.now();
+        if(tpPending && now < tpPending.until){
+          tpBanner.innerHTML = '<div class="tpMain">🎨 ' + escHtml(tpPending.name) + 'さん テーマを選んで！</div>' +
+            '<div class="tpOpts"><span class="tpBaki">⚡バキバキ</span> か <span class="tpPowa">🌸ぽわぽわ</span> をコメントで送ってね</div>' +
+            '<div class="tpCount">あと ' + Math.ceil((tpPending.until - now) / 1000) + ' 秒</div>';
+          tpBanner.classList.add("show");
+        } else tpBanner.classList.remove("show");
+        if(tpOverride && now < tpOverride.until){
+          tpInfo.textContent = "🎨 " + tpOverride.name + "さんのテーマ選択：" + (tpOverride.theme === "baki" ? "⚡バキバキ" : "🌸ぽわぽわ") + " あと " + fmtLeft(tpOverride.until);
+          tpInfo.classList.add("show");
+        } else tpInfo.classList.remove("show");
+      }
+      function tpOnGift(name, count, coinsPerUnit, wasReal){
+        if(!wasReal || EMBED_MODE || testMode) return;
+        if(playCfg.themePickEnabled === false) return;
+        if(tpPending || tpOverride) return;
+        if(!name || !coinsPerUnit || coinsPerUnit <= 0) return;
+        if(coinsPerUnit < (playCfg.coin2 || 100)) return; // 小ティア単体は対象外（コンボ合算での誤爆防止）
+        const total = coinsPerUnit * Math.max(1, Math.min(20, count || 1));
+        const mn = playCfg.themePickMin || 300, mx = playCfg.themePickMax || 999;
+        if(total < mn || total > mx) return;
+        tpPending = { name: name, until: Date.now() + (playCfg.themePickWindowSec || 60) * 1000 };
+        tpRender();
+        try { flash(name + "さん テーマ選択権ゲット！", "コメントで「バキバキ」か「ぽわぽわ」を送ってね"); } catch(e) {}
+        broadcastState();
+      }
+      function tpOnChat(name, comment){
+        if(!tpPending) return;
+        if(Date.now() > tpPending.until){ tpPending = null; tpRender(); return; }
+        if((name || "") !== tpPending.name) return; // 送った本人だけ
+        const c = comment || "";
+        let pick = null;
+        if(/バキバキ|ドパ/.test(c)) pick = "baki";
+        else if(/ぽわぽわ|ぽわ/.test(c)) pick = "powa";
+        if(!pick) return;
+        const by = tpPending.name;
+        tpPending = null;
+        tpOverride = { name: by, theme: pick, until: Date.now() + (playCfg.themePickMinutes || 5) * 60 * 1000 };
+        tpApplyTheme(pick);
+        try { showCutin("テーマ変更！", by + "さんが「" + (pick === "baki" ? "⚡バキバキ" : "🌸ぽわぽわ") + "」を選んだ！"); } catch(e) {}
+        tpRender();
+      }
+      const _giftTp = gift;
+      gift = function(tier, fromName, count, coinsPerUnit){
+        const wasReal = !!window.__pendingRealGift;
+        const r = _giftTp(tier, fromName, count, coinsPerUnit);
+        try { tpOnGift((fromName || "").trim(), count, coinsPerUnit, wasReal); } catch(e) {}
+        return r;
+      };
+      const _hcfTp = handleChatFree;
+      handleChatFree = function(name, comment){
+        try { tpOnChat(name, comment); } catch(e) {}
+        return _hcfTp(name, comment);
+      };
+      setInterval(() => {
+        const now = Date.now();
+        if(tpPending && now >= tpPending.until) tpPending = null;
+        if(tpOverride && now >= tpOverride.until){
+          tpOverride = null;
+          tpApplyTheme(tpBase);
+          try { flash("テーマが元に戻りました", ""); } catch(e) {}
+        }
+        tpRender();
+      }, 500);
+      window.__themePickState = function(){
+        return { pending: tpPending ? { name: tpPending.name, until: tpPending.until } : null,
+                 override: tpOverride ? { name: tpOverride.name, theme: tpOverride.theme, until: tpOverride.until } : null,
+                 base: tpBase, effective: themeMode };
       };
     } catch(e) {}
   })();
