@@ -107,9 +107,9 @@
   #roulette .title { text-shadow:0 2px 6px rgba(0,0,0,.8); }
   #reach { text-shadow:0 2px 10px rgba(0,0,0,.8), 0 0 22px rgba(255,160,0,.55); }
   #smCredit { margin:1.6cqw auto 0; max-width:84cqw; font-weight:900; font-size:clamp(14px,3.2cqw,30px); color:#fff;
-    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:anywhere; }
+    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:break-word; word-break:auto-phrase; }
   #rouletteCredit { margin-top:8px; font-weight:900; font-size:clamp(14px,3cqw,28px); color:#fff;
-    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:anywhere; }
+    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:break-word; word-break:auto-phrase; }
   /* 透明版：パネルの後ろが実画面でも文字が沈まないよう、パネル内テキストに影を足す */
   body.transparent .panel { text-shadow:0 1px 3px rgba(0,0,0,.8); }
   /* 透明版＋ぽわぽわ：パネルは暗い半透明になるので、文字は白系に戻して読めるようにする */
@@ -131,6 +131,9 @@
   #menu .row { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   #menu .row:last-child { border-bottom:none; }
   #menu .tier { font-weight:900; }
+  /* 遊び方パネル：幅を狭めても文字が枠からはみ出さないよう、行内は文節で折り返し、はみ出しは最終保険で止める */
+  #menu { overflow:hidden; }
+  #menu .row, #menuHowto, #tokudaiNoteRow { overflow-wrap:break-word; line-break:strict; word-break:auto-phrase; }
   .t1{color:#a5ffb0}.t2{color:#7be0ff}.t3{color:#ffb3ec}.t4{color:#ffd94d}
 
   /* 右パネル */
@@ -228,14 +231,14 @@
   #roulette.show { display:block; }
   #roulette .title { font-size:clamp(14px,2.6cqw,26px); font-weight:900; color:#ff8080; margin-bottom:6px; }
   #reach { font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
-  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:#ffd94d; min-height:1.4em; }
+  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:#ffd94d; min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
   /* v16: ルーレット結果表示を大型化（当たり/はずれ共通）＋ハズレ時の煽り文 */
   #rouletteItem.result { font-size:clamp(29px,7.6cqw,72px); line-height:1.25;
     text-shadow:0 0 24px rgba(255,180,0,.9), 0 3px 0 rgba(0,0,0,.45); animation:resultPop .5s cubic-bezier(.2,1.6,.4,1); }
   #rouletteItem.result.miss { color:#9adfff; text-shadow:0 0 22px rgba(80,180,255,.85), 0 3px 0 rgba(0,0,0,.45); }
   @keyframes resultPop { 0%{ transform:scale(.5); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
   #rouletteTaunt { display:none; margin-top:6px; font-size:clamp(17px,4.4cqw,42px); font-weight:900; color:#ffe98a;
-    background:rgba(10,10,30,.8); border:2px solid rgba(255,217,77,.6); border-radius:999px; padding:4px 16px; }
+    background:rgba(10,10,30,.8); border:2px solid rgba(255,217,77,.6); border-radius:999px; padding:4px 16px; word-break:auto-phrase; text-wrap:balance; }
   #rouletteTaunt.show { display:inline-block; animation:resultPop .5s .1s cubic-bezier(.2,1.6,.4,1) backwards; }
 
   /* ティザー（コメント欄と重ならないよう上部へ） */
@@ -246,7 +249,7 @@
   #activeFx h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffb3ec; }
   .fxItem { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   .fxItem:last-child { border-bottom:none; }
-  .fxName { flex:1; font-weight:700; }
+  .fxName { flex:1; min-width:0; font-weight:700; word-break:auto-phrase; }
   .fxTime { color:#ffd94d; font-weight:900; white-space:nowrap; }
   .fxEnd { background:#2b2b3d; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:2px 7px; font-size:12px; cursor:pointer; }
   .fxEmpty { opacity:.75; }
@@ -254,7 +257,7 @@
   #activeFx.fxIdle { display:none; }
   body.editing #activeFx.fxIdle { display:block; opacity:.55; }
   .fxItem.fxNext { opacity:.82; }
-  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:anywhere; }
+  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:break-word; }
 
   /* v14: 今日のVIP（王とは別枠の感謝表示・名前のみ） */
   /* v17: ギフター系3パネル（VIP／本日の最大ギフト／特大ボード）は幅・角丸（.panel共通）・見出し・行の作りを統一。
@@ -2613,7 +2616,7 @@
         "#comboRoll{position:absolute;top:16.2%;left:0;right:0;z-index:42;overflow:hidden;display:none;pointer-events:none}" +
         "#comboRoll .crIn{display:inline-block;white-space:nowrap;font-weight:900;font-size:clamp(14px,3.4cqw,32px);color:#7be0ff;text-shadow:0 0 14px rgba(0,180,255,.8);animation:crScroll 6.5s linear forwards;padding-left:100%}" +
         "@keyframes crScroll{to{transform:translateX(-100%)}}" +
-        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:nowrap;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
+        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;max-width:94cqw;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
         "#slotMachine.zen .smStrip{animation:zenSpin .28s linear infinite}" +
         "@keyframes zenSpin{from{transform:translateY(0)}to{transform:translateY(-38%)}}";
       document.head.appendChild(style);
