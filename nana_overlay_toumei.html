@@ -531,9 +531,9 @@
     <div class="row">🌹 <span class="tier t1">99コインまで</span> → <b>100回転</b></div>
     <div class="row">🍩 <span class="tier t2">100〜999コイン</span> → 50回転＋<b>ルーレット</b></div>
     <div class="row">🕶 <span class="tier t3">1,000〜9,999コイン</span> → <b>強いルーレット</b>から開始</div>
-    <div class="row">🦁 <span class="tier t4">10,000コイン以上</span> → <b>確変確定</b>＋<b>特別・名前入り手書きメッセージ</b>＋<b>名前入りデジタル色紙</b>＋<b>名前入りスマホ壁紙</b>＋<b>特大ボード掲載</b></div>
+    <div class="row">🦁 <span class="tier t4">10,000コイン以上</span> → <b>確変確定</b>＋<b>特典（特別・名前入り手書きメッセージ・名前入りデジタル色紙・名前入りスマホ壁紙）のうち1つがランダムで確定</b>＋<b>特大ボード掲載</b></div>
     </div>
-    <div class="row" id="tokudaiNoteRow">✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ</div>
+    <div class="row" id="tokudaiNoteRow">✉️ 特大の特典は1回につき1つ、ランダムで決まるよ。当たった特典は配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ</div>
     <div class="row">🏆 特大をくれた人は <b>本日の特大ボード</b> に名前と今日の合計コインが載るよ（その日だけ）</div>
     <div class="row">🎯 大当たりが出ると <b>10分間スペシャルモード</b>（<span id="probLabel">1/9999</span> → 確率10倍＆画面が虹色）になるよ！</div>
     <div class="row">🔥 60秒以内に続けてギフトするとコンボ！ ×2で回転2倍、×3でルーレット、×5で当たりやすく、×8で大当たりまっしぐら</div>
@@ -707,10 +707,12 @@
   const DEFAULT_PERKS = {
     fx1: DEFAULT_PLAYCFG.fx1.slice(), fx2: DEFAULT_PLAYCFG.fx2.slice(), fx3: DEFAULT_PLAYCFG.fx3.slice(),
     tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
-    tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+    tokudaiNote: "✉️ 特大の特典は1回につき1つ、ランダムで決まるよ。当たった特典は配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
     pianoName: "ピアノ1曲リクエスト権",
     pianoNote: "仕上げて動画にするよ♡"
   };
+  // 特典お届け説明文の旧デフォルト（保存データ移行の判定にだけ使う）
+  const OLD_TOKUDAI_NOTE = "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ";
   let perksCfg = JSON.parse(JSON.stringify(DEFAULT_PERKS));
   let perksReceived = false;
   function sanitizePerks(p){
@@ -722,7 +724,11 @@
     if(a2 && a2.length) out.fx2 = a2;
     if(a3 && a3.length) out.fx3 = a3;
     if(at && at.length) out.tokudaiPerks = at;
-    if(typeof p.tokudaiNote === "string" && p.tokudaiNote.trim()) out.tokudaiNote = p.tokudaiNote.trim().slice(0, 300);
+    if(typeof p.tokudaiNote === "string" && p.tokudaiNote.trim()){
+      const note = p.tokudaiNote.trim().slice(0, 300);
+      // 旧デフォルト文のまま保存されていた場合だけ、ランダム1つ仕様の新デフォルト文へ移行する（自分で書き換えた文には触れない）
+      out.tokudaiNote = (note === OLD_TOKUDAI_NOTE) ? DEFAULT_PERKS.tokudaiNote : note;
+    }
     if(typeof p.pianoName === "string" && p.pianoName.trim()) out.pianoName = p.pianoName.trim().slice(0, 60);
     if(typeof p.pianoNote === "string" && p.pianoNote.trim()) out.pianoNote = p.pianoNote.trim().slice(0, 60);
     return out;
@@ -735,13 +741,18 @@
     savePlayCfg(); renderTierRows();
     broadcastState();
   }
+  // 特大特典は1回につき1つだけ、候補からランダムで選ぶ
+  function pickTokudaiPerk(){
+    const list = (perksCfg.tokudaiPerks && perksCfg.tokudaiPerks.length) ? perksCfg.tokudaiPerks : DEFAULT_PERKS.tokudaiPerks;
+    return list[Math.floor(Math.random() * list.length)];
+  }
   function renderTierRows(){
     const f = (n) => Number(n).toLocaleString();
     document.getElementById("tierRows").innerHTML =
       '<div class="row">🌹 <span class="tier t1">' + f(playCfg.coin2 - 1) + 'コインまで</span> → <b>' + f(playCfg.spins[1]) + '回転</b></div>' +
       '<div class="row">🍩 <span class="tier t2">' + f(playCfg.coin2) + '〜' + f(playCfg.coin3 - 1) + 'コイン</span> → ' + f(playCfg.spins[2]) + '回転＋<b>ルーレット</b></div>' +
       '<div class="row">🕶 <span class="tier t3">' + f(playCfg.coin3) + '〜' + f(playCfg.coin4 - 1) + 'コイン</span> → <b>強いルーレット</b>から開始</div>' +
-      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>スペシャルモード確定</b>＋' + perksCfg.tokudaiPerks.map(p => '<b>' + p + '</b>').join('＋') + '＋<b>特大ボード掲載</b></div>';
+      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>スペシャルモード確定</b>＋<b>特典（' + perksCfg.tokudaiPerks.join('・') + '）のうち1つがランダムで確定</b>＋<b>特大ボード掲載</b></div>';
     document.getElementById("menuHowto").innerHTML = playCfg.howto;
     const tn = document.getElementById("tokudaiNoteRow"); if(tn) tn.innerHTML = perksCfg.tokudaiNote;
   }
@@ -1564,14 +1575,16 @@
       if(tier >= 4){
         // 特大特典の受け渡しログ: ブリッジ経由の実ギフトで特典が付与された時だけ、サーバーへ記録を依頼する。
         // テストモード中と手動ギフト（リモコン）は「渡す義務」が発生しないので送らない。
+        // 特大特典は1回につき1つだけランダムで付与する。抽選はここで1回だけ行い、受け渡しログ・画面表示で同じ結果を使う
+        const tokudaiWon = pickTokudaiPerk();
         if(isRealGift && !testMode && name){
-          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: perksCfg.tokudaiPerks.slice() }); } catch(e) {}
+          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: [tokudaiWon] }); } catch(e) {}
         }
-        // 特大特典（確定）: 特別・名前入り手書きメッセージ＋名前入りデジタル色紙＋名前入りスマホ壁紙。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
+        // 特大特典（ランダムで1つ確定）: 手書きメッセージ／デジタル色紙／スマホ壁紙のうち1つ。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
         setTimeout(()=>{
-          perksCfg.tokudaiPerks.forEach(p => addEffect(p + "（特大特典）", testMode ? "テスト" : (name || "")));
-          // addEffect側のコールアウトが終わった後に、特典まとめのコールアウトを出す
-          setTimeout(()=>flash("特大特典！", perksCfg.tokudaiPerks.join("＋") + " 確定"), 900);
+          addEffect(tokudaiWon + "（特大特典）", testMode ? "テスト" : (name || ""));
+          // addEffect側のコールアウトが終わった後に、特典のコールアウトを出す
+          setTimeout(()=>flash("特大特典！", tokudaiWon + " 確定"), 900);
         }, 2800);
       }
       return;
