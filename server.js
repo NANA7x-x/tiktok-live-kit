@@ -126,6 +126,36 @@ const THEME_FILE = path.join(__dirname, 'theme.json');
 let savedTheme = null;
 try { const j = JSON.parse(fs.readFileSync(THEME_FILE, 'utf8')); if (j && (j.mode === 'baki' || j.mode === 'powa' || j.mode === 'normal')) savedTheme = j.mode; } catch (e) { /* 無ければ未設定 */ }
 function setCanonicalTheme(m) { savedTheme = m; try { fs.writeFileSync(THEME_FILE, JSON.stringify({ mode: savedTheme })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+
+// v17: 特典カスタムの正本（perks.json）。リモコンの「🎁 特典カスタム」から変更でき、
+// ルーレット各プールの景品・効果／特大特典の項目と文言／ピアノ特典の名前と渡し方を保持する。
+const PERKS_FILE = path.join(__dirname, 'perks.json');
+const DEFAULT_PERKS = {
+  fx1: ["語尾「にゃん」3分間", "語尾「〜だぜ」3分間", "一人称「ぼく」3分間", "早口言葉チャレンジ（失敗でスクワット10回）", "語尾「〜なのだ」3分", "語尾「〜じゃん」3分", "語尾「〜だもん」3分", "語尾「〜まる」3分", "語尾「〜じゃろ」3分", "「である」調 3分"],
+  fx2: ["お嬢様口調＋一人称「わたくし」5分間", "猫耳フィルター 次のマッチまで", "イケボで本気の感謝", "ロリボで本気の感謝", "語尾「にゃん」5分間", "語尾「〜なのじゃ」5分", "語尾「〜ってば」5分", "敬語縛り 5分"],
+  fx3: ["確変突入", "次回配信のタイトル決定権", "次回30分 語尾固定（視聴者選択）", "TikTokとXのアイコン罰仕様24時間"],
+  tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
+  tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+  pianoName: "ピアノ1曲リクエスト権",
+  pianoNote: "仕上げて動画にするよ♡"
+};
+function sanitizePerks(p) {
+  const out = JSON.parse(JSON.stringify(DEFAULT_PERKS));
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return out;
+  const arr = (v) => Array.isArray(v) ? v.map(x => String(x == null ? '' : x).trim()).filter(Boolean).slice(0, 40) : null;
+  const a1 = arr(p.fx1), a2 = arr(p.fx2), a3 = arr(p.fx3), at = arr(p.tokudaiPerks);
+  if (a1 && a1.length) out.fx1 = a1;
+  if (a2 && a2.length) out.fx2 = a2;
+  if (a3 && a3.length) out.fx3 = a3;
+  if (at && at.length) out.tokudaiPerks = at;
+  if (typeof p.tokudaiNote === 'string' && p.tokudaiNote.trim()) out.tokudaiNote = p.tokudaiNote.trim().slice(0, 300);
+  if (typeof p.pianoName === 'string' && p.pianoName.trim()) out.pianoName = p.pianoName.trim().slice(0, 60);
+  if (typeof p.pianoNote === 'string' && p.pianoNote.trim()) out.pianoNote = p.pianoNote.trim().slice(0, 60);
+  return out;
+}
+let savedPerks = null;
+try { const j = JSON.parse(fs.readFileSync(PERKS_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedPerks = sanitizePerks(j); } catch (e) { /* 無ければ未設定（初期値のまま） */ }
+function setCanonicalPerks(p) { savedPerks = sanitizePerks(p); try { fs.writeFileSync(PERKS_FILE, JSON.stringify(savedPerks)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
 // ============================================================
 // 特大特典の受け渡し管理ログ
 //   特大ギフトの特典（手書きメッセージ／デジタル色紙／スマホ壁紙）は配信後に
@@ -198,6 +228,7 @@ wss.on('connection', (ws) => {
   try { if (savedHidden) ws.send(JSON.stringify({ type: 'visibility', hidden: savedHidden })); } catch (e) { /* ignore */ }
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
   try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
+  try { if (savedPerks) ws.send(JSON.stringify({ type: 'perks', perks: savedPerks })); } catch (e) { /* ignore */ }
   // 特大特典ログの現在値を新規接続クライアントへ送る（リモコンの一覧表示用）
   try { ws.send(JSON.stringify(tokudaiLogMsg())); } catch (e) { /* ignore */ }
   ws.on('message', (raw) => {
@@ -274,6 +305,10 @@ wss.on('connection', (ws) => {
     if (msg.type === 'theme' && (msg.mode === 'baki' || msg.mode === 'powa' || msg.mode === 'normal')) {
       setCanonicalTheme(msg.mode);
     }
+    if (msg.type === 'perks' && msg.perks && typeof msg.perks === 'object' && !Array.isArray(msg.perks)) {
+      setCanonicalPerks(msg.perks);
+      msg.perks = savedPerks;
+    }
     if (msg.type === 'simple' && msg.simple && typeof msg.simple === 'object' && !Array.isArray(msg.simple)) {
       setCanonicalSimple(msg.simple);
     }
@@ -288,7 +323,7 @@ wss.on('connection', (ws) => {
       else skipRelay = true;
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme'].includes(msg.type)) {
+    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'perks'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });

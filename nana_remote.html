@@ -168,10 +168,50 @@
       </details>
 
       <details class="folder" data-folder="tokudai">
-        <summary>🌟 特大特典ログ <span id="tokudaiBadge" class="tokudaiBadge" style="display:none"></span></summary>
+        <summary>🌟 特典お渡しログ（特大・ピアノ） <span id="tokudaiBadge" class="tokudaiBadge" style="display:none"></span></summary>
         <div class="folderBody">
-          <div class="note">特大ギフト（10,000コイン以上）で確定した特典の受け渡しリストです。配信後にここを見て、渡したら「渡し済み」を押してください。記録はサーバー（キットのフォルダ内）に残るので、開き直しても・日をまたいでも消えません。テスト中と手動ギフトは記録されません。</div>
+          <div class="note">配信のあとで渡す特典は、全部ここに記録されます（特大ギフトの特典＋大ルーレットの超大当たり「ピアノ1曲リクエスト権」＋裏大当たりの手書きメッセージ）。配信後にここを見て、渡したら「渡し済み」を押してください。記録はサーバー（キットのフォルダ内）に残るので、開き直しても・日をまたいでも消えません。テスト中と手動ギフトは記録されません。配信画面には出ない、ここだけのリストです。</div>
           <div id="tokudaiList" style="margin-top:10px;"><div style="opacity:.75">まだ記録はありません</div></div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="perks">
+        <summary>🎁 特典カスタム</summary>
+        <div class="folderBody">
+          <div class="note" style="margin-bottom:8px">ルーレットの景品・効果と、特大特典の中身を自分で変えられます。変更はサーバーに保存されて、両方の表示画面（通常版・透明版）に反映されます。初期値は今までの内容です。</div>
+          <div style="margin-top:8px">
+            <label>小ルーレットの景品・効果（1行に1つ）</label>
+            <textarea id="pFx1" rows="4" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>中ルーレットの景品・効果（1行に1つ）</label>
+            <textarea id="pFx2" rows="4" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>大ルーレットの景品・効果（1行に1つ）</label>
+            <textarea id="pFx3" rows="3" style="width:100%"></textarea>
+          </div>
+          <div class="note">文言に「○分間」「○時間」と書くと、その時間だけ発動タイマーが付きます。語尾・一人称・口調の演出は同時に1つずつ順番に発動します。</div>
+          <div style="margin-top:10px">
+            <label>特大特典の項目（1行に1つ。特大ギフトで確定する特典）</label>
+            <textarea id="pTokudai" rows="3" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>特大特典のお届け説明文（ギフト表に出る文章）</label>
+            <textarea id="pTokudaiNote" rows="2" style="width:100%"></textarea>
+          </div>
+          <div style="margin-top:8px">
+            <label>大ルーレット超大当たりの特典名</label>
+            <input id="pPianoName" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label>その特典の渡し方（当選の記録に、特典名の後ろへ（）で付きます）</label>
+            <input id="pPianoNote" type="text" style="width:100%">
+          </div>
+          <div class="row" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button onclick="applyPerksRemote()">✅ 特典を反映</button>
+            <button onclick="fillPerksForm(true)">↩️ 現在の設定を読み直す</button>
+          </div>
         </div>
       </details>
 
@@ -320,18 +360,7 @@
             <label>あおり文句（1行に1つ。順番に切り替わります）</label>
             <textarea id="cTeaser" rows="4" style="width:100%"></textarea>
           </div>
-          <div style="margin-top:8px">
-            <label>小ルーレットの当たり演出（1行に1つ）</label>
-            <textarea id="cFx1" rows="3" style="width:100%"></textarea>
-          </div>
-          <div style="margin-top:8px">
-            <label>中ルーレットの当たり演出（1行に1つ）</label>
-            <textarea id="cFx2" rows="3" style="width:100%"></textarea>
-          </div>
-          <div style="margin-top:8px">
-            <label>大ルーレットの当たり演出（1行に1つ）</label>
-            <textarea id="cFx3" rows="3" style="width:100%"></textarea>
-          </div>
+          <div class="note" style="margin-top:8px">ルーレットの景品・効果の編集は「🎁 特典カスタム」フォルダに引っ越しました（サーバーに保存されるようになりました）。</div>
           <div style="margin-top:8px">
             <label>セリフ集（「ランダムセリフ」が当たると、この中から1つ表示されます。1行に1つ）</label>
             <textarea id="cSerif" rows="3" style="width:100%"></textarea>
@@ -369,7 +398,6 @@
     { id: "likeBar", label: "いいねバー" },
     { id: "topGift", label: "本日の最大ギフト" },
     { id: "attendPanel", label: "出席簿" },
-    { id: "zukanPanel", label: "ギフト図鑑" },
     { id: "missionBar", label: "協力ミッション" }
   ];
 
@@ -461,7 +489,7 @@
 
   /* ---------- かんたん表示（ローテーション） ---------- */
   const SIMPLE_DEFS = PANEL_DEFS.filter(p => p.id !== "roulette" && p.id !== "teaser");
-  let simpleCfg = { on: false, items: ["menu", "vipPanel", "tokudaiBoard", "attendPanel", "zukanPanel"], sec: 8 };
+  let simpleCfg = { on: false, items: ["menu", "vipPanel", "tokudaiBoard", "attendPanel"], sec: 8 };
   function renderSimple(){
     const st = document.getElementById("smState");
     if(st) st.textContent = simpleCfg.on ? "ON" : "OFF";
@@ -558,7 +586,7 @@
     const fx = (lastState && lastState.fx) || [];
     if(!fx.length){ box.innerHTML = '<div style="opacity:.75">まだ何も当たってません</div>'; return; }
     box.innerHTML = fx.map(f =>
-      '<div class="fxItem"><span class="fxName">' + f.name + '</span>' +
+      '<div class="fxItem"><span class="fxName">' + f.name + (f.by ? ' <span style="font-size:.8em;opacity:.85">（' + (f.by === "テスト" ? "テスト" : f.by + "さん") + '）</span>' : '') + '</span>' +
       '<span class="fxTime">' + (f.state === "wait" ? "待機中" : (f.until ? fmtLeft(f.until) : "獲得")) + '</span>' +
       '<button class="fxEnd" onclick="endFx(' + f.id + ')">終了</button></div>'
     ).join("");
@@ -592,13 +620,60 @@
   }
   function toggleTokudaiDone(id, done){ send({ type: "tokudaiDone", id: id, done: !!done }); }
 
+  /* ---------- 特典カスタム（サーバー保存 perks.json が正本） ---------- */
+  const PERKS_DEFAULTS = {
+    fx1: ["語尾「にゃん」3分間", "語尾「〜だぜ」3分間", "一人称「ぼく」3分間", "早口言葉チャレンジ（失敗でスクワット10回）", "語尾「〜なのだ」3分", "語尾「〜じゃん」3分", "語尾「〜だもん」3分", "語尾「〜まる」3分", "語尾「〜じゃろ」3分", "「である」調 3分"],
+    fx2: ["お嬢様口調＋一人称「わたくし」5分間", "猫耳フィルター 次のマッチまで", "イケボで本気の感謝", "ロリボで本気の感謝", "語尾「にゃん」5分間", "語尾「〜なのじゃ」5分", "語尾「〜ってば」5分", "敬語縛り 5分"],
+    fx3: ["確変突入", "次回配信のタイトル決定権", "次回30分 語尾固定（視聴者選択）", "TikTokとXのアイコン罰仕様24時間"],
+    tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
+    tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+    pianoName: "ピアノ1曲リクエスト権",
+    pianoNote: "仕上げて動画にするよ♡"
+  };
+  let perksRemote = null, perksFormLoaded = false;
+  function perksSource(){
+    if(perksRemote) return perksRemote;
+    // サーバーに保存がまだ無い間は、表示側の現在のプール（state経由）を初期表示に使う
+    const d = JSON.parse(JSON.stringify(PERKS_DEFAULTS));
+    const pc = lastState && lastState.playCfg;
+    if(pc){
+      if(Array.isArray(pc.fx1) && pc.fx1.length) d.fx1 = pc.fx1;
+      if(Array.isArray(pc.fx2) && pc.fx2.length) d.fx2 = pc.fx2;
+      if(Array.isArray(pc.fx3) && pc.fx3.length) d.fx3 = pc.fx3;
+    }
+    return d;
+  }
+  function fillPerksForm(force){
+    if(perksFormLoaded && !force) return;
+    const p = perksSource();
+    const set = (id, v)=>{ document.getElementById(id).value = v; };
+    set("pFx1", (p.fx1 || []).join("\n")); set("pFx2", (p.fx2 || []).join("\n")); set("pFx3", (p.fx3 || []).join("\n"));
+    set("pTokudai", (p.tokudaiPerks || []).join("\n"));
+    set("pTokudaiNote", p.tokudaiNote || "");
+    set("pPianoName", p.pianoName || "");
+    set("pPianoNote", p.pianoNote || "");
+    perksFormLoaded = true;
+  }
+  function applyPerksRemote(){
+    send({ type: "perks", perks: {
+      fx1: lines("pFx1"), fx2: lines("pFx2"), fx3: lines("pFx3"),
+      tokudaiPerks: lines("pTokudai"),
+      tokudaiNote: document.getElementById("pTokudaiNote").value,
+      pianoName: document.getElementById("pPianoName").value,
+      pianoNote: document.getElementById("pPianoNote").value
+    }});
+    perksFormLoaded = false;
+    alert("特典の設定を送りました。サーバーに保存され、表示側に反映されます。");
+  }
+
   function connect(){
     try { ws = new WebSocket(WS_URL); } catch(e) { schedule(); return; }
     ws.onopen = ()=>{ setStatus(true); send({ type: "requestState" }); };
     ws.onmessage = (ev)=>{
       let msg = null;
       try { msg = JSON.parse(ev.data); } catch(e) { return; }
-      if(msg && msg.type === "state" && msg.state){ renderState(msg.state); if(msg.state.playCfg) fillCfgForm(msg.state.playCfg, false); }
+      if(msg && msg.type === "state" && msg.state){ renderState(msg.state); if(msg.state.playCfg) fillCfgForm(msg.state.playCfg, false); fillPerksForm(false); }
+      if(msg && msg.type === "perks" && msg.perks){ perksRemote = msg.perks; fillPerksForm(false); }
       if(msg && msg.type === "visibility" && Array.isArray(msg.hidden)){
         const joined = msg.hidden.slice().sort().join(",");
         if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
@@ -638,7 +713,7 @@
     set("cHowto", cfg.howto);
     set("cMissionTitle", cfg.missionTitle || "🎯 協力ミッション");
     set("cMissionText", cfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！");
-    set("cRouletteMiss", cfg.rouletteMissText || "再チャレンジまってる！");
+    set("cRouletteMiss", cfg.rouletteMissText || "はずれでも大丈夫♡ 次のギフトでまた回るよ");
     document.getElementById("cKakuhenBgm").checked = cfg.kakuhenBgm !== false;
     document.getElementById("cThemePickEnabled").checked = cfg.themePickEnabled !== false;
     set("cThemePickMin", cfg.themePickMin != null ? cfg.themePickMin : 300);
@@ -646,7 +721,6 @@
     set("cThemePickWindow", cfg.themePickWindowSec != null ? cfg.themePickWindowSec : 60);
     set("cThemePickMinutes", cfg.themePickMinutes != null ? cfg.themePickMinutes : 5);
     set("cTeaser", (cfg.teaserLines || []).join("\n"));
-    set("cFx1", (cfg.fx1 || []).join("\n")); set("cFx2", (cfg.fx2 || []).join("\n")); set("cFx3", (cfg.fx3 || []).join("\n"));
     set("cSerif", (cfg.serifLines || []).join("\n"));
     cfgFormLoaded = true;
   }
@@ -663,7 +737,7 @@
       themePickEnabled: document.getElementById("cThemePickEnabled").checked,
       themePickMin: num("cThemePickMin"), themePickMax: num("cThemePickMax"),
       themePickWindowSec: num("cThemePickWindow"), themePickMinutes: num("cThemePickMinutes"),
-      teaserLines: lines("cTeaser"), fx1: lines("cFx1"), fx2: lines("cFx2"), fx3: lines("cFx3"), serifLines: lines("cSerif")
+      teaserLines: lines("cTeaser"), serifLines: lines("cSerif")
     }});
     cfgFormLoaded = false;
     alert("設定を送りました。表示側のギフト表と抽選に反映されます。");

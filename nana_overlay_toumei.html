@@ -62,11 +62,54 @@
   body.theme-powa #cutin .sub { color:#8a5a7a; text-shadow:none; }
   body.theme-powa #cutin.show .band { animation:cutinPowa .45s cubic-bezier(.34,1.56,.64,1); }
   @keyframes cutinPowa { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+  /* v17: ぽわぽわはパネルが明るいので、パネル内の差し色（黄・水色など）を濃いめにして読みやすくする
+     （透明版はパネルが暗くなるので対象外。通常版のぽわぽわだけに効く） */
+  body.theme-powa:not(.transparent) #goal .amount { color:#b97a00; text-shadow:0 1px 0 #fff; }
+  body.theme-powa:not(.transparent) #ticker { color:#2e8b47; }
+  body.theme-powa:not(.transparent) #king { color:#a87400; }
+  body.theme-powa:not(.transparent) #menu h3 { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) .t1 { color:#2e8b47; }
+  body.theme-powa:not(.transparent) .t2 { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) .t3 { color:#c2439b; }
+  body.theme-powa:not(.transparent) .t4 { color:#a87400; }
+  body.theme-powa:not(.transparent) #spinNum { color:#b97a00; }
+  body.theme-powa:not(.transparent) #modeNow { color:#2e8b47; }
+  body.theme-powa:not(.transparent).kakuhen #modeNow { color:#d6336c; }
+  body.theme-powa:not(.transparent).chance #modeNow { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) #renchan { color:#d6336c; }
+  body.theme-powa:not(.transparent) #comboNum { color:#c2570b; }
+  body.theme-powa:not(.transparent) #tenjo, body.theme-powa:not(.transparent) #deathNum { color:#d63a3a; }
+  body.theme-powa:not(.transparent) .fxTime, body.theme-powa:not(.transparent) .tokudaiCoins, body.theme-powa:not(.transparent) .vipRank, body.theme-powa:not(.transparent) .tokudaiPager { color:#a87400; }
+  body.theme-powa:not(.transparent) #activeFx h3 { color:#c2439b; }
+  body.theme-powa:not(.transparent) #vipPanel h3, body.theme-powa:not(.transparent) #topGift h3, body.theme-powa:not(.transparent) #tokudaiBoard h3 { color:#a87400; }
+  body.theme-powa:not(.transparent) #attendPanel h3, body.theme-powa:not(.transparent) .attBadge, body.theme-powa:not(.transparent) .vipJouren { color:#2e8b47; }
+  body.theme-powa:not(.transparent) .attMeta, body.theme-powa:not(.transparent) #vipNext, body.theme-powa:not(.transparent) #mileText { color:#1b6f96; }
+  body.theme-powa:not(.transparent) #mileNextReward { color:#a87400; }
+  body.theme-powa:not(.transparent) #likeText { color:#d6336c; }
+  body.theme-powa:not(.transparent) #likeNext { color:#c2577a; }
+  body.theme-powa:not(.transparent) .lamp-off { color:rgba(90,61,85,.3); }
   #feverBadge { position:absolute; top:9.5%; left:50%; transform:translateX(-50%); z-index:94; display:none;
     background:linear-gradient(90deg,#ff4040,#ff8c1a); color:#fff; font-weight:900; padding:5px 16px;
     border-radius:999px; font-size:clamp(13px,2.6cqw,25px); box-shadow:0 0 18px rgba(255,100,0,.85); white-space:nowrap; }
   body.fever #feverBadge { display:block; animation:blink2 .4s steps(2) infinite; }
   .panel { background:rgba(0,0,0,.55); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; }
+
+  /* ---------- v17: 改行の整え＆文字の読みやすさ（全テーマ共通の下地） ---------- */
+  /* 日本語の禁則処理を厳しめにし、長い語は境目で折る（単語の途中で割らない） */
+  #stage { line-break:strict; overflow-wrap:break-word; }
+  #menu h3, #activeFx h3, #vipPanel h3, #tokudaiBoard h3, #topGift h3, #attendPanel h3, #goal .label, #goal .sub { text-wrap:balance; }
+  /* パネルの外に浮く文字は、背景が明るくても読めるよう影を強める */
+  #rouletteItem { text-shadow:0 2px 8px rgba(0,0,0,.75), 0 0 18px rgba(0,0,0,.45); }
+  #roulette .title { text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  #reach { text-shadow:0 2px 10px rgba(0,0,0,.8), 0 0 22px rgba(255,160,0,.55); }
+  #smCredit { margin:1.6cqw auto 0; max-width:84cqw; font-weight:900; font-size:clamp(14px,3.2cqw,30px); color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:anywhere; }
+  #rouletteCredit { margin-top:8px; font-weight:900; font-size:clamp(14px,3cqw,28px); color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:anywhere; }
+  /* 透明版：パネルの後ろが実画面でも文字が沈まないよう、パネル内テキストに影を足す */
+  body.transparent .panel { text-shadow:0 1px 3px rgba(0,0,0,.8); }
+  /* 透明版＋ぽわぽわ：パネルは暗い半透明になるので、文字は白系に戻して読めるようにする */
+  body.theme-powa.transparent .panel { color:#fff; background:rgba(40,16,44,.62); }
 
   /* 目標バー */
   #goal { position:absolute; top:2%; left:4%; right:4%; text-align:center; }
@@ -76,7 +119,7 @@
   #barInner { height:100%; width:5%; background:linear-gradient(90deg,#ff5f9e,#ffb347); border-radius:99px; transition:width .8s ease; }
   #goal .sub { font-size:clamp(11px,2cqw,20px); opacity:.85; margin-top:4px; }
   #ticker { font-size:clamp(11px,2cqw,20px); color:#a5ffb0; margin-top:4px; min-height:1.3em; white-space:nowrap; overflow:hidden; }
-  #king { font-size:clamp(11px,2cqw,20px); color:#ffd94d; }
+  #king { font-size:clamp(11px,2cqw,20px); color:#ffd94d; overflow-wrap:anywhere; }
 
   /* ギフトメニュー */
   #menu { position:absolute; top:27%; left:4%; width:47%; font-size:clamp(10px,1.9cqw,19px); line-height:1.5; }
@@ -203,38 +246,49 @@
   .fxTime { color:#ffd94d; font-weight:900; white-space:nowrap; }
   .fxEnd { background:#2b2b3d; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:2px 7px; font-size:12px; cursor:pointer; }
   .fxEmpty { opacity:.75; }
+  /* v17: 発動中パネルは「いま発動中」と「つぎ」の最大2件だけ表示。何も無い時はパネルごと隠す（編集中は見える） */
+  #activeFx.fxIdle { display:none; }
+  body.editing #activeFx.fxIdle { display:block; opacity:.55; }
+  .fxItem.fxNext { opacity:.82; }
+  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14: 今日のVIP（王とは別枠の感謝表示・名前のみ） */
-  #vipPanel { position:absolute; left:4%; top:57%; width:44%; font-size:clamp(11px,2cqw,20px); }
-  #vipPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffe98a; }
-  .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* v17: ギフター系3パネル（VIP／本日の最大ギフト／特大ボード）は幅・角丸（.panel共通）・見出し・行の作りを統一。
+     名前は途中で切らず、長い名前は折り返して全文見せる */
+  .gifterPanel { width:44%; font-size:clamp(11px,2cqw,20px); }
+  .gifterPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; }
+  #vipPanel { position:absolute; left:4%; top:57%; }
+  #vipPanel h3 { color:#ffe98a; }
+  .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .vipName:last-child { border-bottom:none; }
   .vipEmpty { opacity:.75; }
 
   /* 特大ボード: その日の特大ギフターを累計コイン順に1人ずつスライドリピート表示（当日限り・王=1位のみ特別表示、VIP=大以上の名前のみ、とは別枠） */
-  #tokudaiBoard { position:absolute; left:4%; top:63.5%; width:44%; font-size:clamp(11px,2cqw,20px); border-color:rgba(255,217,77,.55); }
-  #tokudaiBoard h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffd94d; }
-  .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:nowrap; overflow:hidden; animation:tokudaiSlide .45s ease; }
+  #tokudaiBoard { position:absolute; left:4%; top:63.5%; border-color:rgba(255,217,77,.55); }
+  #tokudaiBoard h3 { color:#ffd94d; }
+  .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:normal; animation:tokudaiSlide .45s ease; }
   @keyframes tokudaiSlide { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
-  .tokudaiName { font-weight:700; overflow:hidden; text-overflow:ellipsis; }
+  .tokudaiName { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .tokudaiCoins { color:#ffd94d; font-weight:900; margin-left:auto; white-space:nowrap; }
   .tokudaiPager { text-align:right; font-size:.78em; color:#ffe98a; font-weight:700; opacity:.85; margin-top:1px; }
 
   /* v14追加(心理パック): 称号ランク・VIP進捗・マイルストーン・本日の最大ギフト（表示と祝福のみ／金額・円額は出さない） */
   .vipRank { color:#ffd94d; font-weight:900; margin-left:6px; }
-  #vipNext { margin-top:5px; font-size:.85em; color:#bfe9ff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #vipNext { margin-top:5px; font-size:.85em; color:#bfe9ff; font-weight:700; white-space:normal; overflow-wrap:break-word; }
   #mileBar { position:absolute; left:30%; top:66.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
   #mileNextReward { font-size:.85em; color:#ffe98a; font-weight:700; margin-bottom:3px; }
-  #mileText { font-weight:900; color:#bfe9ff; margin-bottom:4px; white-space:nowrap; }
+  #mileText { font-weight:900; color:#bfe9ff; margin-bottom:4px; }
   #mileOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #mileInner { background:linear-gradient(90deg,#7be0ff,#ffd94d); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
   /* いいね連携: いいねゲージ（ブリッジが節目管理し、ここは表示と回転加算だけ） */
   #likeBar { position:absolute; left:30%; top:72.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
-  #likeText { font-weight:900; color:#ffb3c2; margin-bottom:4px; white-space:nowrap; }
+  #likeText { font-weight:900; color:#ffb3c2; margin-bottom:4px; }
   #likeOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #likeInner { background:linear-gradient(90deg,#ff5c8a,#ffb3c2); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
-  #likeNext { font-size:.85em; color:#ffd9e2; font-weight:700; margin-top:3px; white-space:nowrap; }
-  #topGift { position:absolute; left:4%; top:49.5%; width:44%; font-size:clamp(11px,2cqw,20px); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #likeNext { font-size:.85em; color:#ffd9e2; font-weight:700; margin-top:3px; }
+  #topGift { position:absolute; left:4%; top:49.5%; }
+  #topGift h3 { color:#ffe98a; }
+  #topGiftBody { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14改修: 出席簿（配信日ベースの出席記録・localStorageに永続化／名前のみ・金額は出さない） */
   #attendPanel { position:absolute; left:4%; top:70.5%; width:44%; font-size:clamp(11px,2cqw,20px); }
@@ -246,17 +300,6 @@
   .attMeta { color:#bfe9ff; font-weight:700; margin-left:auto; white-space:nowrap; }
   .attEmpty { opacity:.75; }
   .vipJouren { color:#a5ffb0; font-weight:900; margin-left:6px; }
-
-  /* v15: ギフト図鑑（今日もらったギフトの種類を集める／名前のみ・金額は出さない） */
-  #zukanPanel { position:absolute; right:4%; top:69%; width:38%; font-size:clamp(10px,1.8cqw,18px); }
-  #zukanPanel h3 { font-size:clamp(12px,2.2cqw,22px); margin-bottom:4px; color:#7be0ff; }
-  #zukanGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; }
-  .zkSlot { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); border-radius:8px; text-align:center; padding:3px 1px 2px; }
-  .zkSlot .zkEmoji { font-size:1.5em; line-height:1.15; }
-  .zkSlot .zkName { font-size:.72em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .zkSlot.miss { opacity:.55; filter:grayscale(1); background:rgba(0,0,0,.35); }
-  .zkSlot.got { border-color:rgba(255,217,77,.65); background:rgba(255,180,0,.13); }
-  #zukanOthers { margin-top:4px; font-size:.8em; color:#bfe9ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   /* v15: バースデーモードの飾りレイヤー（視聴者向け装飾のみ・操作は受けない・コメント欄には被せない） */
   #birthdayLayer { position:absolute; inset:0; z-index:38; display:none; pointer-events:none; overflow:hidden; }
@@ -486,12 +529,12 @@
     <div class="row">🕶 <span class="tier t3">1,000〜9,999コイン</span> → <b>強いルーレット</b>から開始</div>
     <div class="row">🦁 <span class="tier t4">10,000コイン以上</span> → <b>確変確定</b>＋<b>特別・名前入り手書きメッセージ</b>＋<b>名前入りデジタル色紙</b>＋<b>名前入りスマホ壁紙</b>＋<b>特大ボード掲載</b></div>
     </div>
-    <div class="row">✉️ 特大の手書きメッセージは <b>特別仕様</b>、色紙はサイン・名前・日付入り、壁紙も名前入り。いずれも配信専用窓口から画像でお届けします（色紙・壁紙は後日送付／お届けだけの一方向・返信対応はなし・個人の連絡先は使いません）。裏大当たりの通常版とは別格です</div>
-    <div class="row">🏆 特大をくれた人は <b>本日の特大ボード</b> に名前と今日の累計コインが載ります（その日限り）</div>
-    <div class="row">🎯 大当たり（<span id="probLabel">1/9999</span>）→ <b>確変モード10分</b>：当たる確率10倍＆画面が虹色に！</div>
-    <div class="row">🔥 60秒以内の連続ギフトでコンボ：×2 回転2倍 ／ ×3 ルーレット ／ ×5 当たりやすいモード ／ ×8 大当たり直撃</div>
-    <div class="row">❤️ いいねが <b>1,000</b> を超えるたび <b>🔥いいねラッシュ（30秒）</b> 発動！その間はギフトの回転数が <b>1.5倍</b></div>
-    <div class="row">💬 コメントで「ルーレット」と打つと <b>無料で1回</b> 回せる‼️（全体で90秒に1回まで）</div>
+    <div class="row" id="tokudaiNoteRow">✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ</div>
+    <div class="row">🏆 特大をくれた人は <b>本日の特大ボード</b> に名前と今日の合計コインが載るよ（その日だけ）</div>
+    <div class="row">🎯 大当たりが出ると <b>10分間スペシャルモード</b>（<span id="probLabel">1/9999</span> → 確率10倍＆画面が虹色）になるよ！</div>
+    <div class="row">🔥 60秒以内に続けてギフトするとコンボ！ ×2で回転2倍、×3でルーレット、×5で当たりやすく、×8で大当たりまっしぐら</div>
+    <div class="row">❤️ いいねが <b>1,000</b> 増えるたび、30秒間 <b>🔥いいねラッシュ</b>！ その間はギフトの回転数が <b>1.5倍</b> になるよ</div>
+    <div class="row">💬 コメントで「ルーレット」と打つと <b>無料で1回</b> 回せるよ‼️（みんなで90秒に1回まで）</div>
   </div>
 
   <div id="stats" class="panel movable">
@@ -519,18 +562,18 @@
 
   <div id="flash"><div class="who"></div><div class="what"></div></div>
 
-  <div id="activeFx" class="panel movable">
-    <h3>発動中・獲得</h3>
-    <div id="fxList"><div class="fxEmpty">まだ何も当たってません</div></div>
+  <div id="activeFx" class="panel movable fxIdle">
+    <h3>発動中</h3>
+    <div id="fxList"></div>
   </div>
 
-  <div id="vipPanel" class="panel movable">
+  <div id="vipPanel" class="panel movable gifterPanel">
     <h3>💎 今日のVIP</h3>
     <div id="vipList"><div class="vipEmpty">まだいません</div></div>
     <div id="vipNext" style="display:none"></div>
   </div>
 
-  <div id="tokudaiBoard" class="panel movable">
+  <div id="tokudaiBoard" class="panel movable gifterPanel">
     <h3>🏆 本日の特大ボード</h3>
     <div id="tokudaiList"><div class="vipEmpty">まだいません</div></div>
   </div>
@@ -547,17 +590,14 @@
     <div id="likeNext">次の節目まで あと 500</div>
   </div>
 
-  <div id="topGift" class="panel movable">🌟 本日の最大ギフト：まだありません</div>
+  <div id="topGift" class="panel movable gifterPanel">
+    <h3>🌟 本日の最大ギフト</h3>
+    <div id="topGiftBody">まだありません</div>
+  </div>
 
   <div id="attendPanel" class="panel movable">
     <h3>📒 出席簿</h3>
     <div id="attendList"><div class="attEmpty">まだいません</div></div>
-  </div>
-
-  <div id="zukanPanel" class="panel movable">
-    <h3 id="zukanTitle">📖 図鑑 0/12</h3>
-    <div id="zukanGrid"></div>
-    <div id="zukanOthers">その他：なし</div>
   </div>
 
   <div id="attendStamp"><div class="hanko">出席</div><div class="stampText"></div></div>
@@ -573,6 +613,7 @@
       <div class="smBase"></div>
     </div>
     <div id="smLabel"></div>
+    <div id="smCredit"></div>
   </div>
 
   <div id="roulette" class="panel movable">
@@ -581,9 +622,10 @@
     <div id="reach">リーチ！</div>
     <div id="rouletteItem">…</div>
     <div id="rouletteTaunt"></div>
+    <div id="rouletteCredit"></div>
   </div>
 
-  <div id="teaser" class="panel movable"><span id="teaserText">大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転</span></div>
+  <div id="teaser" class="panel movable"><span id="teaserText">大当たりで <b>10分間スペシャルモード</b>！ あたりは全部ななの変化（語尾・声・猫耳）。30,000回転で必ず大当たり</span></div>
 
 </div>
 
@@ -617,20 +659,20 @@
     coin2: 100, coin3: 1000, coin4: 10000,
     yenPerCoin: 0.39,
     spins: {1:100, 2:50, 3:2, 4:1},
-    howto: "🎁 ギフトでルーレットが回ります！<br>あたりが出たら<b>何か起こる</b>かも！",
+    howto: "🎁 ギフトを送ると抽選が回るよ！<br>コインの多いギフトほど <b>大当たりの確率アップ</b>！<br>あたりが出たら、ななの様子が変わるよ♡",
     missionTitle: "🎯 協力ミッション",
     missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
-    rouletteMissText: "再チャレンジまってる！",
+    rouletteMissText: "はずれでも大丈夫♡ 次のギフトでまた回るよ",
     kakuhenBgm: true,
     themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
-      "大当たりで <b>確変</b> 突入。当たり演出は全部「私」の変化（語尾・声・猫耳）。天井は30,000回転",
-      "バラでも <b>100回転</b>＋スロット演出！ 小さなギフトが一番回る台です",
-      "コンボ継続中は <b>回転2倍</b>。60秒以内に繋げて！",
-      "500回転ごとの節目で <b>チャンスゾーン確定</b>。回転数は無駄にならない",
-      "大ギフトは <b>中ルーレット</b> から開始。昇格すれば大当たりに直行",
-      "保留ランプが <b>虹色</b> なら激アツ。先読みから目が離せない"
+      "大当たりで <b>10分間スペシャルモード</b>！ あたりは全部ななの変化（語尾・声・猫耳）。30,000回転で必ず大当たり",
+      "🌹 小さなギフトでも <b>100回転</b>＋スロット演出！ いちばん回るのは小さなギフトだよ",
+      "コンボ継続中は <b>回転2倍</b>。60秒以内につなげて！",
+      "500回転ごとの節目で <b>当たりやすいゾーン確定</b>。回した分はムダにならないよ",
+      "大きなギフトは <b>強いルーレット</b> から開始。のぼっていけば大当たりに直行",
+      "保留ランプが <b>虹色</b> なら超チャンス！ 目が離せないよ"
     ],
     serifLines: ["今日もお疲れ様","どーしたの？よしよししてあげよっか","こっちおいで","頑張っててえらいね","褒めてあげよー！よーしよしよし！","無理しないでね","いつも見てるよ","ゆっくり休んでね"],
     fx1: ["語尾「にゃん」3分間","語尾「〜だぜ」3分間","一人称「ぼく」3分間","早口言葉チャレンジ（失敗でスクワット10回）","語尾「〜なのだ」3分","語尾「〜じゃん」3分","語尾「〜だもん」3分","語尾「〜まる」3分","語尾「〜じゃろ」3分","「である」調 3分"],
@@ -641,15 +683,53 @@
   try { const s = JSON.parse(localStorage.getItem("overlayPlayCfg") || "{}"); if(s && typeof s === "object") playCfg = Object.assign(playCfg, s); if(s.spins) playCfg.spins = Object.assign({1:100,2:50,3:2,4:1}, s.spins); } catch(e) {}
   // 説明文が旧デフォルトのままなら新しいウェルカム文へ差し替える（自分で書き換えた人の文はそのまま）
   if(playCfg.howto === "「回転」＝抽選のこと。当たると <b>私が変身</b> します（語尾・声・猫耳）") playCfg.howto = DEFAULT_PLAYCFG.howto;
+  if(playCfg.howto === "🎁 ギフトでルーレットが回ります！<br>あたりが出たら<b>何か起こる</b>かも！") playCfg.howto = DEFAULT_PLAYCFG.howto;
+  // ハズレ文も旧デフォルトのままなら、やさしい言い方の新デフォルトへ差し替える
+  if(playCfg.rouletteMissText === "再チャレンジまってる！") playCfg.rouletteMissText = DEFAULT_PLAYCFG.rouletteMissText;
   function savePlayCfg(){ try { localStorage.setItem("overlayPlayCfg", JSON.stringify(playCfg)); } catch(e) {} }
+  /* ---------- v17: 特典カスタム（サーバー保存の正本 perks.json を受けて使う） ----------
+     ルーレット各プールの景品・効果／特大特典の項目／特大のお届け説明文／ピアノ特典の名前と渡し方。
+     リモコンの「🎁 特典カスタム」から変更でき、サーバーが正本を配る。未接続・未保存の間は下の初期値で動く */
+  const DEFAULT_PERKS = {
+    fx1: DEFAULT_PLAYCFG.fx1.slice(), fx2: DEFAULT_PLAYCFG.fx2.slice(), fx3: DEFAULT_PLAYCFG.fx3.slice(),
+    tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
+    tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+    pianoName: "ピアノ1曲リクエスト権",
+    pianoNote: "仕上げて動画にするよ♡"
+  };
+  let perksCfg = JSON.parse(JSON.stringify(DEFAULT_PERKS));
+  let perksReceived = false;
+  function sanitizePerks(p){
+    const out = JSON.parse(JSON.stringify(DEFAULT_PERKS));
+    if(!p || typeof p !== "object") return out;
+    const arr = (v) => Array.isArray(v) ? v.map(x => String(x == null ? "" : x).trim()).filter(Boolean).slice(0, 40) : null;
+    const a1 = arr(p.fx1), a2 = arr(p.fx2), a3 = arr(p.fx3), at = arr(p.tokudaiPerks);
+    if(a1 && a1.length) out.fx1 = a1;
+    if(a2 && a2.length) out.fx2 = a2;
+    if(a3 && a3.length) out.fx3 = a3;
+    if(at && at.length) out.tokudaiPerks = at;
+    if(typeof p.tokudaiNote === "string" && p.tokudaiNote.trim()) out.tokudaiNote = p.tokudaiNote.trim().slice(0, 300);
+    if(typeof p.pianoName === "string" && p.pianoName.trim()) out.pianoName = p.pianoName.trim().slice(0, 60);
+    if(typeof p.pianoNote === "string" && p.pianoNote.trim()) out.pianoNote = p.pianoNote.trim().slice(0, 60);
+    return out;
+  }
+  function applyPerks(p){
+    perksCfg = sanitizePerks(p);
+    perksReceived = true;
+    // ルーレットの各プールは playCfg 経由で既存ロジックが読むので、そこへ流し込む
+    playCfg.fx1 = perksCfg.fx1.slice(); playCfg.fx2 = perksCfg.fx2.slice(); playCfg.fx3 = perksCfg.fx3.slice();
+    savePlayCfg(); renderTierRows();
+    broadcastState();
+  }
   function renderTierRows(){
     const f = (n) => Number(n).toLocaleString();
     document.getElementById("tierRows").innerHTML =
       '<div class="row">🌹 <span class="tier t1">' + f(playCfg.coin2 - 1) + 'コインまで</span> → <b>' + f(playCfg.spins[1]) + '回転</b></div>' +
       '<div class="row">🍩 <span class="tier t2">' + f(playCfg.coin2) + '〜' + f(playCfg.coin3 - 1) + 'コイン</span> → ' + f(playCfg.spins[2]) + '回転＋<b>ルーレット</b></div>' +
       '<div class="row">🕶 <span class="tier t3">' + f(playCfg.coin3) + '〜' + f(playCfg.coin4 - 1) + 'コイン</span> → <b>強いルーレット</b>から開始</div>' +
-      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>確変確定</b>＋<b>特別・名前入り手書きメッセージ</b>＋<b>名前入りデジタル色紙</b>＋<b>名前入りスマホ壁紙</b>＋<b>特大ボード掲載</b></div>';
+      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>スペシャルモード確定</b>＋' + perksCfg.tokudaiPerks.map(p => '<b>' + p + '</b>').join('＋') + '＋<b>特大ボード掲載</b></div>';
     document.getElementById("menuHowto").innerHTML = playCfg.howto;
+    const tn = document.getElementById("tokudaiNoteRow"); if(tn) tn.innerHTML = perksCfg.tokudaiNote;
   }
   renderTierRows();
   function applyPlayCfg(nc){
@@ -676,6 +756,8 @@
       playCfg.themePickWindowSec = Math.min(300, Math.max(10, num(nc.themePickWindowSec, playCfg.themePickWindowSec || 60)));
       playCfg.themePickMinutes = Math.min(60, Math.max(1, num(nc.themePickMinutes, playCfg.themePickMinutes || 5)));
     }
+    // ルーレットのプールは特典カスタム（サーバー正本）が優先：受け取り済みの時だけ config 側の値で上書きしない
+    if(perksReceived){ playCfg.fx1 = perksCfg.fx1.slice(); playCfg.fx2 = perksCfg.fx2.slice(); playCfg.fx3 = perksCfg.fx3.slice(); }
     teaserIdx = 0;
     savePlayCfg(); renderTierRows();
     if(window.__renderMission){ try { window.__renderMission(); } catch(e) {} }
@@ -717,6 +799,7 @@
       lastFreeRoulette = now;
       flash((name || "だれか") + "さん 無料ルーレット‼️", "コメントで参加！");
       tone(880, 0, .1, "square", .1); tone(1320, .1, .16, "square", .1);
+      rouletteCreditNext = { name: name || "", auto: true, src: "chat" };
       spinRoulette(1);
     } catch(e) {}
   }
@@ -1123,10 +1206,10 @@
   }
   /* 本日の最大ギフト（単発・名前とギフト名のみ、コイン数は出さない） */
   function renderTopGift(){
-    const el = $("topGift"); if(!el) return;
+    const el = $("topGiftBody"); if(!el) return;
     el.textContent = topGiftRec
-      ? ("🌟 本日の最大ギフト：" + topGiftRec.name + "さん（" + topGiftRec.gift + "）")
-      : "🌟 本日の最大ギフト：まだありません";
+      ? (topGiftRec.name + "さん（" + topGiftRec.gift + "）")
+      : "まだありません";
   }
   /* ギフト1件分の記録：称号ランク判定＋ランクアップ祝福、マイルストーン判定、最大ギフト更新 */
   function v14TrackGift(name, totalCoins, giftLabel){
@@ -1361,8 +1444,8 @@
     $("ticker").textContent = "保留消化 +10回転";
     if(!slotBusy) reel("🎰 +10回転（保留）");
     if(hit){ enterKakuhen(); return; }
-    if(h.color === "rainbow") spinRoulette(1);
-    else if(h.color === "red" && Math.random() < 0.3) spinRoulette(1);
+    if(h.color === "rainbow"){ rouletteCreditNext = { name: "", auto: true, src: "hold" }; spinRoulette(1); }
+    else if(h.color === "red" && Math.random() < 0.3){ rouletteCreditNext = { name: "", auto: true, src: "hold" }; spinRoulette(1); }
   }, 15000);
 
   /* ---------- コンボ ---------- */
@@ -1460,6 +1543,7 @@
     if(mult > 1) bonusNotes.push("コンボ×" + c + " 2倍");
     if(feverMult > 1) bonusNotes.push("🔥ラッシュ1.5倍");
     flash((name ? name + "さん " : "") + tierName[tier] + "！", "+" + n.toLocaleString() + "回転" + (bonusNotes.length ? "（" + bonusNotes.join("・") + "）" : ""));
+    const smc = $("smCredit"); if(smc) smc.textContent = testMode ? "🧪 テスト中" : (name ? "🎁 " + name + "さんのギフトで回転中" : "🎁 ギフトで回転中");
     try { maybeFirstGiftFlash(name, isRealGift); } catch(e) {}
     if(tier >= 4 || c >= 8){
       setTimeout(enterKakuhen, 900);
@@ -1467,24 +1551,22 @@
         // 特大特典の受け渡しログ: ブリッジ経由の実ギフトで特典が付与された時だけ、サーバーへ記録を依頼する。
         // テストモード中と手動ギフト（リモコン）は「渡す義務」が発生しないので送らない。
         if(isRealGift && !testMode && name){
-          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"] }); } catch(e) {}
+          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: perksCfg.tokudaiPerks.slice() }); } catch(e) {}
         }
         // 特大特典（確定）: 特別・名前入り手書きメッセージ＋名前入りデジタル色紙＋名前入りスマホ壁紙。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
         setTimeout(()=>{
-          addEffect("特別・名前入り手書きメッセージ（特大特典）");
-          addEffect("名前入りデジタル色紙（特大特典）");
-          addEffect("名前入りスマホ壁紙（特大特典）");
+          perksCfg.tokudaiPerks.forEach(p => addEffect(p + "（特大特典）", testMode ? "テスト" : (name || "")));
           // addEffect側のコールアウトが終わった後に、特典まとめのコールアウトを出す
-          setTimeout(()=>flash("特大特典！", "特別・名前入り手書きメッセージ＋デジタル色紙＋スマホ壁紙 確定"), 900);
+          setTimeout(()=>flash("特大特典！", perksCfg.tokudaiPerks.join("＋") + " 確定"), 900);
         }, 2800);
       }
       return;
     }
     if(hit){ setTimeout(enterKakuhen, 900); return; }
     if(c === 5) setTimeout(enterChanceFromCombo, 900);
-    if(c === 4) setTimeout(()=>addEffect(effects[Math.floor(Math.random()*effects.length)]), 3000);
-    else if(tier >= 3) setTimeout(()=>spinRoulette(2), 2800);
-    else if(tier === 2 || c === 3) setTimeout(()=>spinRoulette(1), 2800);
+    if(c === 4) setTimeout(()=>addEffect(effects[Math.floor(Math.random()*effects.length)], testMode ? "テスト" : (name || "")), 3000);
+    else if(tier >= 3){ rouletteCreditNext = { name: name || "", auto: isRealGift || !!name, src: "gift" }; setTimeout(()=>spinRoulette(2), 2800); }
+    else if(tier === 2 || c === 3){ rouletteCreditNext = { name: name || "", auto: isRealGift || !!name, src: "gift" }; setTimeout(()=>spinRoulette(1), 2800); }
     broadcastState();
   }
   window.gift = gift; // ブリッジ（bridge-client.js）から呼べるように公開
@@ -1510,11 +1592,35 @@
   };
   let rouletteBusy = false;
   let rouletteBusySince = 0;
+  /* v17: ルーレットの帰属（誰のギフトで回っているか）。ギフト等が「次に回すルーレットの出どころ」を予約し、
+     チェーン開始時に確定する（昇格で段が上がっても同じ人のまま引き継ぐ）。
+     auto=true のチェーンだけ、配信後お渡し特典（ピアノ等）の当選をサーバーの特典ログへ記録する */
+  let rouletteCreditNext = { name: "", auto: false, src: "manual" };
+  let rouletteChain = { name: "", auto: false, src: "manual" };
+  let rouletteChainActive = false;
+  function rouletteCreditText(){
+    const c = rouletteChain;
+    if(testMode) return "🧪 テストで回転中";
+    if(c.src === "chat") return c.name ? "💬 " + c.name + "さんの無料ルーレット！" : "💬 無料ルーレットで回転中！";
+    if(c.src === "hold") return "🎁 保留のギフトで回転中！";
+    if(c.auto) return c.name ? "🎁 " + c.name + "さんのギフトで回転中！" : "🎁 ギフトで回転中！";
+    return "🎰 手動で回転中";
+  }
+  function rouletteWinnerText(){
+    if(testMode) return "🧪 テストの当たり";
+    return rouletteChain.name ? "🎉 " + rouletteChain.name + "さんが当てた！" : "🎉 当たり！";
+  }
   function spinRoulette(tier){
     // 保険：15秒以上ビジーのままなら固まったとみなして強制リセット（固まり防止）
-    if(rouletteBusy && Date.now() - rouletteBusySince > 15000) rouletteBusy = false;
+    if(rouletteBusy && Date.now() - rouletteBusySince > 15000){ rouletteBusy = false; rouletteChainActive = false; }
     if(rouletteBusy) return;
     rouletteBusy = true; rouletteBusySince = Date.now();
+    if(!rouletteChainActive){
+      rouletteChain = rouletteCreditNext;
+      rouletteCreditNext = { name: "", auto: false, src: "manual" };
+      rouletteChainActive = true;
+    }
+    const rcEl = $("rouletteCredit"); if(rcEl) rcEl.textContent = rouletteCreditText();
     tier = tier || 1;
     const cfg = roulettePools[tier];
     const box = $("roulette"), item = $("rouletteItem"), reach = $("reach");
@@ -1552,19 +1658,27 @@
           rouletteBusy = false;
           setTimeout(()=>spinRoulette(tier+1), 2200);
         } else if(Math.random() < 0.10){
-          item.textContent = "→ 超大当たり！ピアノ1曲リクエスト権";
+          item.textContent = "→ 超大当たり！" + perksCfg.pianoName;
           item.classList.add("result");
-          flash("超大当たり！！", "ピアノ1曲リクエスト権（大当たりの10%）");
-          showCutin("超大当たり！", "ピアノ1曲リクエスト権");
-          addEffect("ピアノ1曲リクエスト権（仕上げて動画にするよ♡）");
+          flash("超大当たり！！", perksCfg.pianoName + "（大当たりの10%）");
+          showCutin("超大当たり！", perksCfg.pianoName);
+          const rcP = $("rouletteCredit"); if(rcP) rcP.textContent = rouletteWinnerText();
+          // ピアノ特典は配信後のお渡し物：画面の獲得リストには残さず、リモコンの特典ログへだけ記録する
+          // （実ギフト等から自動で回ったルーレットだけ。テスト・手動は記録しない）
+          if(!testMode && rouletteChain.auto){
+            try { wsSend({ type: "tokudaiGrant", name: rouletteChain.name || "（名前不明）", giftName: "大ルーレット", coins: 0, perks: [perksCfg.pianoName + "（" + perksCfg.pianoNote + "）"] }); } catch(e) {}
+          }
           enterKakuhen();
           rouletteBusy = false;
+          rouletteChainActive = false;
           hideRouletteSoon(3200);
         } else {
-          item.textContent = "→ 大当たり！確変突入";
+          item.textContent = "→ 大当たり！スペシャルモード突入";
           item.classList.add("result");
+          const rcJ = $("rouletteCredit"); if(rcJ) rcJ.textContent = rouletteWinnerText();
           enterKakuhen();
           rouletteBusy = false;
+          rouletteChainActive = false;
           hideRouletteSoon(3200);
         }
       } else if(r < cfg.up + cfg.fx){
@@ -1572,17 +1686,20 @@
         const eff = pool[Math.floor(Math.random()*pool.length)];
         item.textContent = "→ " + eff;
         item.classList.add("result");
+        const rcF = $("rouletteCredit"); if(rcF) rcF.textContent = rouletteWinnerText();
         rouletteBusy = false;
+        rouletteChainActive = false;
         if(eff === "確変突入") enterKakuhen();
-        else addEffect(eff);
+        else addEffect(eff, testMode ? "テスト" : (rouletteChain.name || ""));
         hideRouletteSoon(3000);
       } else {
-        item.textContent = "→ ハズレ";
+        item.textContent = "→ はずれ";
         item.classList.add("result", "miss");
         const tt = $("rouletteTaunt");
-        if(tt){ tt.textContent = playCfg.rouletteMissText || "再チャレンジまってる！"; tt.classList.add("show"); }
+        if(tt){ tt.textContent = playCfg.rouletteMissText || "はずれでも大丈夫♡ 次のギフトでまた回るよ"; tt.classList.add("show"); }
         missSound();
         rouletteBusy = false;
+        rouletteChainActive = false;
         const revive = Math.random() < 0.08;
         if(revive){
           setTimeout(()=>{
@@ -1591,7 +1708,11 @@
             const tt2 = $("rouletteTaunt"); if(tt2){ tt2.classList.remove("show"); tt2.textContent = ""; }
             fanfare();
             flash("復活！裏大当たり", "名前入り手書きメッセージ");
-            addEffect("名前入り手書きメッセージ（裏大当たり）");
+            const rcR = $("rouletteCredit"); if(rcR) rcR.textContent = rouletteWinnerText();
+            // 裏大当たりの手書きメッセージも配信後のお渡し物：画面には残さず、リモコンの特典ログへだけ記録する
+            if(!testMode && rouletteChain.auto){
+              try { wsSend({ type: "tokudaiGrant", name: rouletteChain.name || "（名前不明）", giftName: "ルーレット（復活）", coins: 0, perks: ["名前入り手書きメッセージ（裏大当たり）"] }); } catch(e) {}
+            }
             hideRouletteSoon(2800);
           }, 1600);
         }
@@ -1645,7 +1766,7 @@
       spins: spins, remain: remain, target: goalCfg.target, label: goalCfg.label,
       mode: inKakuhen() ? "確変" : (inChance() ? "チャンスゾーン" : "通常"),
       combo: combo, testMode: testMode, muted: muted, playCfg: playCfg,
-      fx: activeFxList.map(f => ({ id: f.id, name: f.name, until: f.until, state: f.state })),
+      fx: activeFxList.map(f => ({ id: f.id, name: f.name, by: f.by || "", until: f.until, state: f.state })),
       hiddenItems: safeHidden(),
       simple: safeSimple(),
       theme: safeTheme(),
@@ -1701,7 +1822,7 @@
   }
   /* v8: 語尾・一人称・口調の「変化系」は同時に1つだけ。重なったら待機して順番に開始 */
   const personaRe = /語尾|一人称|口調|わたくし|にゃん|だぜ/;
-  function addEffect(name){
+  function addEffect(name, by){
     if(playCfg.serifLines && playCfg.serifLines.length){
       const pick = () => playCfg.serifLines[Math.floor(Math.random()*playCfg.serifLines.length)];
       if(name.indexOf("ランダムセリフ3連発") >= 0) name = "セリフ「" + pick() + "」「" + pick() + "」「" + pick() + "」";
@@ -1709,21 +1830,37 @@
     }
     const mins = parseDurationMin(name);
     const busy = personaRe.test(name) && activeFxList.some(f => f.state === "active" && personaRe.test(f.name));
-    activeFxList.push({ id: ++fxSeq, name: name, durMs: mins ? mins * 60000 : null,
+    activeFxList.push({ id: ++fxSeq, name: name, by: by || "", durMs: mins ? mins * 60000 : null,
       until: (!busy && mins) ? Date.now() + mins * 60000 : null, state: busy ? "wait" : "active" });
     renderFx();
     flash(busy ? "予約！" : "当たった！", busy ? name + "（前の効果が終わったら開始）" : name);
     strobe(false);
     broadcastState();
   }
+  /* v17: 画面に出すのは「いま発動中」と「つぎに発動するやつ」の最大2件だけ。
+     獲得した特典などの一覧は画面に出さない（配信後のお渡し物はリモコンの特典ログで管理する） */
+  function fxByHtml(f){
+    if(!f.by) return "";
+    return ' <span class="fxBy">' + (f.by === "テスト" ? "（テスト）" : "（" + f.by + "さん）") + '</span>';
+  }
   function renderFx(){
-    const box = $("fxList");
-    if(!activeFxList.length){ box.innerHTML = '<div class="fxEmpty">まだ何も当たってません</div>'; return; }
-    box.innerHTML = activeFxList.map(f =>
-      '<div class="fxItem"><span class="fxName">' + f.name + '</span>' +
-      '<span class="fxTime" data-fxid="' + f.id + '">' + (f.state === "wait" ? "待機中" : (f.until ? "" : "獲得")) + '</span>' +
-      '<button class="fxEnd" onclick="endEffect(' + f.id + ')">終了</button></div>'
-    ).join("");
+    const panel = $("activeFx"), box = $("fxList");
+    if(!panel || !box) return;
+    const active = activeFxList.find(f => f.state === "active" && f.until) || activeFxList.find(f => f.state === "active");
+    const next = activeFxList.find(f => f.state === "wait");
+    if(!active && !next){ box.innerHTML = ""; panel.classList.add("fxIdle"); return; }
+    panel.classList.remove("fxIdle");
+    let html = "";
+    if(active){
+      html += '<div class="fxItem"><span class="fxName">' + active.name + fxByHtml(active) + '</span>' +
+        '<span class="fxTime" data-fxid="' + active.id + '">' + (active.until ? "" : "発動中") + '</span>' +
+        '<button class="fxEnd" onclick="endEffect(' + active.id + ')">終了</button></div>';
+    }
+    if(next){
+      html += '<div class="fxItem fxNext"><span class="fxName">つぎ：' + next.name + fxByHtml(next) + '</span>' +
+        '<span class="fxTime">待機中</span></div>';
+    }
+    box.innerHTML = html;
   }
   window.endEffect = function(id){
     activeFxList = activeFxList.filter(f => f.id !== id);
@@ -1753,7 +1890,7 @@
   }, 500);
 
   /* ---------- v7: レイアウト編集（ドラッグ移動・拡縮・プリセット・保存） ---------- */
-  const movableIds = ["goal", "menu", "stats", "teaser", "roulette", "activeFx", "vipPanel", "tokudaiBoard", "mileBar", "likeBar", "topGift", "attendPanel", "zukanPanel", "missionBar"];
+  const movableIds = ["goal", "menu", "stats", "teaser", "roulette", "activeFx", "vipPanel", "tokudaiBoard", "mileBar", "likeBar", "topGift", "attendPanel", "missionBar"];
   let layoutMap = {};
   try { layoutMap = JSON.parse(localStorage.getItem("overlayLayoutV7") || "{}"); } catch(e) { layoutMap = {}; }
   /* 配置の保存時刻。サーバーに正本が無い時、どのクライアントの手持ちを正本にするかの判定に使う
@@ -1806,7 +1943,6 @@
       likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
       attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" },
       missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
     },
     standard: {
@@ -1822,7 +1958,6 @@
       likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
       attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      zukanPanel:{ top:"69%", left:"auto", right:"4%", bottom:"auto" },
       missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
     }
   };
@@ -2210,7 +2345,7 @@
     if(e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
     if(e.key >= "1" && e.key <= "4") gift(parseInt(e.key));
     else if(e.key === "d" || e.key === "D") addDeath();
-    else if(e.key === "r" || e.key === "R") spinRoulette(1);
+    else if(e.key === "r" || e.key === "R"){ rouletteCreditNext = { name: "", auto: false, src: "manual" }; spinRoulette(1); }
     else if(e.key === "t" || e.key === "T") toggleBg();
     else if(e.key === "l" || e.key === "L") toggleEdit();
     else if(editMode && selPanel && e.key.indexOf("Arrow") === 0){
@@ -2364,6 +2499,9 @@
       else if(msg.type === "theme" && msg.mode){
         setTheme(msg.mode);
       }
+      else if(msg.type === "perks" && msg.perks){
+        applyPerks(msg.perks);
+      }
       else if(msg.type === "frame" && msg.style){
         setFrame(msg.style);
       }
@@ -2406,7 +2544,7 @@
     const a = msg.action;
     if(a === "gift") gift(msg.tier || 1, (msg.name || "").trim(), msg.count || 1);
     else if(a === "death") addDeath();
-    else if(a === "roulette") spinRoulette(msg.tier || 1);
+    else if(a === "roulette"){ rouletteCreditNext = { name: "", auto: false, src: "manual" }; spinRoulette(msg.tier || 1); }
     else if(a === "endEffect") endEffect(msg.id);
     else if(a === "setMuted"){ if(muted !== !!msg.value) toggleMute(); }
     else if(a === "setTest"){ if(!!msg.value !== testMode) toggleTest(); }
@@ -2574,9 +2712,10 @@
   })();
 </script>
 <script>
-  /* ============ v15 pack: バースデーモード / 今日のMVP / ギフト図鑑 / ハイライト送信 ============
+  /* ============ v15 pack: バースデーモード / 今日のMVP / ハイライト送信 ============
      方針：既存の仕組みには手を入れず、ラッパーと追加要素だけで足す。
-     ハイライト送信と図鑑はテストモードでは絶対に動かない（本番の記録だけが対象）。 */
+     ハイライト送信はテストモードでは絶対に動かない（本番の記録だけが対象）。
+     （ギフト図鑑は v17 で廃止した） */
   (function(){
     try {
       const stage = $("stage");
@@ -2666,83 +2805,10 @@
       mvpBtn.addEventListener("click", () => window.announceMvp());
       if(controlsEl) controlsEl.appendChild(mvpBtn);
 
-      /* ---------- 3) ギフト図鑑 ---------- */
-      const ZUKAN_KEY = "overlayZukanV1";
-      const ZUKAN_PRESETS = [
-        { id:"bara",      name:"バラ",       emoji:"🌹", alias:["バラ","薔薇","rose"] },
-        { id:"donut",     name:"ドーナツ",   emoji:"🍩", alias:["ドーナツ","donut","doughnut"] },
-        { id:"crown",     name:"王冠",       emoji:"👑", alias:["王冠","クラウン","crown"] },
-        { id:"mirror",    name:"ミラー",     emoji:"🪩", alias:["ミラー","鏡","mirror","ミラーボール"] },
-        { id:"sunglasses",name:"サングラス", emoji:"🕶", alias:["サングラス","sunglasses"] },
-        { id:"perfume",   name:"香水",       emoji:"🧴", alias:["香水","perfume"] },
-        { id:"hat",       name:"帽子",       emoji:"🎩", alias:["帽子","hat","キャップ","cap"] },
-        { id:"glasses",   name:"メガネ",     emoji:"👓", alias:["メガネ","眼鏡","glasses"] },
-        { id:"lion",      name:"ライオン",   emoji:"🦁", alias:["ライオン","lion"] },
-        { id:"falcon",    name:"隼",         emoji:"🦅", alias:["隼","ハヤブサ","falcon"] },
-        { id:"whale",     name:"クジラ",     emoji:"🐳", alias:["クジラ","鯨","whale"] },
-        { id:"rocket",    name:"ロケット",   emoji:"🚀", alias:["ロケット","rocket"] }
-      ];
-      let zukan = { date: todayStr(), filled: [], others: {}, completed: false };
-      try {
-        const s = JSON.parse(localStorage.getItem(ZUKAN_KEY) || "null");
-        if(s && s.date === zukan.date){
-          if(Array.isArray(s.filled)) zukan.filled = s.filled.filter(id => ZUKAN_PRESETS.some(p => p.id === id));
-          if(s.others && typeof s.others === "object") zukan.others = s.others;
-          zukan.completed = !!s.completed;
-        }
-      } catch(e) {}
-      function saveZukan(){ try { localStorage.setItem(ZUKAN_KEY, JSON.stringify(zukan)); } catch(e) {} }
-      function zukanRollDay(){
-        const t = todayStr();
-        if(zukan.date !== t){ zukan = { date: t, filled: [], others: {}, completed: false }; saveZukan(); }
-      }
-      function renderZukan(){
-        const title = $("zukanTitle"), grid = $("zukanGrid"), oth = $("zukanOthers");
-        if(!title || !grid || !oth) return;
-        title.textContent = "📖 図鑑 " + zukan.filled.length + "/" + ZUKAN_PRESETS.length;
-        grid.innerHTML = ZUKAN_PRESETS.map(p => {
-          const got = zukan.filled.indexOf(p.id) >= 0;
-          return got
-            ? '<div class="zkSlot got"><div class="zkEmoji">' + p.emoji + '</div><div class="zkName">' + p.name + '</div></div>'
-            : '<div class="zkSlot miss"><div class="zkEmoji">❔</div><div class="zkName">？？？</div></div>';
-        }).join("");
-        const names = Object.keys(zukan.others || {});
-        oth.textContent = names.length
-          ? "その他：" + names.map(n => n + (zukan.others[n] > 1 ? "×" + zukan.others[n] : "")).join("、")
-          : "その他：なし";
-      }
-      function zukanTrack(giftName){
-        if(testMode) return;                       // テスト中は図鑑を埋めない
-        const g = (giftName || "").trim();
-        if(!g) return;
-        zukanRollDay();
-        const low = g.toLowerCase();
-        const preset = ZUKAN_PRESETS.find(p => p.alias.some(a => low.indexOf(a.toLowerCase()) >= 0));
-        if(preset){
-          if(zukan.filled.indexOf(preset.id) < 0){
-            zukan.filled.push(preset.id);
-            saveZukan(); renderZukan();
-            if(zukan.filled.length >= ZUKAN_PRESETS.length && !zukan.completed){
-              zukan.completed = true; saveZukan();
-              if(window.bigCall) bigCall("📖 ギフト図鑑コンプリート‼️", true);
-              try { if(window.spawnConfetti) spawnConfetti(90); } catch(e) {}
-              fanfare();
-            }
-          }
-        } else {
-          zukan.others[g] = (zukan.others[g] || 0) + 1;
-          saveZukan(); renderZukan();
-        }
-      }
-      renderZukan();
-
-      /* ---------- ギフトのラッパー：図鑑＋バースデー追加演出 ---------- */
+      /* ---------- ギフトのラッパー：バースデー追加演出 ---------- */
       const _gift15 = gift;
       gift = function(tier, name, count, coins){
-        // ブリッジが直前にセットした実ギフト名を、内側の gift() が消費する前に読む
-        const label = ((window.__pendingGiftName || "") + "").trim() || tierName[tier];
         const r = _gift15(tier, name, count, coins);
-        try { zukanTrack(label); } catch(e) {}
         if(birthdayMode){
           try {
             if(tier >= 2 && window.spawnConfetti) spawnConfetti(20);
