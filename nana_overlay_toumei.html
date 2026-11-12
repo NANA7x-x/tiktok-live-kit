@@ -39,7 +39,7 @@
     100% { border-color:#ff5f9e; box-shadow:0 0 20px rgba(255,95,158,.8), 0 0 12px rgba(255,95,158,.55); }
   }
   @keyframes bakiFlow { to { background-position:300% 0; } }
-  body.theme-baki .panel { border-width:3px; animation:bakiBorder 2.4s linear infinite; }
+  body.theme-baki #stage .panel { border-width:3px; animation:bakiBorder 2.4s linear infinite; }
   body.theme-baki #stage { border-width:6px; animation:rainbow 1.6s linear infinite; }
   body.theme-baki #cutin .band { background:linear-gradient(90deg,#ff5f9e,#ffb347,#ffd94d,#a5ffb0,#7be0ff,#c39bff,#ff5f9e);
     background-size:300% 100%; animation:bakiFlow 1.1s linear infinite; box-shadow:0 0 34px rgba(255,120,200,.75); }
@@ -47,7 +47,8 @@
   body.theme-baki #cutin .sub { text-shadow:1px 1px 0 rgba(60,0,40,.85); }
   body.theme-baki #flash.show { animation:pop 2.6s ease forwards, bakiBorder 2.4s linear infinite; }
   body.theme-powa #stage { background:linear-gradient(180deg, rgba(80,55,100,.85), rgba(105,70,125,.8)); border-color:#ffc7e3; }
-  body.theme-powa .panel { background:rgba(255,242,248,.94); color:#5a3d55; border:2px solid #ffb9dd; border-radius:16px; box-shadow:0 4px 14px rgba(255,150,200,.35); }
+  body.theme-powa .panel { background:rgba(255,242,248,.94); color:#5a3d55; }
+  body.theme-powa #stage .panel { border:2px solid #ffb9dd; border-radius:16px; box-shadow:0 4px 14px rgba(255,150,200,.35); }
   body.theme-powa.kakuhen #stage { animation:rainbow 3.6s linear infinite, hueSpin 7s linear infinite; }
   @keyframes shakeAnim { 0%,100%{ transform:translate(0,0); } 20%{ transform:translate(-6px,3px); } 40%{ transform:translate(6px,-3px); } 60%{ transform:translate(-4px,-2px); } 80%{ transform:translate(4px,2px); } }
   body.shake #stage { animation:shakeAnim .4s linear; }
@@ -112,7 +113,7 @@
   /* 透明版：パネルの後ろが実画面でも文字が沈まないよう、パネル内テキストに影を足す */
   body.transparent .panel { text-shadow:0 1px 3px rgba(0,0,0,.8); }
   /* 透明版＋ぽわぽわ：パネルは暗い半透明になるので、文字は白系に戻して読めるようにする */
-  body.theme-powa.transparent .panel { color:#fff; background:rgba(40,16,44,.62); }
+  body.theme-powa.transparent .panel { color:#fff; background:rgba(105,40,80,.68); }
 
   /* 目標バー */
   #goal { position:absolute; top:2%; left:4%; right:4%; text-align:center; }
@@ -463,7 +464,7 @@
 
   /* v6: 常時うるさい画面（流れる背景・漂う粒・画面シェイク・スロット） */
   #stage { background-size:100% 220%; animation:bgPan 9s ease-in-out infinite alternate; }
-  body.transparent #stage { animation:none; }
+  body.transparent:not(.theme-baki):not(.theme-powa) #stage { animation:none; }
   @keyframes bgPan { from{ background-position:50% 0%; } to{ background-position:50% 100%; } }
   #particles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .particle { position:absolute; bottom:-8%; opacity:.45; animation:drift linear infinite; }
