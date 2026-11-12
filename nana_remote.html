@@ -386,6 +386,25 @@
             <label>選択の受付（秒） <input id="cThemePickWindow" type="number" style="width:70px"></label>
             <label>テーマ適用（分） <input id="cThemePickMinutes" type="number" style="width:70px"></label>
           </div>
+          <div style="margin-top:10px">
+            <label><input id="cSakibareEnabled" type="checkbox"> 🐦 先バレ（大きい当たりが控えている時だけ、回転が始まる前に光と音でバレます）</label>
+          </div>
+          <div style="margin-top:6px; display:flex; gap:10px; flex-wrap:wrap">
+            <label>先バレ率（%） <input id="cSakibareRate" type="number" style="width:70px"></label>
+            <label><input id="cSakibareGase" type="checkbox"> ガセ先バレも出す</label>
+            <label>ガセ率（%） <input id="cSakibareGaseRate" type="number" style="width:70px"></label>
+          </div>
+          <div style="margin-top:6px; display:flex; gap:10px; flex-wrap:wrap">
+            <label>⚡ ラッキートリガー突入率（%） <input id="cLtRate" type="number" style="width:70px"></label>
+            <label>LT中の確変（分） <input id="cLtMinutes" type="number" style="width:70px"></label>
+            <label>最終回転の引き戻し率（%） <input id="cHikimodoshiRate" type="number" style="width:70px"></label>
+            <label>継続率の表示 <input id="cKeizokuLabel" type="text" style="width:70px"></label>
+          </div>
+          <div style="margin-top:6px; display:flex; gap:10px; flex-wrap:wrap">
+            <label><input id="cStProbEnabled" type="checkbox"> 確変中の確率表示をST風に変化させる（表示だけ）</label>
+            <label><input id="cDemoEnabled" type="checkbox"> 待機デモ画面</label>
+            <label>デモまで（秒） <input id="cDemoIdleSec" type="number" style="width:80px"></label>
+          </div>
           <div style="margin-top:8px">
             <label>ルーレットでハズレた時の煽り文</label>
             <input id="cRouletteMiss" type="text" style="width:100%">
@@ -447,7 +466,8 @@
     { id: "likeBar", label: "いいねバー" },
     { id: "topGift", label: "本日の最大ギフト" },
     { id: "attendPanel", label: "出席簿" },
-    { id: "missionBar", label: "協力ミッション" }
+    { id: "missionBar", label: "協力ミッション" },
+    { id: "dataCounter", label: "データカウンタ" }
   ];
 
   /* 配置：パネル選択チップ */
@@ -778,6 +798,17 @@
     set("cThemePickMax", cfg.themePickMax != null ? cfg.themePickMax : 999);
     set("cThemePickWindow", cfg.themePickWindowSec != null ? cfg.themePickWindowSec : 60);
     set("cThemePickMinutes", cfg.themePickMinutes != null ? cfg.themePickMinutes : 5);
+    document.getElementById("cSakibareEnabled").checked = cfg.sakibareEnabled !== false;
+    set("cSakibareRate", cfg.sakibareRate != null ? cfg.sakibareRate : 50);
+    document.getElementById("cSakibareGase").checked = !!cfg.sakibareGase;
+    set("cSakibareGaseRate", cfg.sakibareGaseRate != null ? cfg.sakibareGaseRate : 5);
+    set("cLtRate", cfg.ltRate != null ? cfg.ltRate : 25);
+    set("cLtMinutes", cfg.ltMinutes != null ? cfg.ltMinutes : 15);
+    set("cHikimodoshiRate", cfg.hikimodoshiRate != null ? cfg.hikimodoshiRate : 20);
+    set("cKeizokuLabel", cfg.keizokuLabel || "75%");
+    document.getElementById("cStProbEnabled").checked = cfg.stProbEnabled !== false;
+    document.getElementById("cDemoEnabled").checked = cfg.demoEnabled !== false;
+    set("cDemoIdleSec", cfg.demoIdleSec != null ? cfg.demoIdleSec : 180);
     set("cTeaser", (cfg.teaserLines || []).join("\n"));
     set("cSerif", (cfg.serifLines || []).join("\n"));
     cfgFormLoaded = true;
@@ -799,6 +830,13 @@
       themePickEnabled: document.getElementById("cThemePickEnabled").checked,
       themePickMin: num("cThemePickMin"), themePickMax: num("cThemePickMax"),
       themePickWindowSec: num("cThemePickWindow"), themePickMinutes: num("cThemePickMinutes"),
+      sakibareEnabled: document.getElementById("cSakibareEnabled").checked,
+      sakibareRate: num("cSakibareRate"), sakibareGase: document.getElementById("cSakibareGase").checked,
+      sakibareGaseRate: num("cSakibareGaseRate"),
+      ltRate: num("cLtRate"), ltMinutes: num("cLtMinutes"),
+      hikimodoshiRate: num("cHikimodoshiRate"), keizokuLabel: document.getElementById("cKeizokuLabel").value,
+      stProbEnabled: document.getElementById("cStProbEnabled").checked,
+      demoEnabled: document.getElementById("cDemoEnabled").checked, demoIdleSec: num("cDemoIdleSec"),
       teaserLines: lines("cTeaser"), serifLines: lines("cSerif")
     }});
     cfgFormLoaded = false;
@@ -847,7 +885,8 @@
     ["fanfare", "🎉 大当たりファンファーレ（確変突入・大当たりの時）"],
     ["miss", "💧 ルーレットのはずれ音"],
     ["tokudai", "🌟 特大ギフト音"],
-    ["mission", "🎯 協力ミッション達成音（今まで専用の音はありません）"]
+    ["mission", "🎯 協力ミッション達成音（今まで専用の音はありません）"],
+    ["sakibare", "🐦 先バレ音（鳴き・大きい当たりが控えている時だけ鳴ります）"]
   ];
   let soundsRemote = null, soundFilesRemote = [], soundsFormLoaded = false;
   function buildSoundRows(){

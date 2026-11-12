@@ -685,6 +685,9 @@
     comboTextDanger: "切れる！連打しろ‼️ あと{sec}秒",
     kakuhenBgm: true,
     themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
+    sakibareEnabled: true, sakibareRate: 50, sakibareGase: false, sakibareGaseRate: 5,
+    ltRate: 25, ltMinutes: 15, hikimodoshiRate: 20, keizokuLabel: "75%",
+    stProbEnabled: true, demoEnabled: true, demoIdleSec: 180,
     teaserLines: [
       "コメントで「ルーレット」と打てば <b>無料で1回</b> 回せる‼️",
       "大当たりで <b>10分間スペシャルモード</b>！ あたりは全部ななの変化（語尾・声・猫耳）。30,000回転で必ず大当たり",
@@ -810,6 +813,17 @@
       playCfg.themePickMax = Math.max(playCfg.themePickMin, num(nc.themePickMax, playCfg.themePickMax || 999));
       playCfg.themePickWindowSec = Math.min(300, Math.max(10, num(nc.themePickWindowSec, playCfg.themePickWindowSec || 60)));
       playCfg.themePickMinutes = Math.min(60, Math.max(1, num(nc.themePickMinutes, playCfg.themePickMinutes || 5)));
+      if(nc.sakibareEnabled != null) playCfg.sakibareEnabled = !!nc.sakibareEnabled;
+      playCfg.sakibareRate = Math.min(100, Math.max(0, num(nc.sakibareRate, playCfg.sakibareRate != null ? playCfg.sakibareRate : 50)));
+      if(nc.sakibareGase != null) playCfg.sakibareGase = !!nc.sakibareGase;
+      playCfg.sakibareGaseRate = Math.min(100, Math.max(0, num(nc.sakibareGaseRate, playCfg.sakibareGaseRate != null ? playCfg.sakibareGaseRate : 5)));
+      playCfg.ltRate = Math.min(100, Math.max(0, num(nc.ltRate, playCfg.ltRate != null ? playCfg.ltRate : 25)));
+      playCfg.ltMinutes = Math.min(60, Math.max(10, num(nc.ltMinutes, playCfg.ltMinutes != null ? playCfg.ltMinutes : 15)));
+      playCfg.hikimodoshiRate = Math.min(100, Math.max(0, num(nc.hikimodoshiRate, playCfg.hikimodoshiRate != null ? playCfg.hikimodoshiRate : 20)));
+      if(typeof nc.keizokuLabel === "string" && nc.keizokuLabel.trim()) playCfg.keizokuLabel = nc.keizokuLabel.trim().slice(0, 12);
+      if(nc.stProbEnabled != null) playCfg.stProbEnabled = !!nc.stProbEnabled;
+      if(nc.demoEnabled != null) playCfg.demoEnabled = !!nc.demoEnabled;
+      playCfg.demoIdleSec = Math.min(3600, Math.max(30, num(nc.demoIdleSec, playCfg.demoIdleSec != null ? playCfg.demoIdleSec : 180)));
     }
     // ルーレットのプールは特典カスタム（サーバー正本）が優先：受け取り済みの時だけ config 側の値で上書きしない
     if(perksReceived){ playCfg.fx1 = perksCfg.fx1.slice(); playCfg.fx2 = perksCfg.fx2.slice(); playCfg.fx3 = perksCfg.fx3.slice(); }
@@ -824,6 +838,9 @@
   const inKakuhen = () => Date.now() < kakuhenUntil;
   const inChance = () => !inKakuhen() && Date.now() < chanceUntil;
   const prob = () => inKakuhen() ? 999 : inChance() ? 2999 : 9999;
+  /* v20: 表示専用の確率（ST風に段階表示するため、末尾のパックが差し替えることがある）。
+     実際の抽選は必ず prob() を使う。ここは見た目だけ。 */
+  function displayProb(){ return prob(); }
 
   /* ---------- 効果音（WebAudio合成） ---------- */
   let actx = null;
@@ -936,7 +953,7 @@
     else if(inChance())  $("modeNow").textContent = "チャンスゾーン 残り" + fmtLeft(chanceUntil);
     else                 $("modeNow").textContent = "通常";
     $("renchan").textContent = inKakuhen() && renchan > 0 ? renchan + "連チャン中" : "";
-    $("probLabel").textContent = "1/" + prob();
+    $("probLabel").textContent = "1/" + displayProb();
     $("tenjo").textContent = "天井まで あと" + Math.max(0, TENJO - spinsSinceHit).toLocaleString() + "回転";
   }
   setInterval(renderMode, 500);
@@ -1678,6 +1695,10 @@
   };
   let rouletteBusy = false;
   let rouletteBusySince = 0;
+  /* v20: 先バレ用フック。末尾のパックが (tier, cfg) => 乱数 を差し込むと、
+     ルーレット開始時に先に決めた乱数を finishBody がそのまま使う（判定の分布は変わらない）。
+     null の間は従来通り finishBody 内で Math.random() する。 */
+  let roulettePreRoll = null;
   /* v17: ルーレットの帰属（誰のギフトで回っているか）。ギフト等が「次に回すルーレットの出どころ」を予約し、
      チェーン開始時に確定する（昇格で段が上がっても同じ人のまま引き継ぐ）。
      auto=true のチェーンだけ、配信後お渡し特典（ピアノ等）の当選をサーバーの特典ログへ記録する */
@@ -1735,7 +1756,7 @@
       try { finishBody(); } catch(e) { rouletteBusy = false; }
     }
     function finishBody(){
-      const r = Math.random();
+      const r = roulettePreRoll ? roulettePreRoll(tier, cfg) : Math.random();
       if(r < cfg.up){
         if(tier < 3){
           item.textContent = "→ 昇格！ " + roulettePools[tier+1].name + "へ";

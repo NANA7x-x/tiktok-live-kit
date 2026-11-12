@@ -205,7 +205,7 @@ function setCanonicalPerks(p) { savedPerks = sanitizePerks(p); try { fs.writeFil
 // ============================================================
 const SOUNDS_DIR = path.join(__dirname, 'sounds');
 try { fs.mkdirSync(SOUNDS_DIR, { recursive: true }); } catch (e) { /* 作れなくても動作は続ける */ }
-const SOUND_EVENTS = ['bgm', 'gift', 'roulette', 'fanfare', 'miss', 'tokudai', 'mission'];
+const SOUND_EVENTS = ['bgm', 'gift', 'roulette', 'fanfare', 'miss', 'tokudai', 'mission', 'sakibare'];
 const SOUND_EXTS = ['.mp3', '.wav', '.ogg', '.m4a'];
 function listSoundFiles() {
   try {
