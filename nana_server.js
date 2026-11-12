@@ -135,10 +135,12 @@ const DEFAULT_PERKS = {
   fx2: ["お嬢様口調＋一人称「わたくし」5分間", "猫耳フィルター 次のマッチまで", "イケボで本気の感謝", "ロリボで本気の感謝", "語尾「にゃん」5分間", "語尾「〜なのじゃ」5分", "語尾「〜ってば」5分", "敬語縛り 5分"],
   fx3: ["確変突入", "次回配信のタイトル決定権", "次回30分 語尾固定（視聴者選択）", "TikTokとXのアイコン罰仕様24時間"],
   tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
-  tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+  tokudaiNote: "✉️ 特大の特典は1回につき1つ、ランダムで決まるよ。当たった特典は配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
   pianoName: "ピアノ1曲リクエスト権",
   pianoNote: "仕上げて動画にするよ♡"
 };
+// 特典お届け説明文の旧デフォルト（保存データ移行の判定にだけ使う）
+const OLD_TOKUDAI_NOTE = "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ";
 function sanitizePerks(p) {
   const out = JSON.parse(JSON.stringify(DEFAULT_PERKS));
   if (!p || typeof p !== 'object' || Array.isArray(p)) return out;
@@ -148,7 +150,11 @@ function sanitizePerks(p) {
   if (a2 && a2.length) out.fx2 = a2;
   if (a3 && a3.length) out.fx3 = a3;
   if (at && at.length) out.tokudaiPerks = at;
-  if (typeof p.tokudaiNote === 'string' && p.tokudaiNote.trim()) out.tokudaiNote = p.tokudaiNote.trim().slice(0, 300);
+  if (typeof p.tokudaiNote === 'string' && p.tokudaiNote.trim()) {
+    const note = p.tokudaiNote.trim().slice(0, 300);
+    // 旧デフォルト文のまま保存されていた場合だけ、ランダム1つ仕様の新デフォルト文へ移行する（自分で書き換えた文には触れない）
+    out.tokudaiNote = (note === OLD_TOKUDAI_NOTE) ? DEFAULT_PERKS.tokudaiNote : note;
+  }
   if (typeof p.pianoName === 'string' && p.pianoName.trim()) out.pianoName = p.pianoName.trim().slice(0, 60);
   if (typeof p.pianoNote === 'string' && p.pianoNote.trim()) out.pianoNote = p.pianoNote.trim().slice(0, 60);
   return out;
