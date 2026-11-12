@@ -1926,6 +1926,14 @@
   let layoutSendReset = false;
   function stampLayoutTime(){ layoutSavedAt = Date.now(); try { localStorage.setItem("overlayLayoutV7Time", String(layoutSavedAt)); } catch(e) {} }
   let editMode = false, selPanel = null, dragCtx = null;
+  /* パネルの拡大率を読む（新形式 sx/sy を優先。旧形式 sc しか無い保存データは sx=sy=sc として扱うので、そのまま読み込める） */
+  function panelScale(s){
+    if(!s) return { x: 1, y: 1 };
+    const fb = (typeof s.sc === "number" && isFinite(s.sc) && s.sc > 0) ? s.sc : 1;
+    const x = (typeof s.sx === "number" && isFinite(s.sx) && s.sx > 0) ? s.sx : fb;
+    const y = (typeof s.sy === "number" && isFinite(s.sy) && s.sy > 0) ? s.sy : fb;
+    return { x: x, y: y };
+  }
   function applyLayout(){
     movableIds.forEach(id => {
       const el = $(id), s = layoutMap[id];
@@ -1933,7 +1941,7 @@
       if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
       if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc){ el.style.transform = "scale(" + s.sc + ")"; el.style.transformOrigin = "top left"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   function saveLayout(){
@@ -1947,12 +1955,12 @@
     const sr = $("stage").getBoundingClientRect();
     movableIds.forEach(id => {
       const el = $(id); if(!el) return;
-      const sc = (layoutMap[id] && layoutMap[id].sc) || 1;
+      const ps = panelScale(layoutMap[id]);
       el.style.transform = "";
       const r = el.getBoundingClientRect();
       if(r.width === 0 && r.height === 0) return; // 非表示（ルーレット等）は対象外
-      layoutMap[id] = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, w: Math.round(r.width / sr.width * 1000) / 10, sc: sc };
-      if(sc !== 1){ el.style.transform = "scale(" + sc + ")"; el.style.transformOrigin = "top left"; }
+      layoutMap[id] = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, w: Math.round(r.width / sr.width * 1000) / 10, sx: ps.x, sy: ps.y };
+      if(ps.x !== 1 || ps.y !== 1){ el.style.transform = "scale(" + ps.x + ", " + ps.y + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   const presetStyles = {
@@ -2040,10 +2048,14 @@
   };
   window.scaleSel = function(d){
     if(!selPanel) return;
-    const cur = (layoutMap[selPanel.id] && layoutMap[selPanel.id].sc) || 1;
-    const sc = Math.round(Math.max(0.5, Math.min(2, cur + d)) * 100) / 100;
-    layoutMap[selPanel.id] = Object.assign({}, layoutMap[selPanel.id], { sc: sc });
-    selPanel.style.transform = "scale(" + sc + ")";
+    // ボタンでの拡縮は従来通り一律：横の倍率を基準に増減し、縦にも同じ比率を掛ける（縦横比は保つ）
+    const ps = panelScale(layoutMap[selPanel.id]);
+    const next = Math.max(0.5, Math.min(2, ps.x + d));
+    const f = next / ps.x;
+    const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
+    const sx = clampR(ps.x * f), sy = clampR(ps.y * f);
+    layoutMap[selPanel.id] = Object.assign({}, layoutMap[selPanel.id], { sx: sx, sy: sy });
+    selPanel.style.transform = "scale(" + sx + ", " + sy + ")";
     selPanel.style.transformOrigin = "top left";
     saveLayout();
   };
@@ -2055,7 +2067,7 @@
       const sr = $("stage").getBoundingClientRect();
       const r = el.getBoundingClientRect();
       // 掴んだ瞬間に現在の幅を固定する（左右指定で決まっていた幅が潰れるのを防ぐ）
-      const scNow = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+      const scNow = panelScale(layoutMap[el.id]).x;
       const wPct = Math.round(r.width / scNow / sr.width * 1000) / 10;
       el.style.width = wPct + "%";
       layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { w: wPct });
@@ -2085,7 +2097,7 @@
       if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
       if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc){ el.style.transform = "scale(" + s.sc + ")"; el.style.transformOrigin = "top left"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
     }
     try { applyVisibility(); } catch(e) {}
   };
@@ -2230,7 +2242,7 @@
     if(layoutMap[el.id] && layoutMap[el.id].l != null) return;
     const sr = $("stage").getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    const sc = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+    const sc = panelScale(layoutMap[el.id]).x;
     layoutMap[el.id] = Object.assign({}, layoutMap[el.id], {
       l: Math.round((r.left - sr.left) / sr.width * 1000) / 10,
       t: Math.round((r.top - sr.top) / sr.height * 1000) / 10,
@@ -2256,12 +2268,15 @@
       e.preventDefault(); e.stopPropagation();
       selectPanel(el);
       const startX = e.clientX, startY = e.clientY;
-      const startSc = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+      const startS = panelScale(layoutMap[el.id]);
       function mv(ev){
-        const f = 1 + ((ev.clientX - startX) + (ev.clientY - startY)) / (320 * (fitScale || 1));
-        const sc = Math.round(Math.max(0.5, Math.min(2, startSc * f)) * 100) / 100;
-        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sc: sc });
-        el.style.transform = "scale(" + sc + ")";
+        // 横ドラッグで横倍率、縦ドラッグで縦倍率を、それぞれ独立に変える（縦横比も変えられる）
+        const fx = 1 + (ev.clientX - startX) / (320 * (fitScale || 1));
+        const fy = 1 + (ev.clientY - startY) / (320 * (fitScale || 1));
+        const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
+        const sx = clampR(startS.x * fx), sy = clampR(startS.y * fy);
+        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sx: sx, sy: sy });
+        el.style.transform = "scale(" + sx + ", " + sy + ")";
         el.style.transformOrigin = "top left";
       }
       function up(){ window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); saveLayout(); }
