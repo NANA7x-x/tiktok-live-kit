@@ -62,11 +62,54 @@
   body.theme-powa #cutin .sub { color:#8a5a7a; text-shadow:none; }
   body.theme-powa #cutin.show .band { animation:cutinPowa .45s cubic-bezier(.34,1.56,.64,1); }
   @keyframes cutinPowa { from { transform:scale(.6); opacity:0; } to { transform:scale(1); opacity:1; } }
+  /* v17: ぽわぽわはパネルが明るいので、パネル内の差し色（黄・水色など）を濃いめにして読みやすくする
+     （透明版はパネルが暗くなるので対象外。通常版のぽわぽわだけに効く） */
+  body.theme-powa:not(.transparent) #goal .amount { color:#b97a00; text-shadow:0 1px 0 #fff; }
+  body.theme-powa:not(.transparent) #ticker { color:#2e8b47; }
+  body.theme-powa:not(.transparent) #king { color:#a87400; }
+  body.theme-powa:not(.transparent) #menu h3 { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) .t1 { color:#2e8b47; }
+  body.theme-powa:not(.transparent) .t2 { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) .t3 { color:#c2439b; }
+  body.theme-powa:not(.transparent) .t4 { color:#a87400; }
+  body.theme-powa:not(.transparent) #spinNum { color:#b97a00; }
+  body.theme-powa:not(.transparent) #modeNow { color:#2e8b47; }
+  body.theme-powa:not(.transparent).kakuhen #modeNow { color:#d6336c; }
+  body.theme-powa:not(.transparent).chance #modeNow { color:#1b7fa8; }
+  body.theme-powa:not(.transparent) #renchan { color:#d6336c; }
+  body.theme-powa:not(.transparent) #comboNum { color:#c2570b; }
+  body.theme-powa:not(.transparent) #tenjo, body.theme-powa:not(.transparent) #deathNum { color:#d63a3a; }
+  body.theme-powa:not(.transparent) .fxTime, body.theme-powa:not(.transparent) .tokudaiCoins, body.theme-powa:not(.transparent) .vipRank, body.theme-powa:not(.transparent) .tokudaiPager { color:#a87400; }
+  body.theme-powa:not(.transparent) #activeFx h3 { color:#c2439b; }
+  body.theme-powa:not(.transparent) #vipPanel h3, body.theme-powa:not(.transparent) #topGift h3, body.theme-powa:not(.transparent) #tokudaiBoard h3 { color:#a87400; }
+  body.theme-powa:not(.transparent) #attendPanel h3, body.theme-powa:not(.transparent) .attBadge, body.theme-powa:not(.transparent) .vipJouren { color:#2e8b47; }
+  body.theme-powa:not(.transparent) .attMeta, body.theme-powa:not(.transparent) #vipNext, body.theme-powa:not(.transparent) #mileText { color:#1b6f96; }
+  body.theme-powa:not(.transparent) #mileNextReward { color:#a87400; }
+  body.theme-powa:not(.transparent) #likeText { color:#d6336c; }
+  body.theme-powa:not(.transparent) #likeNext { color:#c2577a; }
+  body.theme-powa:not(.transparent) .lamp-off { color:rgba(90,61,85,.3); }
   #feverBadge { position:absolute; top:9.5%; left:50%; transform:translateX(-50%); z-index:94; display:none;
     background:linear-gradient(90deg,#ff4040,#ff8c1a); color:#fff; font-weight:900; padding:5px 16px;
     border-radius:999px; font-size:clamp(13px,2.6cqw,25px); box-shadow:0 0 18px rgba(255,100,0,.85); white-space:nowrap; }
   body.fever #feverBadge { display:block; animation:blink2 .4s steps(2) infinite; }
   .panel { background:rgba(0,0,0,.55); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; }
+
+  /* ---------- v17: 改行の整え＆文字の読みやすさ（全テーマ共通の下地） ---------- */
+  /* 日本語の禁則処理を厳しめにし、長い語は境目で折る（単語の途中で割らない） */
+  #stage { line-break:strict; overflow-wrap:break-word; }
+  #menu h3, #activeFx h3, #vipPanel h3, #tokudaiBoard h3, #topGift h3, #attendPanel h3, #goal .label, #goal .sub { text-wrap:balance; }
+  /* パネルの外に浮く文字は、背景が明るくても読めるよう影を強める */
+  #rouletteItem { text-shadow:0 2px 8px rgba(0,0,0,.75), 0 0 18px rgba(0,0,0,.45); }
+  #roulette .title { text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  #reach { text-shadow:0 2px 10px rgba(0,0,0,.8), 0 0 22px rgba(255,160,0,.55); }
+  #smCredit { margin:1.6cqw auto 0; max-width:84cqw; font-weight:900; font-size:clamp(14px,3.2cqw,30px); color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:anywhere; }
+  #rouletteCredit { margin-top:8px; font-weight:900; font-size:clamp(14px,3cqw,28px); color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:anywhere; }
+  /* 透明版：パネルの後ろが実画面でも文字が沈まないよう、パネル内テキストに影を足す */
+  body.transparent .panel { text-shadow:0 1px 3px rgba(0,0,0,.8); }
+  /* 透明版＋ぽわぽわ：パネルは暗い半透明になるので、文字は白系に戻して読めるようにする */
+  body.theme-powa.transparent .panel { color:#fff; background:rgba(40,16,44,.62); }
 
   /* 目標バー */
   #goal { position:absolute; top:2%; left:4%; right:4%; text-align:center; }
@@ -76,7 +119,7 @@
   #barInner { height:100%; width:5%; background:linear-gradient(90deg,#ff5f9e,#ffb347); border-radius:99px; transition:width .8s ease; }
   #goal .sub { font-size:clamp(11px,2cqw,20px); opacity:.85; margin-top:4px; }
   #ticker { font-size:clamp(11px,2cqw,20px); color:#a5ffb0; margin-top:4px; min-height:1.3em; white-space:nowrap; overflow:hidden; }
-  #king { font-size:clamp(11px,2cqw,20px); color:#ffd94d; }
+  #king { font-size:clamp(11px,2cqw,20px); color:#ffd94d; overflow-wrap:anywhere; }
 
   /* ギフトメニュー */
   #menu { position:absolute; top:27%; left:4%; width:47%; font-size:clamp(10px,1.9cqw,19px); line-height:1.5; }
@@ -206,38 +249,46 @@
   /* v17: 発動中パネルは「いま発動中」と「つぎ」の最大2件だけ表示。何も無い時はパネルごと隠す（編集中は見える） */
   #activeFx.fxIdle { display:none; }
   body.editing #activeFx.fxIdle { display:block; opacity:.55; }
+  .fxItem.fxNext { opacity:.82; }
+  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14: 今日のVIP（王とは別枠の感謝表示・名前のみ） */
-  #vipPanel { position:absolute; left:4%; top:57%; width:44%; font-size:clamp(11px,2cqw,20px); }
-  #vipPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffe98a; }
-  .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* v17: ギフター系3パネル（VIP／本日の最大ギフト／特大ボード）は幅・角丸（.panel共通）・見出し・行の作りを統一。
+     名前は途中で切らず、長い名前は折り返して全文見せる */
+  .gifterPanel { width:44%; font-size:clamp(11px,2cqw,20px); }
+  .gifterPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; }
+  #vipPanel { position:absolute; left:4%; top:57%; }
+  #vipPanel h3 { color:#ffe98a; }
+  .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .vipName:last-child { border-bottom:none; }
   .vipEmpty { opacity:.75; }
 
   /* 特大ボード: その日の特大ギフターを累計コイン順に1人ずつスライドリピート表示（当日限り・王=1位のみ特別表示、VIP=大以上の名前のみ、とは別枠） */
-  #tokudaiBoard { position:absolute; left:4%; top:63.5%; width:44%; font-size:clamp(11px,2cqw,20px); border-color:rgba(255,217,77,.55); }
-  #tokudaiBoard h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffd94d; }
-  .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:nowrap; overflow:hidden; animation:tokudaiSlide .45s ease; }
+  #tokudaiBoard { position:absolute; left:4%; top:63.5%; border-color:rgba(255,217,77,.55); }
+  #tokudaiBoard h3 { color:#ffd94d; }
+  .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:normal; animation:tokudaiSlide .45s ease; }
   @keyframes tokudaiSlide { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
-  .tokudaiName { font-weight:700; overflow:hidden; text-overflow:ellipsis; }
+  .tokudaiName { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .tokudaiCoins { color:#ffd94d; font-weight:900; margin-left:auto; white-space:nowrap; }
   .tokudaiPager { text-align:right; font-size:.78em; color:#ffe98a; font-weight:700; opacity:.85; margin-top:1px; }
 
   /* v14追加(心理パック): 称号ランク・VIP進捗・マイルストーン・本日の最大ギフト（表示と祝福のみ／金額・円額は出さない） */
   .vipRank { color:#ffd94d; font-weight:900; margin-left:6px; }
-  #vipNext { margin-top:5px; font-size:.85em; color:#bfe9ff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #vipNext { margin-top:5px; font-size:.85em; color:#bfe9ff; font-weight:700; white-space:normal; overflow-wrap:break-word; }
   #mileBar { position:absolute; left:30%; top:66.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
   #mileNextReward { font-size:.85em; color:#ffe98a; font-weight:700; margin-bottom:3px; }
-  #mileText { font-weight:900; color:#bfe9ff; margin-bottom:4px; white-space:nowrap; }
+  #mileText { font-weight:900; color:#bfe9ff; margin-bottom:4px; }
   #mileOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #mileInner { background:linear-gradient(90deg,#7be0ff,#ffd94d); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
   /* いいね連携: いいねゲージ（ブリッジが節目管理し、ここは表示と回転加算だけ） */
   #likeBar { position:absolute; left:30%; top:72.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
-  #likeText { font-weight:900; color:#ffb3c2; margin-bottom:4px; white-space:nowrap; }
+  #likeText { font-weight:900; color:#ffb3c2; margin-bottom:4px; }
   #likeOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #likeInner { background:linear-gradient(90deg,#ff5c8a,#ffb3c2); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
-  #likeNext { font-size:.85em; color:#ffd9e2; font-weight:700; margin-top:3px; white-space:nowrap; }
-  #topGift { position:absolute; left:4%; top:49.5%; width:44%; font-size:clamp(11px,2cqw,20px); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #likeNext { font-size:.85em; color:#ffd9e2; font-weight:700; margin-top:3px; }
+  #topGift { position:absolute; left:4%; top:49.5%; }
+  #topGift h3 { color:#ffe98a; }
+  #topGiftBody { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14改修: 出席簿（配信日ベースの出席記録・localStorageに永続化／名前のみ・金額は出さない） */
   #attendPanel { position:absolute; left:4%; top:70.5%; width:44%; font-size:clamp(11px,2cqw,20px); }
@@ -516,13 +567,13 @@
     <div id="fxList"></div>
   </div>
 
-  <div id="vipPanel" class="panel movable">
+  <div id="vipPanel" class="panel movable gifterPanel">
     <h3>💎 今日のVIP</h3>
     <div id="vipList"><div class="vipEmpty">まだいません</div></div>
     <div id="vipNext" style="display:none"></div>
   </div>
 
-  <div id="tokudaiBoard" class="panel movable">
+  <div id="tokudaiBoard" class="panel movable gifterPanel">
     <h3>🏆 本日の特大ボード</h3>
     <div id="tokudaiList"><div class="vipEmpty">まだいません</div></div>
   </div>
@@ -539,7 +590,10 @@
     <div id="likeNext">次の節目まで あと 500</div>
   </div>
 
-  <div id="topGift" class="panel movable">🌟 本日の最大ギフト：まだありません</div>
+  <div id="topGift" class="panel movable gifterPanel">
+    <h3>🌟 本日の最大ギフト</h3>
+    <div id="topGiftBody">まだありません</div>
+  </div>
 
   <div id="attendPanel" class="panel movable">
     <h3>📒 出席簿</h3>
@@ -1152,10 +1206,10 @@
   }
   /* 本日の最大ギフト（単発・名前とギフト名のみ、コイン数は出さない） */
   function renderTopGift(){
-    const el = $("topGift"); if(!el) return;
+    const el = $("topGiftBody"); if(!el) return;
     el.textContent = topGiftRec
-      ? ("🌟 本日の最大ギフト：" + topGiftRec.name + "さん（" + topGiftRec.gift + "）")
-      : "🌟 本日の最大ギフト：まだありません";
+      ? (topGiftRec.name + "さん（" + topGiftRec.gift + "）")
+      : "まだありません";
   }
   /* ギフト1件分の記録：称号ランク判定＋ランクアップ祝福、マイルストーン判定、最大ギフト更新 */
   function v14TrackGift(name, totalCoins, giftLabel){
