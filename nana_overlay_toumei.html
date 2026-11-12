@@ -107,9 +107,9 @@
   #roulette .title { text-shadow:0 2px 6px rgba(0,0,0,.8); }
   #reach { text-shadow:0 2px 10px rgba(0,0,0,.8), 0 0 22px rgba(255,160,0,.55); }
   #smCredit { margin:1.6cqw auto 0; max-width:84cqw; font-weight:900; font-size:clamp(14px,3.2cqw,30px); color:#fff;
-    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:anywhere; }
+    text-shadow:0 2px 8px rgba(0,0,0,.85), 0 0 16px rgba(168,85,247,.8); white-space:normal; overflow-wrap:break-word; word-break:auto-phrase; }
   #rouletteCredit { margin-top:8px; font-weight:900; font-size:clamp(14px,3cqw,28px); color:#fff;
-    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:anywhere; }
+    text-shadow:0 2px 8px rgba(0,0,0,.85); white-space:normal; overflow-wrap:break-word; word-break:auto-phrase; }
   /* 透明版：パネルの後ろが実画面でも文字が沈まないよう、パネル内テキストに影を足す */
   body.transparent .panel { text-shadow:0 1px 3px rgba(0,0,0,.8); }
   /* 透明版＋ぽわぽわ：パネルは暗い半透明になるので、文字は白系に戻して読めるようにする */
@@ -131,6 +131,9 @@
   #menu .row { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   #menu .row:last-child { border-bottom:none; }
   #menu .tier { font-weight:900; }
+  /* 遊び方パネル：幅を狭めても文字が枠からはみ出さないよう、行内は文節で折り返し、はみ出しは最終保険で止める */
+  #menu { overflow:hidden; }
+  #menu .row, #menuHowto, #tokudaiNoteRow { overflow-wrap:break-word; line-break:strict; word-break:auto-phrase; }
   .t1{color:#a5ffb0}.t2{color:#7be0ff}.t3{color:#ffb3ec}.t4{color:#ffd94d}
 
   /* 右パネル */
@@ -228,14 +231,14 @@
   #roulette.show { display:block; }
   #roulette .title { font-size:clamp(14px,2.6cqw,26px); font-weight:900; color:#ff8080; margin-bottom:6px; }
   #reach { font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
-  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:#ffd94d; min-height:1.4em; }
+  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:#ffd94d; min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
   /* v16: ルーレット結果表示を大型化（当たり/はずれ共通）＋ハズレ時の煽り文 */
   #rouletteItem.result { font-size:clamp(29px,7.6cqw,72px); line-height:1.25;
     text-shadow:0 0 24px rgba(255,180,0,.9), 0 3px 0 rgba(0,0,0,.45); animation:resultPop .5s cubic-bezier(.2,1.6,.4,1); }
   #rouletteItem.result.miss { color:#9adfff; text-shadow:0 0 22px rgba(80,180,255,.85), 0 3px 0 rgba(0,0,0,.45); }
   @keyframes resultPop { 0%{ transform:scale(.5); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
   #rouletteTaunt { display:none; margin-top:6px; font-size:clamp(17px,4.4cqw,42px); font-weight:900; color:#ffe98a;
-    background:rgba(10,10,30,.8); border:2px solid rgba(255,217,77,.6); border-radius:999px; padding:4px 16px; }
+    background:rgba(10,10,30,.8); border:2px solid rgba(255,217,77,.6); border-radius:999px; padding:4px 16px; word-break:auto-phrase; text-wrap:balance; }
   #rouletteTaunt.show { display:inline-block; animation:resultPop .5s .1s cubic-bezier(.2,1.6,.4,1) backwards; }
 
   /* ティザー（コメント欄と重ならないよう上部へ） */
@@ -246,7 +249,7 @@
   #activeFx h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffb3ec; }
   .fxItem { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   .fxItem:last-child { border-bottom:none; }
-  .fxName { flex:1; font-weight:700; }
+  .fxName { flex:1; min-width:0; font-weight:700; word-break:auto-phrase; }
   .fxTime { color:#ffd94d; font-weight:900; white-space:nowrap; }
   .fxEnd { background:#2b2b3d; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:2px 7px; font-size:12px; cursor:pointer; }
   .fxEmpty { opacity:.75; }
@@ -254,7 +257,7 @@
   #activeFx.fxIdle { display:none; }
   body.editing #activeFx.fxIdle { display:block; opacity:.55; }
   .fxItem.fxNext { opacity:.82; }
-  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:anywhere; }
+  .fxBy { font-size:.78em; font-weight:700; opacity:.85; white-space:normal; overflow-wrap:break-word; }
 
   /* v14: 今日のVIP（王とは別枠の感謝表示・名前のみ） */
   /* v17: ギフター系3パネル（VIP／本日の最大ギフト／特大ボード）は幅・角丸（.panel共通）・見出し・行の作りを統一。
@@ -531,9 +534,9 @@
     <div class="row">🌹 <span class="tier t1">99コインまで</span> → <b>100回転</b></div>
     <div class="row">🍩 <span class="tier t2">100〜999コイン</span> → 50回転＋<b>ルーレット</b></div>
     <div class="row">🕶 <span class="tier t3">1,000〜9,999コイン</span> → <b>強いルーレット</b>から開始</div>
-    <div class="row">🦁 <span class="tier t4">10,000コイン以上</span> → <b>確変確定</b>＋<b>特別・名前入り手書きメッセージ</b>＋<b>名前入りデジタル色紙</b>＋<b>名前入りスマホ壁紙</b>＋<b>特大ボード掲載</b></div>
+    <div class="row">🦁 <span class="tier t4">10,000コイン以上</span> → <b>確変確定</b>＋<b>特典（特別・名前入り手書きメッセージ・名前入りデジタル色紙・名前入りスマホ壁紙）のうち1つがランダムで確定</b>＋<b>特大ボード掲載</b></div>
     </div>
-    <div class="row" id="tokudaiNoteRow">✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ</div>
+    <div class="row" id="tokudaiNoteRow">✉️ 特大の特典は1回につき1つ、ランダムで決まるよ。当たった特典は配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ</div>
     <div class="row">🏆 特大をくれた人は <b>本日の特大ボード</b> に名前と今日の合計コインが載るよ（その日だけ）</div>
     <div class="row">🎯 大当たりが出ると <b>10分間スペシャルモード</b>（<span id="probLabel">1/9999</span> → 確率10倍＆画面が虹色）になるよ！</div>
     <div class="row">🔥 60秒以内に続けてギフトするとコンボ！ ×2で回転2倍、×3でルーレット、×5で当たりやすく、×8で大当たりまっしぐら</div>
@@ -707,10 +710,12 @@
   const DEFAULT_PERKS = {
     fx1: DEFAULT_PLAYCFG.fx1.slice(), fx2: DEFAULT_PLAYCFG.fx2.slice(), fx3: DEFAULT_PLAYCFG.fx3.slice(),
     tokudaiPerks: ["特別・名前入り手書きメッセージ", "名前入りデジタル色紙", "名前入りスマホ壁紙"],
-    tokudaiNote: "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
+    tokudaiNote: "✉️ 特大の特典は1回につき1つ、ランダムで決まるよ。当たった特典は配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ",
     pianoName: "ピアノ1曲リクエスト権",
     pianoNote: "仕上げて動画にするよ♡"
   };
+  // 特典お届け説明文の旧デフォルト（保存データ移行の判定にだけ使う）
+  const OLD_TOKUDAI_NOTE = "✉️ 特大の特典（手書きメッセージ・色紙・壁紙）は、配信のあとに画像で送るよ。色紙と壁紙は後日になることもあるよ。送るだけの一方通行で、返信はしていないよ";
   let perksCfg = JSON.parse(JSON.stringify(DEFAULT_PERKS));
   let perksReceived = false;
   function sanitizePerks(p){
@@ -722,7 +727,11 @@
     if(a2 && a2.length) out.fx2 = a2;
     if(a3 && a3.length) out.fx3 = a3;
     if(at && at.length) out.tokudaiPerks = at;
-    if(typeof p.tokudaiNote === "string" && p.tokudaiNote.trim()) out.tokudaiNote = p.tokudaiNote.trim().slice(0, 300);
+    if(typeof p.tokudaiNote === "string" && p.tokudaiNote.trim()){
+      const note = p.tokudaiNote.trim().slice(0, 300);
+      // 旧デフォルト文のまま保存されていた場合だけ、ランダム1つ仕様の新デフォルト文へ移行する（自分で書き換えた文には触れない）
+      out.tokudaiNote = (note === OLD_TOKUDAI_NOTE) ? DEFAULT_PERKS.tokudaiNote : note;
+    }
     if(typeof p.pianoName === "string" && p.pianoName.trim()) out.pianoName = p.pianoName.trim().slice(0, 60);
     if(typeof p.pianoNote === "string" && p.pianoNote.trim()) out.pianoNote = p.pianoNote.trim().slice(0, 60);
     return out;
@@ -735,13 +744,18 @@
     savePlayCfg(); renderTierRows();
     broadcastState();
   }
+  // 特大特典は1回につき1つだけ、候補からランダムで選ぶ
+  function pickTokudaiPerk(){
+    const list = (perksCfg.tokudaiPerks && perksCfg.tokudaiPerks.length) ? perksCfg.tokudaiPerks : DEFAULT_PERKS.tokudaiPerks;
+    return list[Math.floor(Math.random() * list.length)];
+  }
   function renderTierRows(){
     const f = (n) => Number(n).toLocaleString();
     document.getElementById("tierRows").innerHTML =
       '<div class="row">🌹 <span class="tier t1">' + f(playCfg.coin2 - 1) + 'コインまで</span> → <b>' + f(playCfg.spins[1]) + '回転</b></div>' +
       '<div class="row">🍩 <span class="tier t2">' + f(playCfg.coin2) + '〜' + f(playCfg.coin3 - 1) + 'コイン</span> → ' + f(playCfg.spins[2]) + '回転＋<b>ルーレット</b></div>' +
       '<div class="row">🕶 <span class="tier t3">' + f(playCfg.coin3) + '〜' + f(playCfg.coin4 - 1) + 'コイン</span> → <b>強いルーレット</b>から開始</div>' +
-      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>スペシャルモード確定</b>＋' + perksCfg.tokudaiPerks.map(p => '<b>' + p + '</b>').join('＋') + '＋<b>特大ボード掲載</b></div>';
+      '<div class="row">🦁 <span class="tier t4">' + f(playCfg.coin4) + 'コイン以上</span> → <b>スペシャルモード確定</b>＋<b>特典（' + perksCfg.tokudaiPerks.join('・') + '）のうち1つがランダムで確定</b>＋<b>特大ボード掲載</b></div>';
     document.getElementById("menuHowto").innerHTML = playCfg.howto;
     const tn = document.getElementById("tokudaiNoteRow"); if(tn) tn.innerHTML = perksCfg.tokudaiNote;
   }
@@ -1564,14 +1578,16 @@
       if(tier >= 4){
         // 特大特典の受け渡しログ: ブリッジ経由の実ギフトで特典が付与された時だけ、サーバーへ記録を依頼する。
         // テストモード中と手動ギフト（リモコン）は「渡す義務」が発生しないので送らない。
+        // 特大特典は1回につき1つだけランダムで付与する。抽選はここで1回だけ行い、受け渡しログ・画面表示で同じ結果を使う
+        const tokudaiWon = pickTokudaiPerk();
         if(isRealGift && !testMode && name){
-          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: perksCfg.tokudaiPerks.slice() }); } catch(e) {}
+          try { wsSend({ type: "tokudaiGrant", name: name, giftName: giftLabel, coins: (coinsPerUnit && coinsPerUnit > 0) ? coinsPerUnit * count : 0, perks: [tokudaiWon] }); } catch(e) {}
         }
-        // 特大特典（確定）: 特別・名前入り手書きメッセージ＋名前入りデジタル色紙＋名前入りスマホ壁紙。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
+        // 特大特典（ランダムで1つ確定）: 手書きメッセージ／デジタル色紙／スマホ壁紙のうち1つ。お届けは配信専用窓口から画像を送るだけの一方向（返信対応なし・個人連絡先は使わない／色紙・壁紙は後日送付）
         setTimeout(()=>{
-          perksCfg.tokudaiPerks.forEach(p => addEffect(p + "（特大特典）", testMode ? "テスト" : (name || "")));
-          // addEffect側のコールアウトが終わった後に、特典まとめのコールアウトを出す
-          setTimeout(()=>flash("特大特典！", perksCfg.tokudaiPerks.join("＋") + " 確定"), 900);
+          addEffect(tokudaiWon + "（特大特典）", testMode ? "テスト" : (name || ""));
+          // addEffect側のコールアウトが終わった後に、特典のコールアウトを出す
+          setTimeout(()=>flash("特大特典！", tokudaiWon + " 確定"), 900);
         }, 2800);
       }
       return;
@@ -1914,6 +1930,14 @@
   let layoutSendReset = false;
   function stampLayoutTime(){ layoutSavedAt = Date.now(); try { localStorage.setItem("overlayLayoutV7Time", String(layoutSavedAt)); } catch(e) {} }
   let editMode = false, selPanel = null, dragCtx = null;
+  /* パネルの拡大率を読む（新形式 sx/sy を優先。旧形式 sc しか無い保存データは sx=sy=sc として扱うので、そのまま読み込める） */
+  function panelScale(s){
+    if(!s) return { x: 1, y: 1 };
+    const fb = (typeof s.sc === "number" && isFinite(s.sc) && s.sc > 0) ? s.sc : 1;
+    const x = (typeof s.sx === "number" && isFinite(s.sx) && s.sx > 0) ? s.sx : fb;
+    const y = (typeof s.sy === "number" && isFinite(s.sy) && s.sy > 0) ? s.sy : fb;
+    return { x: x, y: y };
+  }
   function applyLayout(){
     movableIds.forEach(id => {
       const el = $(id), s = layoutMap[id];
@@ -1921,7 +1945,7 @@
       if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
       if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc){ el.style.transform = "scale(" + s.sc + ")"; el.style.transformOrigin = "top left"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   function saveLayout(){
@@ -1935,12 +1959,12 @@
     const sr = $("stage").getBoundingClientRect();
     movableIds.forEach(id => {
       const el = $(id); if(!el) return;
-      const sc = (layoutMap[id] && layoutMap[id].sc) || 1;
+      const ps = panelScale(layoutMap[id]);
       el.style.transform = "";
       const r = el.getBoundingClientRect();
       if(r.width === 0 && r.height === 0) return; // 非表示（ルーレット等）は対象外
-      layoutMap[id] = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, w: Math.round(r.width / sr.width * 1000) / 10, sc: sc };
-      if(sc !== 1){ el.style.transform = "scale(" + sc + ")"; el.style.transformOrigin = "top left"; }
+      layoutMap[id] = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, w: Math.round(r.width / sr.width * 1000) / 10, sx: ps.x, sy: ps.y };
+      if(ps.x !== 1 || ps.y !== 1){ el.style.transform = "scale(" + ps.x + ", " + ps.y + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   const presetStyles = {
@@ -2028,10 +2052,14 @@
   };
   window.scaleSel = function(d){
     if(!selPanel) return;
-    const cur = (layoutMap[selPanel.id] && layoutMap[selPanel.id].sc) || 1;
-    const sc = Math.round(Math.max(0.5, Math.min(2, cur + d)) * 100) / 100;
-    layoutMap[selPanel.id] = Object.assign({}, layoutMap[selPanel.id], { sc: sc });
-    selPanel.style.transform = "scale(" + sc + ")";
+    // ボタンでの拡縮は従来通り一律：横の倍率を基準に増減し、縦にも同じ比率を掛ける（縦横比は保つ）
+    const ps = panelScale(layoutMap[selPanel.id]);
+    const next = Math.max(0.5, Math.min(2, ps.x + d));
+    const f = next / ps.x;
+    const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
+    const sx = clampR(ps.x * f), sy = clampR(ps.y * f);
+    layoutMap[selPanel.id] = Object.assign({}, layoutMap[selPanel.id], { sx: sx, sy: sy });
+    selPanel.style.transform = "scale(" + sx + ", " + sy + ")";
     selPanel.style.transformOrigin = "top left";
     saveLayout();
   };
@@ -2043,7 +2071,7 @@
       const sr = $("stage").getBoundingClientRect();
       const r = el.getBoundingClientRect();
       // 掴んだ瞬間に現在の幅を固定する（左右指定で決まっていた幅が潰れるのを防ぐ）
-      const scNow = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+      const scNow = panelScale(layoutMap[el.id]).x;
       const wPct = Math.round(r.width / scNow / sr.width * 1000) / 10;
       el.style.width = wPct + "%";
       layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { w: wPct });
@@ -2073,7 +2101,7 @@
       if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
       if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc){ el.style.transform = "scale(" + s.sc + ")"; el.style.transformOrigin = "top left"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
     }
     try { applyVisibility(); } catch(e) {}
   };
@@ -2218,7 +2246,7 @@
     if(layoutMap[el.id] && layoutMap[el.id].l != null) return;
     const sr = $("stage").getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    const sc = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+    const sc = panelScale(layoutMap[el.id]).x;
     layoutMap[el.id] = Object.assign({}, layoutMap[el.id], {
       l: Math.round((r.left - sr.left) / sr.width * 1000) / 10,
       t: Math.round((r.top - sr.top) / sr.height * 1000) / 10,
@@ -2244,12 +2272,15 @@
       e.preventDefault(); e.stopPropagation();
       selectPanel(el);
       const startX = e.clientX, startY = e.clientY;
-      const startSc = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
+      const startS = panelScale(layoutMap[el.id]);
       function mv(ev){
-        const f = 1 + ((ev.clientX - startX) + (ev.clientY - startY)) / (320 * (fitScale || 1));
-        const sc = Math.round(Math.max(0.5, Math.min(2, startSc * f)) * 100) / 100;
-        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sc: sc });
-        el.style.transform = "scale(" + sc + ")";
+        // 横ドラッグで横倍率、縦ドラッグで縦倍率を、それぞれ独立に変える（縦横比も変えられる）
+        const fx = 1 + (ev.clientX - startX) / (320 * (fitScale || 1));
+        const fy = 1 + (ev.clientY - startY) / (320 * (fitScale || 1));
+        const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
+        const sx = clampR(startS.x * fx), sy = clampR(startS.y * fy);
+        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sx: sx, sy: sy });
+        el.style.transform = "scale(" + sx + ", " + sy + ")";
         el.style.transformOrigin = "top left";
       }
       function up(){ window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); saveLayout(); }
@@ -2586,7 +2617,7 @@
         "#comboRoll{position:absolute;top:16.2%;left:0;right:0;z-index:42;overflow:hidden;display:none;pointer-events:none}" +
         "#comboRoll .crIn{display:inline-block;white-space:nowrap;font-weight:900;font-size:clamp(14px,3.4cqw,32px);color:#7be0ff;text-shadow:0 0 14px rgba(0,180,255,.8);animation:crScroll 6.5s linear forwards;padding-left:100%}" +
         "@keyframes crScroll{to{transform:translateX(-100%)}}" +
-        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:nowrap;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
+        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;max-width:94cqw;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
         "#slotMachine.zen .smStrip{animation:zenSpin .28s linear infinite}" +
         "@keyframes zenSpin{from{transform:translateY(0)}to{transform:translateY(-38%)}}";
       document.head.appendChild(style);
