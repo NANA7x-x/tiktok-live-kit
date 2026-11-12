@@ -7,8 +7,11 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; }
   html,body { background:#111; height:100%; }
   body.transparent { background:transparent; }
+  /* v18: ステージは固定デザインサイズ(1080x1920)で描画し、外側の #fit が画面サイズに合わせて縮小する。
+     編集プレビュー(405px幅)でも配信画面(1080px幅)でも内部寸法が同一になり、保存した配置の見た目が一致する */
+  #fit { position:fixed; left:50%; top:50%; width:1080px; height:1920px; transform:translate(-50%,-50%); }
   #stage {
-    position:relative; width:min(100vw, 56.25vh); aspect-ratio:9/16; margin:0 auto; container-type:inline-size;
+    position:relative; width:1080px; height:1920px; container-type:inline-size;
     background:linear-gradient(180deg, rgba(20,16,40,.88), rgba(40,10,50,.82));
     overflow:hidden; color:#fff; border:4px solid transparent;
   }
@@ -115,7 +118,7 @@
   #goal { position:absolute; top:2%; left:4%; right:4%; text-align:center; }
   #goal .label { font-size:clamp(14px,2.6cqw,26px); font-weight:700; letter-spacing:.05em; }
   #goal .amount { font-size:clamp(26px,5.4cqw,52px); font-weight:900; color:#ffd94d; text-shadow:0 2px 10px rgba(255,150,0,.6); cursor:pointer; }
-  #barOuter { height:clamp(12px,2vh,22px); background:rgba(255,255,255,.18); border-radius:99px; margin-top:6px; overflow:hidden; }
+  #barOuter { height:clamp(12px,2cqw,22px); background:rgba(255,255,255,.18); border-radius:99px; margin-top:6px; overflow:hidden; }
   #barInner { height:100%; width:5%; background:linear-gradient(90deg,#ff5f9e,#ffb347); border-radius:99px; transition:width .8s ease; }
   #goal .sub { font-size:clamp(11px,2cqw,20px); opacity:.85; margin-top:4px; }
   #ticker { font-size:clamp(11px,2cqw,20px); color:#a5ffb0; margin-top:4px; min-height:1.3em; white-space:nowrap; overflow:hidden; }
@@ -433,7 +436,7 @@
   }
   #controls .hint { width:100%; text-align:center; font-size:11px; opacity:.7; color:#fff; }
   .coin { position:absolute; font-size:26px; color:#ffd94d; font-weight:900; pointer-events:none; animation:fall 1.4s ease-in forwards; }
-  @keyframes fall { from{ transform:translateY(-10px); opacity:1 } to{ transform:translateY(46vh); opacity:0 } }
+  @keyframes fall { from{ transform:translateY(-10px); opacity:1 } to{ transform:translateY(82cqw); opacity:0 } }
 
   /* v5: どぱ演出（レインボー点滅・回転表示・ポップ） */
   #strobe { position:absolute; inset:0; pointer-events:none; opacity:0; z-index:40;
@@ -464,7 +467,7 @@
   @keyframes bgPan { from{ background-position:50% 0%; } to{ background-position:50% 100%; } }
   #particles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .particle { position:absolute; bottom:-8%; opacity:.45; animation:drift linear infinite; }
-  @keyframes drift { 0%{ transform:translateY(0) translateX(0) rotate(0deg); } 50%{ transform:translateY(-55vh) translateX(3cqw) rotate(160deg); } 100%{ transform:translateY(-112vh) translateX(-2cqw) rotate(320deg); } }
+  @keyframes drift { 0%{ transform:translateY(0) translateX(0) rotate(0deg); } 50%{ transform:translateY(-98cqw) translateX(3cqw) rotate(160deg); } 100%{ transform:translateY(-199cqw) translateX(-2cqw) rotate(320deg); } }
   #stage.shake { animation:shakeA .35s linear; }
   @keyframes shakeA { 0%{transform:translateX(0)} 25%{transform:translateX(-7px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-4px)} 100%{transform:translateX(0)} }
   #spinReel { background:rgba(0,0,0,.45); border:2px solid rgba(255,217,77,.0); border-radius:14px; padding:4px 8px; }
@@ -508,7 +511,7 @@
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="smXXGrad" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#f3e8ff"/><stop offset="55%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6d28d9"/></radialGradient></defs></svg>
-<div id="stage">
+<div id="fit"><div id="stage">
   <div id="particles"></div>
   <div id="goal" class="panel movable">
     <div class="label" id="goalLabel">カード支払いまで あと</div>
@@ -626,10 +629,20 @@
 
   <div id="teaser" class="panel movable"><span id="teaserText">大当たりで <b>10分間スペシャルモード</b>！ あたりは全部ななの変化（語尾・声・猫耳）。30,000回転で必ず大当たり</span></div>
 
-</div>
+</div></div>
 
 <script>
   const TENJO = 30000;
+  /* v18: 固定サイズ(1080x1920)のステージを画面に合わせて縮小表示する。
+     どの画面サイズで開いても内部の寸法計算が同じになり、編集プレビューと配信画面の配置が一致する */
+  let fitScale = 1;
+  function fitStage(){
+    const f = document.getElementById("fit"); if(!f) return;
+    fitScale = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+    f.style.transform = "translate(-50%,-50%) scale(" + fitScale + ")";
+  }
+  window.addEventListener("resize", fitStage);
+  fitStage();
   /* v8: 目標の文字・金額はカスタム可能（保存される） */
   let goalCfg = { label: "カード支払いまで あと", target: 50000, remain: 47494 };
   try { Object.assign(goalCfg, JSON.parse(localStorage.getItem("overlayGoalCfg") || "{}")); } catch(e) {}
@@ -2231,7 +2244,7 @@
       const startX = e.clientX, startY = e.clientY;
       const startSc = (layoutMap[el.id] && layoutMap[el.id].sc) || 1;
       function mv(ev){
-        const f = 1 + ((ev.clientX - startX) + (ev.clientY - startY)) / 320;
+        const f = 1 + ((ev.clientX - startX) + (ev.clientY - startY)) / (320 * (fitScale || 1));
         const sc = Math.round(Math.max(0.5, Math.min(2, startSc * f)) * 100) / 100;
         layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sc: sc });
         el.style.transform = "scale(" + sc + ")";
