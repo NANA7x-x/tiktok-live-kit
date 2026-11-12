@@ -68,6 +68,40 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify(out));
     return;
   }
+  // v19: カスタムサウンドのアップロード（リモコンから JSON で filename + base64 を受けて sounds/ に保存する。ローカル専用）
+  if (p === '/upload-sound' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; if (body.length > 40 * 1024 * 1024) { try { req.destroy(); } catch (e) { /* ignore */ } } });
+    req.on('end', () => {
+      const sendJson = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
+      try {
+        const j = JSON.parse(body || '{}');
+        const name = sanitizeSoundUploadName(j && j.filename);
+        if (!name) { sendJson(400, { ok: false, error: 'ファイル名または拡張子が不正です（mp3 / wav / ogg / m4a のみ）' }); return; }
+        const buf = Buffer.from(String((j && j.data) || ''), 'base64');
+        if (!buf.length) { sendJson(400, { ok: false, error: 'データが空です' }); return; }
+        try { fs.mkdirSync(SOUNDS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+        fs.writeFileSync(path.join(SOUNDS_DIR, name), buf);
+        console.log(`[bridge] サウンドファイルを保存しました: sounds/${name} (${buf.length} bytes)`);
+        broadcast(soundsMsg());
+        sendJson(200, { ok: true, file: name, files: listSoundFiles() });
+      } catch (e) { sendJson(400, { ok: false, error: 'アップロードに失敗しました' }); }
+    });
+    return;
+  }
+  // v19: カスタムサウンドの配信（オーバーレイの再生とリモコンの試聴用。ファイル名は basename のみ許可）
+  if (p.startsWith('/sounds/') && req.method === 'GET') {
+    const name = path.basename(p.slice('/sounds/'.length));
+    const types = { '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4' };
+    const ct = types[path.extname(name).toLowerCase()];
+    if (!ct) { res.writeHead(404); res.end('not found'); return; }
+    fs.readFile(path.join(SOUNDS_DIR, name), (err, data) => {
+      if (err) { res.writeHead(404); res.end('not found'); return; }
+      res.writeHead(200, { 'Content-Type': ct, 'Cache-Control': 'no-store' });
+      res.end(data);
+    });
+    return;
+  }
   const names = FILES[p];
   if (!names) { res.writeHead(404); res.end('not found'); return; }
   const name = names.find((n) => fs.existsSync(path.join(__dirname, n)));
@@ -163,6 +197,73 @@ let savedPerks = null;
 try { const j = JSON.parse(fs.readFileSync(PERKS_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedPerks = sanitizePerks(j); } catch (e) { /* 無ければ未設定（初期値のまま） */ }
 function setCanonicalPerks(p) { savedPerks = sanitizePerks(p); try { fs.writeFileSync(PERKS_FILE, JSON.stringify(savedPerks)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
 // ============================================================
+// v19: サウンドカスタムの正本（sounds.json）と音声ファイル置き場（sounds/）。
+//   リモコンの「🔊 サウンド・BGMカスタム」から、場面（イベント）ごとに自分の
+//   音声ファイルを割り当てられる。ファイル本体は sounds/ に置き、GitHub には
+//   上げない（.gitignore）。未割り当て／「使う」がOFFの場面は、オーバーレイ側の
+//   従来音（WebAudio合成音）にフォールバックする。
+// ============================================================
+const SOUNDS_DIR = path.join(__dirname, 'sounds');
+try { fs.mkdirSync(SOUNDS_DIR, { recursive: true }); } catch (e) { /* 作れなくても動作は続ける */ }
+const SOUND_EVENTS = ['bgm', 'gift', 'roulette', 'fanfare', 'miss', 'tokudai', 'mission'];
+const SOUND_EXTS = ['.mp3', '.wav', '.ogg', '.m4a'];
+function listSoundFiles() {
+  try {
+    return fs.readdirSync(SOUNDS_DIR)
+      .filter((f) => SOUND_EXTS.includes(path.extname(f).toLowerCase()))
+      .sort();
+  } catch (e) { return []; }
+}
+function sanitizeSoundUploadName(name) {
+  let n = String(name == null ? '' : name).split(/[\\/]/).pop().trim();
+  n = n.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_');
+  if (!n || n.startsWith('.')) return null;
+  if (!SOUND_EXTS.includes(path.extname(n).toLowerCase())) return null;
+  return n.slice(0, 100);
+}
+const SOUNDS_FILE = path.join(__dirname, 'sounds.json');
+function sanitizeSounds(s) {
+  const out = { events: {} };
+  for (const k of SOUND_EVENTS) out.events[k] = { file: null, volume: 0.8, enabled: true };
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return out;
+  const ev = (s.events && typeof s.events === 'object' && !Array.isArray(s.events)) ? s.events : {};
+  const files = listSoundFiles();
+  for (const k of SOUND_EVENTS) {
+    const e = ev[k];
+    if (!e || typeof e !== 'object') continue;
+    if (typeof e.file === 'string' && e.file) {
+      const base = path.basename(e.file);
+      if (files.includes(base)) out.events[k].file = base;
+    }
+    if (typeof e.volume === 'number' && isFinite(e.volume)) out.events[k].volume = Math.max(0, Math.min(1, e.volume));
+    if (typeof e.enabled === 'boolean') out.events[k].enabled = e.enabled;
+  }
+  return out;
+}
+let savedSounds = sanitizeSounds(null);
+try { const j = JSON.parse(fs.readFileSync(SOUNDS_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedSounds = sanitizeSounds(j); } catch (e) { /* 無ければ初期値（全て未割り当て） */ }
+function setCanonicalSounds(s) { savedSounds = sanitizeSounds(s); try { fs.writeFileSync(SOUNDS_FILE, JSON.stringify(savedSounds)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+function soundsMsg() { return { type: 'sounds', sounds: savedSounds, files: listSoundFiles() }; }
+// ============================================================
+// v19: 文字色カスタムの正本（style.json）。リモコンの「🎨 文字色カスタム」から
+//   変更でき、本文・見出し・強調の3色を保持する。色が null の項目は
+//   「未設定＝今までの色のまま」を表す。
+// ============================================================
+const STYLE_FILE = path.join(__dirname, 'style.json');
+const STYLE_KEYS = ['textMain', 'textHeading', 'textAccent'];
+function sanitizeStyle(s) {
+  const out = { textMain: null, textHeading: null, textAccent: null };
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return out;
+  for (const k of STYLE_KEYS) {
+    const v = s[k];
+    if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v.trim())) out[k] = v.trim().toLowerCase();
+  }
+  return out;
+}
+let savedStyle = null;
+try { const j = JSON.parse(fs.readFileSync(STYLE_FILE, 'utf8')); if (j && typeof j === 'object' && !Array.isArray(j)) savedStyle = sanitizeStyle(j); } catch (e) { /* 無ければ未設定 */ }
+function setCanonicalStyle(s) { savedStyle = sanitizeStyle(s); try { fs.writeFileSync(STYLE_FILE, JSON.stringify(savedStyle)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+// ============================================================
 // 特大特典の受け渡し管理ログ
 //   特大ギフトの特典（手書きメッセージ／デジタル色紙／スマホ壁紙）は配信後に
 //   ユーザーごとに個別で渡す必要があるため、付与の記録を tokudai_log.json
@@ -235,6 +336,9 @@ wss.on('connection', (ws) => {
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
   try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
   try { if (savedPerks) ws.send(JSON.stringify({ type: 'perks', perks: savedPerks })); } catch (e) { /* ignore */ }
+  // サウンドカスタムの正本とファイル一覧を新規接続クライアントへ送る
+  try { ws.send(JSON.stringify(soundsMsg())); } catch (e) { /* ignore */ }
+  try { if (savedStyle) ws.send(JSON.stringify({ type: 'style', style: savedStyle })); } catch (e) { /* ignore */ }
   // 特大特典ログの現在値を新規接続クライアントへ送る（リモコンの一覧表示用）
   try { ws.send(JSON.stringify(tokudaiLogMsg())); } catch (e) { /* ignore */ }
   ws.on('message', (raw) => {
@@ -315,6 +419,15 @@ wss.on('connection', (ws) => {
       setCanonicalPerks(msg.perks);
       msg.perks = savedPerks;
     }
+    if (msg.type === 'sounds' && msg.sounds && typeof msg.sounds === 'object' && !Array.isArray(msg.sounds)) {
+      setCanonicalSounds(msg.sounds);
+      msg.sounds = savedSounds;
+      msg.files = listSoundFiles();
+    }
+    if (msg.type === 'style' && msg.style && typeof msg.style === 'object' && !Array.isArray(msg.style)) {
+      setCanonicalStyle(msg.style);
+      msg.style = savedStyle;
+    }
     if (msg.type === 'simple' && msg.simple && typeof msg.simple === 'object' && !Array.isArray(msg.simple)) {
       setCanonicalSimple(msg.simple);
     }
@@ -329,7 +442,7 @@ wss.on('connection', (ws) => {
       else skipRelay = true;
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'perks'].includes(msg.type)) {
+    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'perks', 'sounds', 'style'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });

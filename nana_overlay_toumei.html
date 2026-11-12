@@ -13,7 +13,7 @@
   #stage {
     position:relative; width:1080px; height:1920px; container-type:inline-size;
     background:linear-gradient(180deg, rgba(20,16,40,.88), rgba(40,10,50,.82));
-    overflow:hidden; color:#fff; border:4px solid transparent;
+    overflow:hidden; color:var(--text-main, #fff); border:4px solid transparent;
   }
   body.transparent #stage { background:transparent; }
   body.kakuhen #stage { animation:rainbow 1.2s linear infinite; }
@@ -118,16 +118,16 @@
   /* 目標バー */
   #goal { position:absolute; top:2%; left:4%; right:4%; text-align:center; }
   #goal .label { font-size:clamp(14px,2.6cqw,26px); font-weight:700; letter-spacing:.05em; }
-  #goal .amount { font-size:clamp(26px,5.4cqw,52px); font-weight:900; color:#ffd94d; text-shadow:0 2px 10px rgba(255,150,0,.6); cursor:pointer; }
+  #goal .amount { font-size:clamp(26px,5.4cqw,52px); font-weight:900; color:var(--text-accent, #ffd94d); text-shadow:0 2px 10px rgba(255,150,0,.6); cursor:pointer; }
   #barOuter { height:clamp(12px,2cqw,22px); background:rgba(255,255,255,.18); border-radius:99px; margin-top:6px; overflow:hidden; }
   #barInner { height:100%; width:5%; background:linear-gradient(90deg,#ff5f9e,#ffb347); border-radius:99px; transition:width .8s ease; }
   #goal .sub { font-size:clamp(11px,2cqw,20px); opacity:.85; margin-top:4px; }
   #ticker { font-size:clamp(11px,2cqw,20px); color:#a5ffb0; margin-top:4px; min-height:1.3em; white-space:nowrap; overflow:hidden; }
-  #king { font-size:clamp(11px,2cqw,20px); color:#ffd94d; overflow-wrap:anywhere; }
+  #king { font-size:clamp(11px,2cqw,20px); color:var(--text-accent, #ffd94d); overflow-wrap:anywhere; }
 
   /* ギフトメニュー */
   #menu { position:absolute; top:27%; left:4%; width:47%; font-size:clamp(10px,1.9cqw,19px); line-height:1.5; }
-  #menu h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#7be0ff; }
+  #menu h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:var(--text-heading, #7be0ff); }
   #menu .row { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   #menu .row:last-child { border-bottom:none; }
   #menu .tier { font-weight:900; }
@@ -139,7 +139,7 @@
   /* 右パネル */
   #stats { position:absolute; top:27%; right:4%; width:38%; text-align:center; }
   .statLabel { font-size:clamp(10px,1.9cqw,19px); opacity:.9; }
-  #spinNum { font-size:clamp(24px,5cqw,48px); font-weight:900; color:#ffd94d; }
+  #spinNum { font-size:clamp(24px,5cqw,48px); font-weight:900; color:var(--text-accent, #ffd94d); }
   #modeNow { font-size:clamp(15px,3cqw,30px); font-weight:900; color:#a5ffb0; min-height:1.5em; }
   body.kakuhen #modeNow { color:#ff5f9e; }
   body.chance #modeNow { color:#7be0ff; }
@@ -231,7 +231,7 @@
   #roulette.show { display:block; }
   #roulette .title { font-size:clamp(14px,2.6cqw,26px); font-weight:900; color:#ff8080; margin-bottom:6px; }
   #reach { font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
-  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:#ffd94d; min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
+  #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:var(--text-accent, #ffd94d); min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
   /* v16: ルーレット結果表示を大型化（当たり/はずれ共通）＋ハズレ時の煽り文 */
   #rouletteItem.result { font-size:clamp(29px,7.6cqw,72px); line-height:1.25;
     text-shadow:0 0 24px rgba(255,180,0,.9), 0 3px 0 rgba(0,0,0,.45); animation:resultPop .5s cubic-bezier(.2,1.6,.4,1); }
@@ -246,11 +246,11 @@
 
   /* v7: 発動中エフェクト＆タイマー */
   #activeFx { position:absolute; right:4%; top:56%; width:38%; font-size:clamp(11px,2cqw,20px); }
-  #activeFx h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#ffb3ec; }
+  #activeFx h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:var(--text-heading, #ffb3ec); }
   .fxItem { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   .fxItem:last-child { border-bottom:none; }
   .fxName { flex:1; min-width:0; font-weight:700; word-break:auto-phrase; }
-  .fxTime { color:#ffd94d; font-weight:900; white-space:nowrap; }
+  .fxTime { color:var(--text-accent, #ffd94d); font-weight:900; white-space:nowrap; }
   .fxEnd { background:#2b2b3d; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:2px 7px; font-size:12px; cursor:pointer; }
   .fxEmpty { opacity:.75; }
   /* v17: 発動中パネルは「いま発動中」と「つぎ」の最大2件だけ表示。何も無い時はパネルごと隠す（編集中は見える） */
@@ -265,18 +265,18 @@
   .gifterPanel { width:44%; font-size:clamp(11px,2cqw,20px); }
   .gifterPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; }
   #vipPanel { position:absolute; left:4%; top:57%; }
-  #vipPanel h3 { color:#ffe98a; }
+  #vipPanel h3 { color:var(--text-heading, #ffe98a); }
   .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .vipName:last-child { border-bottom:none; }
   .vipEmpty { opacity:.75; }
 
   /* 特大ボード: その日の特大ギフターを累計コイン順に1人ずつスライドリピート表示（当日限り・王=1位のみ特別表示、VIP=大以上の名前のみ、とは別枠） */
   #tokudaiBoard { position:absolute; left:4%; top:63.5%; border-color:rgba(255,217,77,.55); }
-  #tokudaiBoard h3 { color:#ffd94d; }
+  #tokudaiBoard h3 { color:var(--text-heading, #ffd94d); }
   .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:normal; animation:tokudaiSlide .45s ease; }
   @keyframes tokudaiSlide { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
   .tokudaiName { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
-  .tokudaiCoins { color:#ffd94d; font-weight:900; margin-left:auto; white-space:nowrap; }
+  .tokudaiCoins { color:var(--text-accent, #ffd94d); font-weight:900; margin-left:auto; white-space:nowrap; }
   .tokudaiPager { text-align:right; font-size:.78em; color:#ffe98a; font-weight:700; opacity:.85; margin-top:1px; }
 
   /* v14追加(心理パック): 称号ランク・VIP進捗・マイルストーン・本日の最大ギフト（表示と祝福のみ／金額・円額は出さない） */
@@ -294,12 +294,12 @@
   #likeInner { background:linear-gradient(90deg,#ff5c8a,#ffb3c2); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
   #likeNext { font-size:.85em; color:#ffd9e2; font-weight:700; margin-top:3px; }
   #topGift { position:absolute; left:4%; top:49.5%; }
-  #topGift h3 { color:#ffe98a; }
+  #topGift h3 { color:var(--text-heading, #ffe98a); }
   #topGiftBody { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14改修: 出席簿（配信日ベースの出席記録・localStorageに永続化／名前のみ・金額は出さない） */
   #attendPanel { position:absolute; left:4%; top:70.5%; width:44%; font-size:clamp(11px,2cqw,20px); }
-  #attendPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:#a5ffb0; }
+  #attendPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:var(--text-heading, #a5ffb0); }
   .attRow { display:flex; align-items:baseline; gap:6px; padding:1px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-size:.88em; white-space:nowrap; overflow:hidden; }
   .attRow:last-child { border-bottom:none; }
   .attName { font-weight:700; overflow:hidden; text-overflow:ellipsis; }
@@ -680,6 +680,9 @@
     missionTitle: "🎯 協力ミッション",
     missionText: "無料ルーレット あと{remaining}人で 全員+{reward}回転！",
     rouletteMissText: "はずれでも大丈夫♡ 次のギフトでまた回るよ",
+    comboTextKeep: "コンボ×{combo} 継続中",
+    comboTextWarn: "連打しろ‼️ あと{sec}秒",
+    comboTextDanger: "切れる！連打しろ‼️ あと{sec}秒",
     kakuhenBgm: true,
     themePickEnabled: true, themePickMin: 300, themePickMax: 999, themePickWindowSec: 60, themePickMinutes: 5,
     teaserLines: [
@@ -744,6 +747,27 @@
     savePlayCfg(); renderTierRows();
     broadcastState();
   }
+  /* ---------- v19: 文字色カスタム（サーバー正本 style.json。本文・見出し・強調の3色） ----------
+     設定された色だけ CSS変数を上書きする。未設定（null）の色は変数を外し、
+     CSS側の var() フォールバック（今までの色）がそのまま効くので、未設定時は見た目が変わらない。 */
+  function sanitizeStyleLocal(s){
+    const out = { textMain: null, textHeading: null, textAccent: null };
+    if(!s || typeof s !== "object") return out;
+    for(const k of ["textMain", "textHeading", "textAccent"]){
+      const v = s[k];
+      if(typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v.trim())) out[k] = v.trim().toLowerCase();
+    }
+    return out;
+  }
+  function applyStyle(s){
+    const st = sanitizeStyleLocal(s);
+    const root = document.documentElement;
+    const map = { textMain: "--text-main", textHeading: "--text-heading", textAccent: "--text-accent" };
+    for(const k of Object.keys(map)){
+      if(st[k]) root.style.setProperty(map[k], st[k]);
+      else root.style.removeProperty(map[k]);
+    }
+  }
   // 特大特典は1回につき1つだけ、候補からランダムで選ぶ
   function pickTokudaiPerk(){
     const list = (perksCfg.tokudaiPerks && perksCfg.tokudaiPerks.length) ? perksCfg.tokudaiPerks : DEFAULT_PERKS.tokudaiPerks;
@@ -777,6 +801,9 @@
       if(typeof nc.missionTitle === "string" && nc.missionTitle.trim()) playCfg.missionTitle = nc.missionTitle;
       if(typeof nc.missionText === "string" && nc.missionText.trim()) playCfg.missionText = nc.missionText;
       if(typeof nc.rouletteMissText === "string" && nc.rouletteMissText.trim()) playCfg.rouletteMissText = nc.rouletteMissText;
+      if(typeof nc.comboTextKeep === "string" && nc.comboTextKeep.trim()) playCfg.comboTextKeep = nc.comboTextKeep;
+      if(typeof nc.comboTextWarn === "string" && nc.comboTextWarn.trim()) playCfg.comboTextWarn = nc.comboTextWarn;
+      if(typeof nc.comboTextDanger === "string" && nc.comboTextDanger.trim()) playCfg.comboTextDanger = nc.comboTextDanger;
       if(typeof nc.kakuhenBgm === "boolean") playCfg.kakuhenBgm = nc.kakuhenBgm;
       if(nc.themePickEnabled != null) playCfg.themePickEnabled = !!nc.themePickEnabled;
       playCfg.themePickMin = Math.max(1, num(nc.themePickMin, playCfg.themePickMin || 300));
@@ -816,7 +843,7 @@
       o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur);
     }catch(e){}
   }
-  function coinSound(){ tone(988, 0, .09, "square", .05); tone(1319, .07, .16, "square", .05); }
+  function coinSound(){ if(sndPlay("gift")) return; tone(988, 0, .09, "square", .05); tone(1319, .07, .16, "square", .05); }
   let lastFreeRoulette = 0;
   function handleChatFree(name, comment){ /* コメント「ルーレット」で無料ルーレット（全体90秒クールダウン） */
     try {
@@ -840,7 +867,7 @@
     o.frequency.exponentialRampToValueAtTime(1320, c.currentTime + 1.1);
     g.gain.setValueAtTime(.05, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + 1.2);
     o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 1.2); }catch(e){} }
-  function fanfare(){ [523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f, i*.13, .22, "square", .06)); }
+  function fanfare(){ if(sndPlay("fanfare")) return; [523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f, i*.13, .22, "square", .06)); }
   function stampSound(){ /* ハンコを押す「ドンッ」という音（低音の沈み込み＋当たった瞬間のクリック） */
     if(muted) return;
     try {
@@ -854,8 +881,36 @@
       tone(880, 0, .045, "square", .05);
     } catch(e) {}
   }
-  function missSound(){ tone(392, 0, .18, "triangle", .06); tone(330, .16, .2, "triangle", .06); tone(262, .34, .3, "triangle", .06); }
+  function missSound(){ if(sndPlay("miss")) return; tone(392, 0, .18, "triangle", .06); tone(330, .16, .2, "triangle", .06); tone(262, .34, .3, "triangle", .06); }
   function toggleMute(){ muted = !muted; if($("muteBtn")) $("muteBtn").textContent = muted ? "音 OFF" : "音 ON"; if(!muted) coinSound(); broadcastState(); }
+
+  /* ---------- v19: サウンドカスタム（サーバー正本 sounds.json。自分の音声ファイルを場面ごとに割り当て） ----------
+     「カスタム音を使う」ON＋ファイル選択済みの場面はファイル音声を鳴らし、それ以外は従来のWebAudio合成音。
+     enabled は「カスタム音を使うか」のスイッチで、消音はミュート（音 ON/OFF）の担当。 */
+  let soundCfg = { events: {} };
+  function sndEvent(key){
+    const e = (soundCfg && soundCfg.events) ? soundCfg.events[key] : null;
+    if(!e || typeof e !== "object" || !e.enabled || !e.file) return null;
+    return e;
+  }
+  function sndVolume(e){
+    return (e && typeof e.volume === "number" && isFinite(e.volume)) ? Math.max(0, Math.min(1, e.volume)) : 0.8;
+  }
+  function sndPlay(key){ /* カスタム音を1回鳴らす。鳴らしたら true（呼び出し側は合成音を飛ばす） */
+    if(muted) return false;
+    const e = sndEvent(key);
+    if(!e) return false;
+    try {
+      const a = new Audio("/sounds/" + encodeURIComponent(e.file));
+      a.volume = sndVolume(e);
+      const pr = a.play();
+      if(pr && pr.catch) pr.catch(()=>{});
+      return true;
+    } catch(err) { return false; }
+  }
+  function applySounds(s){
+    if(s && typeof s === "object" && s.events && typeof s.events === "object") soundCfg = { events: s.events };
+  }
 
   /* ---------- 表示 ---------- */
   function renderGoal(){
@@ -1490,9 +1545,10 @@
       $("comboGauge").style.width = (left / 600) + "%";
       const sec = Math.ceil(left/1000);
       banner.classList.add("show");
-      if(left < 10000){ banner.textContent = "切れる！連打しろ‼️ あと" + sec + "秒"; banner.classList.add("danger"); }
-      else if(left < 30000){ banner.textContent = "連打しろ‼️ あと" + sec + "秒"; banner.classList.remove("danger"); }
-      else { banner.textContent = "コンボ×" + combo + " 継続中"; banner.classList.remove("danger"); }
+      const comboFmt = (tpl, dflt) => (typeof tpl === "string" && tpl ? tpl : dflt).replace(/\{sec\}/g, sec).replace(/\{combo\}/g, combo);
+      if(left < 10000){ banner.textContent = comboFmt(playCfg.comboTextDanger, "切れる！連打しろ‼️ あと{sec}秒"); banner.classList.add("danger"); }
+      else if(left < 30000){ banner.textContent = comboFmt(playCfg.comboTextWarn, "連打しろ‼️ あと{sec}秒"); banner.classList.remove("danger"); }
+      else { banner.textContent = comboFmt(playCfg.comboTextKeep, "コンボ×{combo} 継続中"); banner.classList.remove("danger"); }
     }, 100);
     return combo;
   }
@@ -1553,7 +1609,7 @@
       if(trackCoins > 0){ try { v14TrackGift(name, trackCoins, giftLabel); } catch(e) {} }
       if(tier >= 4 && trackCoins > 0){ try { tokudaiTrack(name, trackCoins); } catch(e) {} }
     }
-    if(tier >= 4) showCutin("特大ギフト！", name ? name + "さん ありがとう！" : "");
+    if(tier >= 4){ if(sndPlay("tokudai")) skipCutinSoundOnce = true; showCutin("特大ギフト！", name ? name + "さん ありがとう！" : ""); }
     const c = bumpCombo();
     const mult = c >= 2 ? 2 : 1;
     // いいねラッシュ（フィーバー）中はギフト由来の回転数だけ 1.5倍。
@@ -1645,6 +1701,7 @@
     if(rouletteBusy && Date.now() - rouletteBusySince > 15000){ rouletteBusy = false; rouletteChainActive = false; }
     if(rouletteBusy) return;
     rouletteBusy = true; rouletteBusySince = Date.now();
+    sndPlay("roulette");
     if(!rouletteChainActive){
       rouletteChain = rouletteCreditNext;
       rouletteCreditNext = { name: "", auto: false, src: "manual" };
@@ -2220,7 +2277,9 @@
   applyFrame();
 
   let cutinTimer = null;
+  let skipCutinSoundOnce = false; // 特大ギフトでカスタム音を鳴らした時だけ、そのカットイン音を1回飛ばす
   function cutinSound(){
+    if(skipCutinSoundOnce){ skipCutinSoundOnce = false; return; }
     if(muted) return;
     if(themeMode === "powa"){ [880, 1108, 1318].forEach((f, i) => tone(f, i * .09, .18, "sine", .05)); }
     else if(themeMode === "baki"){ [196, 262, 392, 523, 784].forEach((f, i) => tone(f, i * .06, .16, "sawtooth", .07)); tone(1568, .3, .3, "square", .06); }
@@ -2547,6 +2606,12 @@
       else if(msg.type === "perks" && msg.perks){
         applyPerks(msg.perks);
       }
+      else if(msg.type === "sounds" && msg.sounds){
+        applySounds(msg.sounds);
+      }
+      else if(msg.type === "style" && msg.style){
+        applyStyle(msg.style);
+      }
       else if(msg.type === "frame" && msg.style){
         setFrame(msg.style);
       }
@@ -2703,6 +2768,7 @@
             missionUsers.add(name || "だれか");
             if(missionUsers.size >= missionGoal){
               missionDone++; missionUsers.clear(); missionGoal = Math.min(3 + missionDone * 2, 9);
+              sndPlay("mission");
               if(window.bigCall) bigCall("ミッション達成‼️", false);
               flash("協力ミッション達成！", "全員にボーナス +50回転");
               const mHit = rollSpins(50);
@@ -3242,8 +3308,21 @@
       const BGM_NOTES = [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25, 587.33, 659.25];
       const BGM_BASS = [130.81, 146.83, 98.00, 110.00];
       let bgmOn = false, bgmTimer = null, bgmStep = 0, bgmPlayed = 0;
+      let bgmAudio = null, bgmFile = null; // カスタムBGM（ファイル）再生中は Audio 要素とファイル名を持つ
+      function bgmStopAudio(){ if(bgmAudio){ try { bgmAudio.pause(); } catch(e) {} bgmAudio = null; bgmFile = null; } }
+      function bgmStartAudio(e){
+        bgmStopAudio();
+        try {
+          const a = new Audio("/sounds/" + encodeURIComponent(e.file));
+          a.loop = true;
+          a.volume = sndVolume(e);
+          const pr = a.play(); if(pr && pr.catch) pr.catch(()=>{});
+          bgmAudio = a; bgmFile = e.file;
+        } catch(err) { bgmAudio = null; bgmFile = null; }
+      }
       function bgmTick(){
         if(!bgmOn) return;
+        if(bgmFile) return; // カスタムBGM再生中は合成ループを出さない
         if(!muted && playCfg.kakuhenBgm !== false && inKakuhen()){
           const i = bgmStep % 8;
           tone(BGM_NOTES[i], 0, .15, "square", .026);
@@ -3255,14 +3334,28 @@
       }
       setInterval(() => {
         const should = inKakuhen() && playCfg.kakuhenBgm !== false;
+        const ce = should ? sndEvent("bgm") : null; // カスタムBGMの設定（割り当て＋使うONの時だけ非null）
+        const wantFile = ce ? ce.file : null;
         if(should && !bgmOn){
           bgmOn = true; bgmStep = 0;
           if(bgmTimer) clearInterval(bgmTimer);
           bgmTimer = setInterval(bgmTick, 214);
+          if(ce) bgmStartAudio(ce);
         } else if(!should && bgmOn){
           bgmOn = false;
           if(bgmTimer) clearInterval(bgmTimer);
           bgmTimer = null;
+          bgmStopAudio();
+        } else if(bgmOn && bgmFile !== wantFile){
+          // 配信中にカスタムBGMの設定が変わったら、その場で切り替える
+          if(ce) bgmStartAudio(ce); else bgmStopAudio();
+        }
+        if(bgmAudio){
+          // 音量とミュートに追従する
+          const ee = sndEvent("bgm");
+          if(ee) bgmAudio.volume = sndVolume(ee);
+          if(muted && !bgmAudio.paused){ try { bgmAudio.pause(); } catch(err) {} }
+          else if(!muted && bgmAudio.paused && bgmOn){ const pr = bgmAudio.play(); if(pr && pr.catch) pr.catch(()=>{}); }
         }
       }, 400);
       window.__kakuhenBgm = { isOn: () => bgmOn, played: () => bgmPlayed, step: () => bgmStep };
