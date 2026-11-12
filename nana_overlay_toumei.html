@@ -3693,6 +3693,36 @@
       };
     } catch(e) {}
   })();
+
+  /* ============ v20 visuals: 先バレ等の装飾アニメーション（見た目だけの上乗せ） ============ */
+  (function(){
+    try {
+      const style = document.createElement("style");
+      style.textContent =
+        "@keyframes sbBg{0%{background:rgba(255,255,255,.92)}18%{background:rgba(214,140,255,.88)}36%{background:rgba(255,255,255,.92)}54%{background:rgba(255,120,220,.85)}72%{background:rgba(255,255,255,.9)}100%{background:rgba(190,90,255,.88)}}" +
+        "#sakibareFlash.show{animation:sbBg .95s linear forwards}" +
+        "@keyframes sbTextPop{0%{transform:scale(.5) rotate(-4deg);opacity:0}35%{transform:scale(1.18) rotate(2deg);opacity:1}60%{transform:scale(.96)}100%{transform:scale(1)}}" +
+        "#sakibareFlash.show .sbText{animation:sbTextPop .95s ease-out forwards}" +
+        "@keyframes syuchuPulse{0%{opacity:0;transform:scale(1.25)}25%{opacity:.85}70%{opacity:.55}100%{opacity:0;transform:scale(.96)}}" +
+        "#syuchuLines.show{animation:syuchuPulse .8s ease-out forwards}" +
+        "@keyframes ochiDrop{0%{transform:translate(-50%,-75vh)}22%{transform:translate(-50%,0)}30%{transform:translate(-50%,-2.2cqw)}38%{transform:translate(-50%,0)}46%{transform:translate(-50.6%,0)}54%{transform:translate(-49.4%,0)}62%{transform:translate(-50.6%,0)}70%{transform:translate(-49.4%,0)}78%{transform:translate(-50%,0)}100%{transform:translate(-50%,0)}}" +
+        "#ochiBuru{top:7%}" +
+        "#ochiBuru.show{animation:ochiDrop 1.75s ease-out forwards}" +
+        "@keyframes pkDrop{0%{transform:translateY(-9cqw) scale(1.6);opacity:0}45%{transform:translateY(0) scale(.94);opacity:1}65%{transform:translateY(1cqw) scale(1)}100%{transform:translateY(0)}}" +
+        "#punkCut.show .pkMain{animation:pkDrop .55s ease-out}" +
+        "#punkCut.show .pkSub{animation:pkDrop .55s ease-out}" +
+        "@keyframes finalBlink{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}" +
+        "#finalSpin.show{animation:finalBlink .5s steps(2) infinite}" +
+        "@keyframes dmGlow{0%,100%{text-shadow:0 0 22px rgba(255,180,0,.7)}50%{text-shadow:0 0 44px rgba(255,210,60,1)}}" +
+        "#demoScreen .dmTitle{animation:dmGlow 2.2s ease-in-out infinite}" +
+        "@keyframes dmFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.6cqw) scale(1.12)}}" +
+        "#demoScreen .dmSpark{animation:dmFloat 1.8s ease-in-out infinite}" +
+        "#dataCounter{background:linear-gradient(180deg, rgba(8,8,18,.92), rgba(4,4,10,.92));border:2px solid #39415e;border-radius:14px;box-shadow:0 0 18px rgba(30,40,90,.55), inset 0 0 22px rgba(0,0,0,.65)}" +
+        "@keyframes heatBlink{0%,100%{opacity:1}50%{opacity:.35}}" +
+        "#yomiHeat[data-heat='4']{animation:heatBlink .45s steps(2) infinite}";
+      document.head.appendChild(style);
+    } catch(e) {}
+  })();
 </script>
 </body>
 </html>
