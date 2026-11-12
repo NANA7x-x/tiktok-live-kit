@@ -215,6 +215,26 @@
         </div>
       </details>
 
+      <details class="folder" data-folder="sounds">
+        <summary>🔊 サウンド・BGMカスタム</summary>
+        <div class="folderBody">
+          <div class="note" style="margin-bottom:8px">自分の音声ファイル（mp3 / wav / ogg / m4a）をアップロードして、場面ごとに割り当てられます。「カスタム音を使う」がONでファイルが選ばれている場面はそのファイルが鳴り、OFF／未選択の場面は今まで通りの音が鳴ります（音そのものを消すのは、表示画面側のミュートです）。ファイルはキットのフォルダ内（sounds）に保存され、GitHubには上がりません。設定はサーバーに保存されます。</div>
+          <div style="margin-top:8px">
+            <label>音声ファイルを追加</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">
+              <input id="sndFileInput" type="file" accept=".mp3,.wav,.ogg,.m4a">
+              <button onclick="uploadSoundFile()">⬆️ アップロード</button>
+              <span id="sndUploadState" style="opacity:.85"></span>
+            </div>
+          </div>
+          <div id="sndEvents" style="margin-top:6px"></div>
+          <div class="row" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button onclick="applySoundsRemote()">✅ サウンド設定を反映</button>
+            <button onclick="fillSoundsForm(true)">↩️ 現在の設定を読み直す</button>
+          </div>
+        </div>
+      </details>
+
       <details class="folder" data-folder="visibility" open>
         <summary>👁️ 画面表示 ON / OFF（項目ごと）</summary>
         <div class="folderBody">
@@ -258,6 +278,23 @@
             <button onclick="setThemeMode('powa')">🌸 ぽわぽわ（かわいい・見やすい）</button>
           </div>
           <div class="note">バキバキ：カットインが激しくなり、画面シェイクと太い発光枠でパチンコ全開の見た目になります。ぽわぽわ：パステルの丸いパネルで柔らかく、点滅（ストロボ）は止まって目に優しい見た目になります。カットインはどちらのテーマでも出ます（リーチ／昇格／大当たり／確変／777／特大ギフト）。設定はサーバーに保存されます。</div>
+        </div>
+      </details>
+
+      <details class="folder" data-folder="style">
+        <summary>🎨 文字色カスタム</summary>
+        <div class="folderBody">
+          <div class="note" style="margin-bottom:8px">画面の文字色を3色だけまとめて変えられます。本文＝パネルの普通の文字、見出し＝各パネルのタイトル、強調＝タイマーや金額などの大事な数字・文字です。設定はサーバーに保存されます。「初期値に戻す」と今までの色に戻ります。テーマ（ぽわぽわ等）専用の色は、今まで通りテーマ側が優先されます。</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+            <label>本文 <input id="stMain" type="color" value="#ffffff"></label>
+            <label>見出し <input id="stHeading" type="color" value="#7be0ff"></label>
+            <label>強調 <input id="stAccent" type="color" value="#ffd94d"></label>
+          </div>
+          <div class="row" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button onclick="applyStyleRemote()">✅ 文字色を反映</button>
+            <button onclick="fillStyleForm(true)">↩️ 現在の設定を読み直す</button>
+            <button onclick="resetStyleRemote()">初期値に戻す</button>
+          </div>
         </div>
       </details>
 
@@ -352,6 +389,18 @@
           <div style="margin-top:8px">
             <label>ルーレットでハズレた時の煽り文</label>
             <input id="cRouletteMiss" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label>コンボ継続中の文（{combo}=コンボ数 に置き換わります）</label>
+            <input id="cComboKeep" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label>コンボ残り30秒を切った時の文（{sec}=残り秒数 に置き換わります）</label>
+            <input id="cComboWarn" type="text" style="width:100%">
+          </div>
+          <div style="margin-top:8px">
+            <label>コンボ残り10秒を切った時の文（{sec}=残り秒数 に置き換わります）</label>
+            <input id="cComboDanger" type="text" style="width:100%">
           </div>
           <div style="margin-top:8px">
             <label><input id="cKakuhenBgm" type="checkbox"> 確変中にBGMを流す</label>
@@ -674,6 +723,12 @@
       try { msg = JSON.parse(ev.data); } catch(e) { return; }
       if(msg && msg.type === "state" && msg.state){ renderState(msg.state); if(msg.state.playCfg) fillCfgForm(msg.state.playCfg, false); fillPerksForm(false); }
       if(msg && msg.type === "perks" && msg.perks){ perksRemote = msg.perks; fillPerksForm(false); }
+      if(msg && msg.type === "sounds"){
+        soundsRemote = msg.sounds || null;
+        if(Array.isArray(msg.files) && msg.files.join("\n") !== soundFilesRemote.join("\n")){ soundFilesRemote = msg.files; buildSoundRows(); }
+        fillSoundsForm(false);
+      }
+      if(msg && msg.type === "style"){ styleRemote = msg.style || null; fillStyleForm(false); }
       if(msg && msg.type === "visibility" && Array.isArray(msg.hidden)){
         const joined = msg.hidden.slice().sort().join(",");
         if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
@@ -714,6 +769,9 @@
     set("cMissionTitle", cfg.missionTitle || "🎯 協力ミッション");
     set("cMissionText", cfg.missionText || "無料ルーレット あと{remaining}人で 全員+{reward}回転！");
     set("cRouletteMiss", cfg.rouletteMissText || "はずれでも大丈夫♡ 次のギフトでまた回るよ");
+    set("cComboKeep", cfg.comboTextKeep || "コンボ×{combo} 継続中");
+    set("cComboWarn", cfg.comboTextWarn || "連打しろ‼️ あと{sec}秒");
+    set("cComboDanger", cfg.comboTextDanger || "切れる！連打しろ‼️ あと{sec}秒");
     document.getElementById("cKakuhenBgm").checked = cfg.kakuhenBgm !== false;
     document.getElementById("cThemePickEnabled").checked = cfg.themePickEnabled !== false;
     set("cThemePickMin", cfg.themePickMin != null ? cfg.themePickMin : 300);
@@ -733,7 +791,11 @@
       spins: { 1: num("cSpin1"), 2: num("cSpin2"), 3: num("cSpin3"), 4: num("cSpin4") },
       howto: document.getElementById("cHowto").value,
       missionTitle: document.getElementById("cMissionTitle").value, missionText: document.getElementById("cMissionText").value,
-      rouletteMissText: document.getElementById("cRouletteMiss").value, kakuhenBgm: document.getElementById("cKakuhenBgm").checked,
+      rouletteMissText: document.getElementById("cRouletteMiss").value,
+      comboTextKeep: document.getElementById("cComboKeep").value,
+      comboTextWarn: document.getElementById("cComboWarn").value,
+      comboTextDanger: document.getElementById("cComboDanger").value,
+      kakuhenBgm: document.getElementById("cKakuhenBgm").checked,
       themePickEnabled: document.getElementById("cThemePickEnabled").checked,
       themePickMin: num("cThemePickMin"), themePickMax: num("cThemePickMax"),
       themePickWindowSec: num("cThemePickWindow"), themePickMinutes: num("cThemePickMinutes"),
@@ -748,6 +810,132 @@
     cfgFormLoaded = false;
   }
 
+  /* ---------- 文字色カスタム（サーバー保存 style.json が正本） ---------- */
+  const STYLE_DEFAULTS_REMOTE = { textMain: "#ffffff", textHeading: "#7be0ff", textAccent: "#ffd94d" };
+  let styleRemote = null, styleFormLoaded = false;
+  function fillStyleForm(force){
+    if(styleFormLoaded && !force) return;
+    const s = styleRemote || {};
+    const setC = (id, v)=>{ const el = document.getElementById(id); if(el) el.value = v; };
+    setC("stMain", s.textMain || STYLE_DEFAULTS_REMOTE.textMain);
+    setC("stHeading", s.textHeading || STYLE_DEFAULTS_REMOTE.textHeading);
+    setC("stAccent", s.textAccent || STYLE_DEFAULTS_REMOTE.textAccent);
+    styleFormLoaded = true;
+  }
+  function applyStyleRemote(){
+    send({ type: "style", style: {
+      textMain: document.getElementById("stMain").value,
+      textHeading: document.getElementById("stHeading").value,
+      textAccent: document.getElementById("stAccent").value
+    }});
+    styleFormLoaded = false;
+    alert("文字色を送りました。表示側に反映されます。");
+  }
+  function resetStyleRemote(){
+    if(!confirm("文字色を初期値（今までの色）に戻しますか？")) return;
+    styleRemote = null;
+    send({ type: "style", style: { textMain: null, textHeading: null, textAccent: null } });
+    styleFormLoaded = false;
+    fillStyleForm(true);
+  }
+
+  /* ---------- サウンド・BGMカスタム（サーバー保存 sounds.json が正本） ---------- */
+  const SOUND_EVENTS_REMOTE = [
+    ["bgm", "🎵 BGM（確変中）"],
+    ["gift", "🎁 ギフト受付音"],
+    ["roulette", "🎰 ルーレット開始音"],
+    ["fanfare", "🎉 大当たりファンファーレ（確変突入・大当たりの時）"],
+    ["miss", "💧 ルーレットのはずれ音"],
+    ["tokudai", "🌟 特大ギフト音"],
+    ["mission", "🎯 協力ミッション達成音（今まで専用の音はありません）"]
+  ];
+  let soundsRemote = null, soundFilesRemote = [], soundsFormLoaded = false;
+  function buildSoundRows(){
+    const box = document.getElementById("sndEvents");
+    if(!box) return;
+    const cur = {};
+    SOUND_EVENTS_REMOTE.forEach(([k]) => {
+      const sel = document.getElementById("sndFile_" + k);
+      if(sel) cur[k] = { file: sel.value, vol: document.getElementById("sndVol_" + k).value, en: document.getElementById("sndEn_" + k).checked };
+    });
+    box.innerHTML = SOUND_EVENTS_REMOTE.map(([k, label]) => {
+      const opts = ['<option value="">（今まで通りの音）</option>'].concat(soundFilesRemote.map(f => '<option value="' + escHtml(f) + '">' + escHtml(f) + '</option>')).join("");
+      return '<div style="margin-top:10px;border-top:1px dashed rgba(255,255,255,.15);padding-top:8px">' +
+        '<label>' + label + '</label>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px">' +
+        '<select id="sndFile_' + k + '" style="max-width:230px">' + opts + '</select>' +
+        '<label>音量 <input id="sndVol_' + k + '" type="range" min="0" max="100" value="80" style="width:110px"></label>' +
+        '<label><input id="sndEn_' + k + '" type="checkbox" checked> カスタム音を使う</label>' +
+        '<button onclick="previewSound(\'' + k + '\')">▶ 試聴</button>' +
+        '</div></div>';
+    }).join("");
+    SOUND_EVENTS_REMOTE.forEach(([k]) => {
+      if(cur[k]){ document.getElementById("sndFile_" + k).value = cur[k].file; document.getElementById("sndVol_" + k).value = cur[k].vol; document.getElementById("sndEn_" + k).checked = cur[k].en; }
+    });
+  }
+  function fillSoundsForm(force){
+    if(soundsFormLoaded && !force) return;
+    const ev = (soundsRemote && soundsRemote.events) || {};
+    let ok = true;
+    SOUND_EVENTS_REMOTE.forEach(([k]) => {
+      const sel = document.getElementById("sndFile_" + k);
+      if(!sel){ ok = false; return; }
+      const e = ev[k] || {};
+      sel.value = e.file || "";
+      if(sel.value !== (e.file || "")) sel.value = "";
+      document.getElementById("sndVol_" + k).value = Math.round(((typeof e.volume === "number" && isFinite(e.volume)) ? e.volume : 0.8) * 100);
+      document.getElementById("sndEn_" + k).checked = e.enabled !== false;
+    });
+    if(ok) soundsFormLoaded = true;
+  }
+  function applySoundsRemote(){
+    const events = {};
+    SOUND_EVENTS_REMOTE.forEach(([k]) => {
+      events[k] = {
+        file: document.getElementById("sndFile_" + k).value || null,
+        volume: (parseInt(document.getElementById("sndVol_" + k).value, 10) || 0) / 100,
+        enabled: document.getElementById("sndEn_" + k).checked
+      };
+    });
+    send({ type: "sounds", sounds: { events } });
+    soundsFormLoaded = false;
+    alert("サウンド設定を送りました。サーバーに保存され、表示側に反映されます。");
+  }
+  let sndPreviewAudio = null;
+  function previewSound(k){
+    const f = document.getElementById("sndFile_" + k).value;
+    if(!f){ alert("ファイルが選ばれていません（今まで通りの音が鳴ります）"); return; }
+    try {
+      if(sndPreviewAudio){ try { sndPreviewAudio.pause(); } catch(e) {} }
+      sndPreviewAudio = new Audio("/sounds/" + encodeURIComponent(f));
+      sndPreviewAudio.volume = (parseInt(document.getElementById("sndVol_" + k).value, 10) || 0) / 100;
+      sndPreviewAudio.play();
+    } catch(e) {}
+  }
+  function uploadSoundFile(){
+    const inp = document.getElementById("sndFileInput");
+    const st = document.getElementById("sndUploadState");
+    if(!inp.files || !inp.files[0]){ alert("ファイルを選んでください"); return; }
+    const f = inp.files[0];
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const data = String(reader.result || "").split(",")[1] || "";
+      st.textContent = "アップロード中…";
+      fetch("/upload-sound", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: f.name, data }) })
+        .then(r => r.json())
+        .then(j => {
+          if(j && j.ok){
+            st.textContent = "保存しました：" + j.file;
+            if(Array.isArray(j.files)){ soundFilesRemote = j.files; buildSoundRows(); fillSoundsForm(true); }
+          } else { st.textContent = "失敗：" + ((j && j.error) || "不明なエラー"); }
+        })
+        .catch(()=>{ st.textContent = "失敗：サーバーに接続できませんでした"; });
+    };
+    reader.onerror = ()=>{ st.textContent = "失敗：ファイルを読み込めませんでした"; };
+    reader.readAsDataURL(f);
+  }
+
+  buildSoundRows();
   connect();
   setInterval(()=> send({ type: "requestState" }), 8000);
 </script>
