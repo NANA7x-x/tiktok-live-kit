@@ -1986,22 +1986,73 @@
   let layoutSendReset = false;
   function stampLayoutTime(){ layoutSavedAt = Date.now(); try { localStorage.setItem("overlayLayoutV7Time", String(layoutSavedAt)); } catch(e) {} }
   let editMode = false, selPanel = null, dragCtx = null;
-  /* パネルの拡大率を読む（新形式 sx/sy を優先。旧形式 sc しか無い保存データは sx=sy=sc として扱うので、そのまま読み込める） */
-  function panelScale(s){
-    if(!s) return { x: 1, y: 1 };
-    const fb = (typeof s.sc === "number" && isFinite(s.sc) && s.sc > 0) ? s.sc : 1;
-    const x = (typeof s.sx === "number" && isFinite(s.sx) && s.sx > 0) ? s.sx : fb;
-    const y = (typeof s.sy === "number" && isFinite(s.sy) && s.sy > 0) ? s.sy : fb;
-    return { x: x, y: y };
+  /* v18: 文字入りパネルは「テキストボックス」として扱う。
+     横の大きさ = 箱の幅 w（ステージ幅に対する%。文字は元の大きさのまま、その幅で折り返す）、
+     縦の大きさ = 一律倍率 sc（transform: scale(sc)。文字も比例して拡縮するだけで形は変形しない）。
+     文字が横や縦に伸びてしまう非一律スケール（旧 sx/sy）は廃止し、読み込み時に移行する。
+     左右アンカーで幅が決まるパネル（goal / teaser / roulette）は箱幅を持たず、{l, t, r, sc} で表す
+     （r = 右端の余白%）。それ以外のパネルは {l, t, w, sc} */
+  const ANCHOR_PANELS = { goal: true, teaser: true, roulette: true };
+  const ANCHOR_RIGHT = { goal: 4, teaser: 4, roulette: 8 };
+  function isAnchorPanel(id){ return !!ANCHOR_PANELS[id]; }
+  function validScale(v){ return (typeof v === "number" && isFinite(v) && v > 0) ? v : null; }
+  /* パネルの一律倍率を読む（sc が正本。移行前の値が残っていても sy→sx の順で拾う） */
+  function layoutScale(s){
+    if(!s) return 1;
+    return validScale(s.sc) || validScale(s.sy) || validScale(s.sx) || 1;
+  }
+  /* 旧形式（sx/sy を含む）エントリを新形式へ移行する。見た目の大きさをなるべく保つ：
+     sc := sy（一律化。無い場合は旧 sc、それも無ければ 1）。
+     箱幅 w := 旧の表示幅 ÷ sc = 旧 w × 旧 sx ÷ sc（旧 sx が無い場合は旧 sc を使う）。
+     w 自体が無いエントリは実測で補う（この時点では移行前の transform が未適用なので CSS 幅ベースの近似）。
+     アンカー型は w を捨て、l / t / sc（と r があれば r）だけにする。移行後のエントリに sx/sy は残らない */
+  function normalizeLayoutEntry(id, s){
+    if(!s || typeof s !== "object") return s;
+    if(s.sx == null && s.sy == null){
+      if(isAnchorPanel(id) && s.w != null){ const c = Object.assign({}, s); delete c.w; return c; }
+      return s;
+    }
+    const out = {};
+    if(s.l != null) out.l = s.l;
+    if(s.t != null) out.t = s.t;
+    const sc = validScale(s.sy) || validScale(s.sc) || 1;
+    out.sc = Math.round(sc * 100) / 100;
+    if(isAnchorPanel(id)){
+      if(s.r != null) out.r = s.r;
+    } else {
+      const sxEff = validScale(s.sx) || validScale(s.sc) || 1;
+      let w = null;
+      if(typeof s.w === "number" && isFinite(s.w) && s.w > 0) w = s.w * sxEff / sc;
+      else {
+        try {
+          const el = $(id), sr = $("stage").getBoundingClientRect();
+          if(el && sr.width > 0){ const r = el.getBoundingClientRect(); if(r.width > 0) w = r.width / sc / sr.width * 100; }
+        } catch(e) {}
+      }
+      if(w != null) out.w = Math.round(Math.max(10, Math.min(96, w)) * 10) / 10;
+    }
+    return out;
+  }
+  function normalizeLayoutMap(){
+    Object.keys(layoutMap).forEach(id => { layoutMap[id] = normalizeLayoutEntry(id, layoutMap[id]); });
+  }
+  /* 移行結果を localStorage にだけ静かに書き戻す（保存時刻は進めない＝サーバー正本との新旧判定に影響させない。
+     サーバー側に残った旧データは、次に本物の保存が走った時に新形式で上書きされる） */
+  function persistLayoutLocal(){
+    try { localStorage.setItem("overlayLayoutV7", JSON.stringify(layoutMap)); } catch(e) {}
   }
   function applyLayout(){
     movableIds.forEach(id => {
       const el = $(id), s = layoutMap[id];
       if(!el || !s) return;
-      if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
+      if(s.l != null){
+        el.style.left = s.l + "%";
+        // アンカー型は右端も位置として扱う（幅は左右の間隔で決まる）。それ以外は右指定を外して箱幅 w に任せる
+        el.style.right = isAnchorPanel(id) ? ((s.r != null ? s.r : ANCHOR_RIGHT[id]) + "%") : "auto";
+      }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
-      if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
+      if(!isAnchorPanel(id) && s.w != null){ el.style.width = s.w + "%"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ el.style.transform = "scale(" + layoutScale(s) + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   function saveLayout(){
@@ -2015,12 +2066,16 @@
     const sr = $("stage").getBoundingClientRect();
     movableIds.forEach(id => {
       const el = $(id); if(!el) return;
-      const ps = panelScale(layoutMap[id]);
+      const sc = layoutScale(layoutMap[id]);
       el.style.transform = "";
       const r = el.getBoundingClientRect();
       if(r.width === 0 && r.height === 0) return; // 非表示（ルーレット等）は対象外
-      layoutMap[id] = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, w: Math.round(r.width / sr.width * 1000) / 10, sx: ps.x, sy: ps.y };
-      if(ps.x !== 1 || ps.y !== 1){ el.style.transform = "scale(" + ps.x + ", " + ps.y + ")"; el.style.transformOrigin = "top left"; }
+      // transform を外して測るので、幅は「箱幅そのもの」。アンカー型は幅の代わりに右端の余白 r を記録する
+      const ent = { l: Math.round((r.left - sr.left) / sr.width * 1000) / 10, t: Math.round((r.top - sr.top) / sr.height * 1000) / 10, sc: sc };
+      if(isAnchorPanel(id)) ent.r = Math.round((sr.right - r.right) / sr.width * 1000) / 10;
+      else ent.w = Math.round(r.width / sr.width * 1000) / 10;
+      layoutMap[id] = ent;
+      if(sc !== 1){ el.style.transform = "scale(" + sc + ")"; el.style.transformOrigin = "top left"; }
     });
   }
   const presetStyles = {
@@ -2075,7 +2130,7 @@
   window.importLayout = function(code){
     try {
       const v = JSON.parse(typeof code === "string" ? code : "");
-      if(v && typeof v === "object"){ layoutMap = v; saveLayout(); applyLayout(); setEditState("配置コードを取り込みました"); return true; }
+      if(v && typeof v === "object"){ layoutMap = v; normalizeLayoutMap(); saveLayout(); applyLayout(); setEditState("配置コードを取り込みました"); return true; }
     } catch(e){ setEditState("配置コードの読み込みに失敗しました"); }
     return false;
   };
@@ -2097,25 +2152,23 @@
     document.querySelectorAll(".movable").forEach(e => e.classList.remove("sel"));
     selPanel = el;
     if(el) el.classList.add("sel");
-    setEditState(editMode ? ("編集中：選択中=" + (el ? el.id : "なし") + " ／ ドラッグで移動、大きさボタンで拡縮、Lで終了") : "");
+    setEditState(editMode ? ("編集中：選択中=" + (el ? el.id : "なし") + " ／ ドラッグで移動、右下ハンドルは横引き=箱の幅・縦引き=全体の大きさ、Lで終了") : "");
   }
   window.toggleEdit = function(){
     editMode = !editMode;
     document.body.classList.toggle("editing", editMode);
     applyVisibility();
     if(!editMode) selectPanel(null);
-    else setEditState("編集中：パネルをドラッグで移動、クリックで選択、大きさボタンで拡縮、Lで終了");
+    else setEditState("編集中：ドラッグで移動、クリックで選択、右下ハンドルは横引き=箱の幅（文字は折り返す）・縦引き=全体の大きさ、Lで終了");
   };
   window.scaleSel = function(d){
     if(!selPanel) return;
-    // ボタンでの拡縮は従来通り一律：横の倍率を基準に増減し、縦にも同じ比率を掛ける（縦横比は保つ）
-    const ps = panelScale(layoutMap[selPanel.id]);
-    const next = Math.max(0.5, Math.min(2, ps.x + d));
-    const f = next / ps.x;
-    const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
-    const sx = clampR(ps.x * f), sy = clampR(ps.y * f);
-    layoutMap[selPanel.id] = Object.assign({}, layoutMap[selPanel.id], { sx: sx, sy: sy });
-    selPanel.style.transform = "scale(" + sx + ", " + sy + ")";
+    // 大きさボタンは一律倍率 sc だけを変える（文字の形は変形しない）
+    const sc = Math.round(Math.max(0.5, Math.min(2, layoutScale(layoutMap[selPanel.id]) + d)) * 100) / 100;
+    const ent = Object.assign({}, layoutMap[selPanel.id], { sc: sc });
+    delete ent.sx; delete ent.sy;
+    layoutMap[selPanel.id] = ent;
+    selPanel.style.transform = "scale(" + sc + ")";
     selPanel.style.transformOrigin = "top left";
     saveLayout();
   };
@@ -2126,12 +2179,19 @@
       selectPanel(el);
       const sr = $("stage").getBoundingClientRect();
       const r = el.getBoundingClientRect();
-      // 掴んだ瞬間に現在の幅を固定する（左右指定で決まっていた幅が潰れるのを防ぐ）
-      const scNow = panelScale(layoutMap[el.id]).x;
-      const wPct = Math.round(r.width / scNow / sr.width * 1000) / 10;
-      el.style.width = wPct + "%";
-      layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { w: wPct });
-      dragCtx = { el: el, dx: e.clientX - r.left, dy: e.clientY - r.top, sr: sr };
+      if(isAnchorPanel(el.id)){
+        // アンカー型は幅を固定せず、右端の余白を掴んだ時点の値で固定して箱ごと動かす（幅が潰れるのを防ぐ）
+        const rGap = Math.round((sr.right - r.right) / sr.width * 1000) / 10;
+        el.style.right = rGap + "%";
+        dragCtx = { el: el, dx: e.clientX - r.left, dy: e.clientY - r.top, sr: sr, rGap: rGap };
+      } else {
+        // 掴んだ瞬間に現在の幅を固定する（左右指定で決まっていた幅が潰れるのを防ぐ）
+        const scNow = layoutScale(layoutMap[el.id]);
+        const wPct = Math.round(r.width / scNow / sr.width * 1000) / 10;
+        el.style.width = wPct + "%";
+        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { w: wPct });
+        dragCtx = { el: el, dx: e.clientX - r.left, dy: e.clientY - r.top, sr: sr };
+      }
       try { el.setPointerCapture(e.pointerId); } catch(err) {}
     });
     el.addEventListener("pointermove", e => {
@@ -2140,8 +2200,11 @@
       let l = (e.clientX - sr.left - dragCtx.dx) / sr.width * 100;
       let t = (e.clientY - sr.top - dragCtx.dy) / sr.height * 100;
       l = Math.max(0, Math.min(95, l)); t = Math.max(0, Math.min(95, t));
-      el.style.left = l + "%"; el.style.top = t + "%"; el.style.right = "auto"; el.style.bottom = "auto";
-      layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { l: Math.round(l * 10) / 10, t: Math.round(t * 10) / 10 });
+      el.style.left = l + "%"; el.style.top = t + "%"; el.style.bottom = "auto";
+      const ent = { l: Math.round(l * 10) / 10, t: Math.round(t * 10) / 10 };
+      if(dragCtx.rGap != null){ el.style.right = dragCtx.rGap + "%"; ent.r = dragCtx.rGap; }
+      else el.style.right = "auto";
+      layoutMap[el.id] = Object.assign({}, layoutMap[el.id], ent);
     });
     el.addEventListener("pointerup", () => { if(dragCtx){ dragCtx = null; saveLayout(); } });
   }
@@ -2154,13 +2217,15 @@
     if(typeof attachResizeHandle === "function") attachResizeHandle(el);
     const s = layoutMap[el.id];
     if(s){
-      if(s.l != null){ el.style.left = s.l + "%"; el.style.right = "auto"; }
+      if(s.l != null){ el.style.left = s.l + "%"; el.style.right = isAnchorPanel(el.id) ? ((s.r != null ? s.r : ANCHOR_RIGHT[el.id]) + "%") : "auto"; }
       if(s.t != null){ el.style.top = s.t + "%"; el.style.bottom = "auto"; }
-      if(s.w != null){ el.style.width = s.w + "%"; }
-      if(s.sc != null || s.sx != null || s.sy != null){ const psc = panelScale(s); el.style.transform = "scale(" + psc.x + ", " + psc.y + ")"; el.style.transformOrigin = "top left"; }
+      if(!isAnchorPanel(el.id) && s.w != null){ el.style.width = s.w + "%"; }
+      if(s.sc != null || s.sx != null || s.sy != null){ el.style.transform = "scale(" + layoutScale(s) + ")"; el.style.transformOrigin = "top left"; }
     }
     try { applyVisibility(); } catch(e) {}
   };
+  // 起動時：手持ちの配置に旧形式（sx/sy）が残っていれば新形式へ移行してから適用する
+  normalizeLayoutMap(); persistLayoutLocal();
   applyLayout();
 
   /* ---------- v16: 項目ごとの表示ON/OFF（リモコンから切替・サーバーが正本を保持） ---------- */
@@ -2304,12 +2369,14 @@
     if(layoutMap[el.id] && layoutMap[el.id].l != null) return;
     const sr = $("stage").getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    const sc = panelScale(layoutMap[el.id]).x;
-    layoutMap[el.id] = Object.assign({}, layoutMap[el.id], {
+    const ent = {
       l: Math.round((r.left - sr.left) / sr.width * 1000) / 10,
-      t: Math.round((r.top - sr.top) / sr.height * 1000) / 10,
-      w: Math.round(r.width / sc / sr.width * 1000) / 10
-    });
+      t: Math.round((r.top - sr.top) / sr.height * 1000) / 10
+    };
+    // アンカー型は幅の代わりに右端の余白、それ以外は実測の箱幅を補う
+    if(isAnchorPanel(el.id)) ent.r = Math.round((sr.right - r.right) / sr.width * 1000) / 10;
+    else ent.w = Math.round(r.width / layoutScale(layoutMap[el.id]) / sr.width * 1000) / 10;
+    layoutMap[el.id] = Object.assign({}, layoutMap[el.id], ent);
   }
   window.nudgeSel = function(dx, dy){
     if(!selPanel) return;
@@ -2318,7 +2385,8 @@
     const l = Math.max(0, Math.min(95, cur.l + dx));
     const t = Math.max(0, Math.min(95, cur.t + dy));
     layoutMap[selPanel.id] = Object.assign({}, cur, { l: Math.round(l * 10) / 10, t: Math.round(t * 10) / 10 });
-    selPanel.style.left = l + "%"; selPanel.style.top = t + "%"; selPanel.style.right = "auto"; selPanel.style.bottom = "auto";
+    selPanel.style.left = l + "%"; selPanel.style.top = t + "%"; selPanel.style.bottom = "auto";
+    selPanel.style.right = isAnchorPanel(selPanel.id) ? ((cur.r != null ? cur.r : ANCHOR_RIGHT[selPanel.id]) + "%") : "auto";
     saveLayout();
   };
   function attachResizeHandle(el){
@@ -2330,16 +2398,48 @@
       e.preventDefault(); e.stopPropagation();
       selectPanel(el);
       const startX = e.clientX, startY = e.clientY;
-      const startS = panelScale(layoutMap[el.id]);
+      const anchor = isAnchorPanel(el.id);
+      const startSc = layoutScale(layoutMap[el.id]);
+      const srW = $("stage").getBoundingClientRect().width;
+      // 横ドラッグの起点になる箱幅（%）。保存が無ければ実測（表示幅 ÷ 倍率）で求める
+      let startW = null;
+      if(!anchor){
+        const cur = layoutMap[el.id];
+        if(cur && typeof cur.w === "number" && isFinite(cur.w) && cur.w > 0) startW = cur.w;
+        else if(srW > 0){
+          const r = el.getBoundingClientRect();
+          if(r.width > 0) startW = Math.round(r.width / startSc / srW * 1000) / 10;
+        }
+        if(startW != null) startW = Math.max(10, Math.min(96, startW));
+      }
       function mv(ev){
-        // 横ドラッグで横倍率、縦ドラッグで縦倍率を、それぞれ独立に変える（縦横比も変えられる）
-        const fx = 1 + (ev.clientX - startX) / (320 * (fitScale || 1));
-        const fy = 1 + (ev.clientY - startY) / (320 * (fitScale || 1));
-        const clampR = (v) => Math.round(Math.max(0.5, Math.min(2, v)) * 100) / 100;
-        const sx = clampR(startS.x * fx), sy = clampR(startS.y * fy);
-        layoutMap[el.id] = Object.assign({}, layoutMap[el.id], { sx: sx, sy: sy });
-        el.style.transform = "scale(" + sx + ", " + sy + ")";
-        el.style.transformOrigin = "top left";
+        // 移動量はステージ座標系（fitScale で割る）に直してから使う
+        const dx = (ev.clientX - startX) / (fitScale || 1);
+        const dy = (ev.clientY - startY) / (fitScale || 1);
+        const ent = Object.assign({}, layoutMap[el.id]);
+        if(anchor){
+          // アンカー型は幅が左右の間隔で決まるので、横・縦どちらのドラッグも一律倍率として扱う（文字を変形させない）
+          const f = 1 + (dx + dy) / 320;
+          ent.sc = Math.round(Math.max(0.5, Math.min(2, startSc * f)) * 100) / 100;
+          el.style.transform = "scale(" + ent.sc + ")";
+          el.style.transformOrigin = "top left";
+        } else {
+          // 横ドラッグ = 箱の幅 w を変えるだけ。文字は元の大きさ・形のまま、新しい幅で折り返す
+          if(startW != null && srW > 0){
+            const w = Math.round(Math.max(10, Math.min(96, startW + dx / startSc / srW * 100)) * 10) / 10;
+            ent.w = w;
+            el.style.width = w + "%";
+          }
+          // 縦ドラッグ = 全体の一律倍率 sc。文字も比例して大きく/小さくなるだけ
+          if(dy !== 0){
+            const f = 1 + dy / 320;
+            ent.sc = Math.round(Math.max(0.5, Math.min(2, startSc * f)) * 100) / 100;
+            el.style.transform = "scale(" + ent.sc + ")";
+            el.style.transformOrigin = "top left";
+          }
+        }
+        delete ent.sx; delete ent.sy;
+        layoutMap[el.id] = ent;
       }
       function up(){ window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); saveLayout(); }
       window.addEventListener("pointermove", mv);
@@ -2595,8 +2695,9 @@
       }
       else if(msg.type === "layout" && msg.layout){
         layoutMap = msg.layout;
+        normalizeLayoutMap(); // 正本が旧形式（sx/sy）のまま届いても、新形式に移行してから使う
         stampLayoutTime(); // 正本を取り込んだ = このクライアントの手持ちも最新になった
-        try { localStorage.setItem("overlayLayoutV7", JSON.stringify(layoutMap)); } catch(e){}
+        persistLayoutLocal();
         applyLayout();
       }
       else if(msg.type === "theme" && msg.mode){
