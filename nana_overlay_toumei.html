@@ -102,7 +102,7 @@
     background:linear-gradient(90deg,#ff4040,#ff8c1a); color:#fff; font-weight:900; padding:5px 16px;
     border-radius:999px; font-size:clamp(13px,2.6cqw,25px); box-shadow:0 0 18px rgba(255,100,0,.85); white-space:nowrap; }
   body.fever #feverBadge { display:block; animation:blink2 .4s steps(2) infinite; }
-  .panel { background:rgba(6,3,16,.78); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; line-height:1.5; }
+  .panel { background:rgba(6,3,16,.88); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; line-height:1.5; }
 
   /* ---------- v17: 改行の整え＆文字の読みやすさ（全テーマ共通の下地） ---------- */
   /* 日本語の禁則処理を厳しめにし、長い語は境目で折る（単語の途中で割らない） */
@@ -164,7 +164,7 @@
     font-weight:900; font-size:clamp(18px,4cqw,38px); color:#ffb347;
     text-shadow:0 2px 12px rgba(255,150,0,.7);
     /* v16: 背後の演出・文字と混ざらないよう帯の下地を追加 */
-    background:rgba(24,8,0,.82); border-radius:999px; padding:4px 10px;
+    background:rgba(24,8,0,.92); border-radius:999px; padding:4px 10px;
   }
   #comboBanner.show { display:block; }
   #comboBanner.danger { color:#ff4040; animation:blink2 .25s steps(2) infinite; }
@@ -172,9 +172,10 @@
 
   /* フラッシュ */
   #flash {
-    position:absolute; left:6%; right:6%; top:47%; text-align:center; padding:18px 10px; z-index:72;
+    /* v21: 告知は上部ゾーンへ（中央の主役＝スロットとその結果表示に被せない）。下地はほぼベタ塗り */
+    position:absolute; left:6%; right:6%; top:10%; text-align:center; padding:18px 10px; z-index:72;
     /* v16: 下の文字が透けないよう、半透明グラデ→濃いプレート＋枠＋影に変更（重なり読みにくさ対策） */
-    background:linear-gradient(180deg, rgba(96,10,56,.95), rgba(48,4,28,.95));
+    background:linear-gradient(180deg, rgba(96,10,56,.98), rgba(48,4,28,.98));
     border:2px solid rgba(255,217,77,.55); box-shadow:0 0 30px rgba(255,95,158,.55), inset 0 0 22px rgba(255,95,158,.25);
     border-radius:20px; font-weight:900; opacity:0; transform:scale(.7); pointer-events:none;
   }
@@ -240,12 +241,12 @@
   #roulette .title { font-size:clamp(14px,2.6cqw,26px); font-weight:900; color:#ff8080; margin-bottom:6px; }
   /* v21: リーチ！は行として積み重ねず、ホイール上のバッジとして重ねる（背板つき） */
   #reach { position:absolute; top:9cqw; left:50%; transform:translateX(-50%); z-index:3;
-    background:rgba(20,6,0,.88); border:2px solid rgba(255,217,77,.8); border-radius:999px; padding:.2cqw 2.6cqw;
+    background:rgba(20,6,0,.95); border:2px solid rgba(255,217,77,.8); border-radius:999px; padding:.2cqw 2.6cqw;
     font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
   #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:var(--text-accent, #ffd94d); min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
   /* v16: ルーレット結果表示を大型化（当たり/はずれ共通）＋ハズレ時の煽り文 */
   #rouletteItem.result { font-size:clamp(29px,7.6cqw,72px); line-height:1.25;
-    display:inline-block; background:rgba(12,6,24,.88); border:2px solid rgba(255,217,77,.55); border-radius:16px; padding:2px 14px;
+    display:inline-block; background:rgba(12,6,24,.95); border:2px solid rgba(255,217,77,.55); border-radius:16px; padding:2px 14px;
     text-shadow:0 0 24px rgba(255,180,0,.9), 0 3px 0 rgba(0,0,0,.45); animation:resultPop .5s cubic-bezier(.2,1.6,.4,1); }
   #rouletteItem.result.miss { color:#9adfff; text-shadow:0 0 22px rgba(80,180,255,.85), 0 3px 0 rgba(0,0,0,.45); }
   @keyframes resultPop { 0%{ transform:scale(.5); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
@@ -355,7 +356,7 @@
     box-shadow:0 0 3cqw rgba(230,0,18,.5), inset 0 0 2.6cqw rgba(230,0,18,.35); }
   #attendStamp .stampText { margin-top:2.4cqw; font-size:7cqw; font-weight:900; color:#fff;
     text-shadow:0 0 2cqw rgba(230,0,18,.9), 0 .5cqw 0 rgba(0,0,0,.55); white-space:nowrap;
-    background:rgba(0,0,0,.5); padding:.5cqw 2.6cqw; border-radius:1.8cqw; }
+    background:rgba(0,0,0,.8); padding:.5cqw 2.6cqw; border-radius:1.8cqw; }
   #attendStamp.show .hanko { animation:stampIn 2.5s ease-out forwards; }
   #attendStamp.show .stampText { animation:stampTextIn 2.5s ease-out forwards; }
   @keyframes stampIn {
@@ -411,7 +412,7 @@
     z-index:74; pointer-events:none; }
   /* v21: 巨大文字の下に濃い背板（.callPlate）を敷き、下のパネルや文字が透けて読めなくなるのを防ぐ。
      ポップアニメーションは背板側に移し、文字には縁取りを足した */
-  #bigCallout .callPlate { background:rgba(10,4,22,.9); border:3px solid rgba(255,217,77,.7); border-radius:2.6cqw;
+  #bigCallout .callPlate { background:rgba(10,4,22,.97); border:3px solid rgba(255,217,77,.7); border-radius:2.6cqw;
     padding:1.4cqw 4.6cqw 2cqw; box-shadow:0 0 34px rgba(0,0,0,.6), inset 0 0 22px rgba(120,40,180,.35); opacity:0; }
   #bigCallout.gold .callPlate { border-color:rgba(255,217,77,.95);
     box-shadow:0 0 38px rgba(255,180,0,.45), inset 0 0 22px rgba(255,180,0,.3); }
@@ -495,7 +496,7 @@
   @keyframes drift { 0%{ transform:translateY(0) translateX(0) rotate(0deg); } 50%{ transform:translateY(-98cqw) translateX(3cqw) rotate(160deg); } 100%{ transform:translateY(-199cqw) translateX(-2cqw) rotate(320deg); } }
   #stage.shake { animation:shakeA .35s linear; }
   @keyframes shakeA { 0%{transform:translateX(0)} 25%{transform:translateX(-7px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-4px)} 100%{transform:translateX(0)} }
-  #spinReel { background:rgba(0,0,0,.45); border:2px solid rgba(255,217,77,.0); border-radius:14px; padding:4px 8px; }
+  #spinReel { background:rgba(0,0,0,.75); border:2px solid rgba(255,217,77,.0); border-radius:14px; padding:4px 8px; }
   #spinReel.on { opacity:1; border-color:rgba(255,217,77,.8); }
   #teaser.pop { animation:teaserPop .5s ease; }
   @keyframes teaserPop { 40%{ transform:scale(1.06); } }
@@ -544,7 +545,7 @@
   #vipNext, #mileNextReward, #likeNext { font-size:.92em; }
 </style>
 </head>
-  <style> html, body { background:transparent !important; } body.transparent .panel { background:rgba(0,0,0,.62); } </style>
+  <style> html, body { background:transparent !important; } body.transparent .panel { background:rgba(0,0,0,.8); } </style>
 <body class="transparent">
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="smXXGrad" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#f3e8ff"/><stop offset="55%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6d28d9"/></radialGradient></defs></svg>
 <div id="fit"><div id="stage">
@@ -2836,12 +2837,12 @@
     try {
       const style = document.createElement("style");
       style.textContent =
-        "#hypeCut{position:absolute;inset:0;z-index:73;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,0,10,.88);pointer-events:none}" +
+        "#hypeCut{position:absolute;inset:0;z-index:73;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,0,10,.94);pointer-events:none}" +
         "#hypeCut.show{display:flex}" +
         "#hypeCut .hcMain{font-size:15cqw;font-weight:900;color:#ff2d55;text-shadow:0 0 34px rgba(255,45,85,.95),0 4px 0 #40000d;animation:hcShake .12s linear infinite}" +
         "#hypeCut .hcStars{font-size:6.5cqw;color:#ffd94d;text-shadow:0 0 18px rgba(255,180,0,.9);margin-top:1cqw}" +
         "@keyframes hcShake{0%{transform:translate(0,0) rotate(-.6deg)}50%{transform:translate(.6cqw,-.4cqw) rotate(.6deg)}100%{transform:translate(-.5cqw,.5cqw)}}" +
-        "#tenjoWarn{position:absolute;top:11.5%;left:50%;transform:translateX(-50%);z-index:41;display:none;font-weight:900;color:#ff4040;font-size:clamp(16px,4.4cqw,42px);text-shadow:0 0 20px rgba(255,0,0,.8);white-space:nowrap;background:rgba(16,0,0,.82);border-radius:999px;padding:.4cqw 2.6cqw}" +
+        "#tenjoWarn{position:absolute;top:11.5%;left:50%;transform:translateX(-50%);z-index:41;display:none;font-weight:900;color:#ff4040;font-size:clamp(16px,4.4cqw,42px);text-shadow:0 0 20px rgba(255,0,0,.8);white-space:nowrap;background:rgba(16,0,0,.92);border-radius:999px;padding:.4cqw 2.6cqw}" +
         "#tenjoWarn.hot{display:block;animation:blink2 .5s steps(2) infinite}" +
         "#tenjoWarn.mega{font-size:clamp(22px,6.4cqw,60px);animation:hcShake .15s linear infinite}" +
         "#vipEntry{position:absolute;top:42%;right:-70%;z-index:72;background:linear-gradient(90deg,rgba(60,35,0,.94),rgba(20,12,0,.94));border:3px solid #ffd94d;border-right:none;border-radius:16px 0 0 16px;padding:2.2cqw 4cqw;color:#ffe98a;font-weight:900;font-size:clamp(18px,4.8cqw,46px);box-shadow:0 0 34px rgba(255,180,0,.65);transition:right .45s cubic-bezier(.2,1.4,.4,1);pointer-events:none;white-space:nowrap}" +
@@ -2849,7 +2850,7 @@
         "#comboRoll{position:absolute;top:16.2%;left:0;right:0;z-index:42;overflow:hidden;display:none;pointer-events:none}" +
         "#comboRoll .crIn{display:inline-block;white-space:nowrap;font-weight:900;font-size:clamp(14px,3.4cqw,32px);color:#7be0ff;text-shadow:0 0 14px rgba(0,180,255,.8);animation:crScroll 6.5s linear forwards;padding-left:100%}" +
         "@keyframes crScroll{to{transform:translateX(-100%)}}" +
-        "#missionBar{position:absolute;top:24.6%;bottom:auto;left:0;right:0;margin:0 auto;width:max-content;max-width:56cqw;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);line-height:1.45;color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
+        "#missionBar{position:absolute;top:24.6%;bottom:auto;left:0;right:0;margin:0 auto;width:max-content;max-width:56cqw;z-index:40;background:rgba(10,20,40,.93);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);line-height:1.45;color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
         "#slotMachine.zen .smStrip{animation:zenSpin .28s linear infinite}" +
         "@keyframes zenSpin{from{transform:translateY(0)}to{transform:translateY(-38%)}}";
       document.head.appendChild(style);
@@ -3561,11 +3562,11 @@
         "#ochiBuru .obPlate{width:34cqw;height:34cqw;margin:0 auto;border-radius:50%;background:radial-gradient(circle at 50% 38%, #3b1166, #170830);border:4px solid #ffd94d;box-shadow:0 0 34px rgba(255,200,40,.75);display:flex;align-items:center;justify-content:center}" +
         "#ochiBuru .obPlate svg{width:72%;height:72%}" +
         "#ochiBuru .obLabel{font-weight:900;color:#ffd94d;font-size:5cqw;text-shadow:0 0 14px rgba(255,180,0,.9);margin-top:.6cqw}" +
-        "#punkCut{position:absolute;left:0;right:0;top:34%;z-index:128;display:none;text-align:center;pointer-events:none}" +
+        "#punkCut{position:absolute;left:0;right:0;top:10%;z-index:128;display:none;text-align:center;pointer-events:none}" +
         "#punkCut.show{display:block}" +
-        "#punkCut .pkMain{display:inline-block;background:rgba(14,2,8,.9);border:3px solid rgba(255,51,72,.75);border-radius:2.2cqw;padding:.6cqw 3.6cqw 1.1cqw;font-size:17cqw;font-weight:900;color:#ff3348;text-shadow:0 0 26px rgba(255,0,40,.85),0 5px 0 #30000a}" +
-        "#punkCut .pkSub{display:inline-block;background:rgba(10,4,10,.85);border-radius:999px;padding:.3cqw 2.2cqw;font-size:5.4cqw;font-weight:900;color:#cfd2dc;text-shadow:0 2px 8px rgba(0,0,0,.8);margin-top:1cqw}" +
-        "#finalSpin{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:93;display:none;font-weight:900;white-space:nowrap;color:#ffe14d;font-size:clamp(18px,5.2cqw,50px);text-shadow:0 0 20px rgba(255,160,0,.9),0 3px 0 #4a2400;background:rgba(20,8,0,.72);border:3px solid #ffb347;border-radius:999px;padding:1cqw 4cqw;pointer-events:none}" +
+        "#punkCut .pkMain{display:inline-block;background:rgba(14,2,8,.97);border:3px solid rgba(255,51,72,.75);border-radius:2.2cqw;padding:.6cqw 3.6cqw 1.1cqw;font-size:17cqw;font-weight:900;color:#ff3348;text-shadow:0 0 26px rgba(255,0,40,.85),0 5px 0 #30000a}" +
+        "#punkCut .pkSub{display:inline-block;background:rgba(10,4,10,.93);border-radius:999px;padding:.3cqw 2.2cqw;font-size:5.4cqw;font-weight:900;color:#cfd2dc;text-shadow:0 2px 8px rgba(0,0,0,.8);margin-top:1cqw}" +
+        "#finalSpin{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:93;display:none;font-weight:900;white-space:nowrap;color:#ffe14d;font-size:clamp(18px,5.2cqw,50px);text-shadow:0 0 20px rgba(255,160,0,.9),0 3px 0 #4a2400;background:rgba(20,8,0,.88);border:3px solid #ffb347;border-radius:999px;padding:1cqw 4cqw;pointer-events:none}" +
         "#finalSpin.show{display:block}" +
         "#demoScreen{position:absolute;inset:0;z-index:150;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;background:radial-gradient(circle at 50% 30%, rgba(64,20,110,.96), rgba(8,2,20,.98))}" +
         "#demoScreen.show{display:flex}" +
@@ -3873,7 +3874,7 @@
         "#demoScreen .dmTitle{animation:dmGlow 2.2s ease-in-out infinite}" +
         "@keyframes dmFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.6cqw) scale(1.12)}}" +
         "#demoScreen .dmSpark{animation:dmFloat 1.8s ease-in-out infinite}" +
-        "#dataCounter{background:linear-gradient(180deg, rgba(8,8,18,.92), rgba(4,4,10,.92));border:2px solid #39415e;border-radius:14px;box-shadow:0 0 18px rgba(30,40,90,.55), inset 0 0 22px rgba(0,0,0,.65)}" +
+        "#dataCounter{background:linear-gradient(180deg, rgba(8,8,18,.96), rgba(4,4,10,.96));border:2px solid #39415e;border-radius:14px;box-shadow:0 0 18px rgba(30,40,90,.55), inset 0 0 22px rgba(0,0,0,.65)}" +
         "@keyframes heatBlink{0%,100%{opacity:1}50%{opacity:.35}}" +
         "#yomiHeat[data-heat='4']{animation:heatBlink .45s steps(2) infinite}";
       document.head.appendChild(style);
