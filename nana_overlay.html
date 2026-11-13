@@ -20,6 +20,64 @@
     background:linear-gradient(180deg, rgba(20,16,40,.88), rgba(40,10,50,.82)); }
   body.transparent #stage { background:transparent; }
   body.transparent #bgLayer { background:transparent; animation:none; }
+  /* ---------- v22 全画面フィルター（オーロラのツヤ＋キラキラ） ----------
+     層の位置: 背景・（OBS側の）アバターの上、UIパネル（z44）と文字の下 = z39。
+     アニメーションは transform / opacity のみ（負荷配慮）。色味は控えめなアルファで敷き、
+     パネル側はベタ塗り背板で読めるので、読みやすさは落とさない。
+     種類と強さはリモコンから変更でき、テーマと同じくサーバー保存・全クライアント同期。 */
+  #screenFx { position:absolute; inset:0; z-index:39; pointer-events:none; overflow:hidden; display:none; }
+  body[data-screenfx="aurora"] #screenFx, body[data-screenfx="sparkle"] #screenFx, body[data-screenfx="both"] #screenFx { display:block; }
+  body[data-screenfx-level="weak"] #screenFx { opacity:.45; }
+  body[data-screenfx-level="mid"] #screenFx { opacity:.7; }
+  body[data-screenfx-level="strong"] #screenFx { opacity:1; }
+  .fxAurora, .fxSparkle { position:absolute; inset:0; display:none; }
+  body[data-screenfx="aurora"] .fxAurora, body[data-screenfx="both"] .fxAurora { display:block; }
+  body[data-screenfx="sparkle"] .fxSparkle, body[data-screenfx="both"] .fxSparkle { display:block; }
+  .fxAurora i { position:absolute; inset:-22%; display:block; }
+  .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(168,85,247,.34), rgba(168,85,247,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(255,95,158,.26), rgba(255,95,158,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(64,200,255,.22), rgba(64,200,255,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,217,77,.18), rgba(255,217,77,0) 70%);
+    animation:aurDrift 26s ease-in-out infinite alternate; }
+  .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(123,224,255,.24), rgba(123,224,255,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(255,120,220,.20), rgba(255,120,220,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(168,85,247,.24), rgba(168,85,247,0) 70%);
+    animation:aurDrift 34s ease-in-out infinite alternate-reverse, aurFade 17s ease-in-out infinite alternate; }
+  /* テーマ連動の色味（初期の寄せのみ。種類・強さの手動選択が常に優先） */
+  body.theme-baki .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(255,70,60,.32), rgba(255,70,60,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(255,150,50,.28), rgba(255,150,50,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(255,60,180,.22), rgba(255,60,180,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,217,77,.22), rgba(255,217,77,0) 70%); }
+  body.theme-baki .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(255,200,60,.24), rgba(255,200,60,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(255,90,120,.20), rgba(255,90,120,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(255,120,40,.24), rgba(255,120,40,0) 70%); }
+  body.theme-powa .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(255,170,220,.32), rgba(255,170,220,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(170,220,255,.26), rgba(170,220,255,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(200,170,255,.22), rgba(200,170,255,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,240,190,.20), rgba(255,240,190,0) 70%); }
+  body.theme-powa .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(255,210,235,.24), rgba(255,210,235,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(170,255,220,.18), rgba(170,255,220,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(255,180,200,.24), rgba(255,180,200,0) 70%); }
+  .fxSparkle .spkDots { position:absolute; inset:-8%; display:block;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.85) 0 1.6px, rgba(255,255,255,0) 3px),
+      radial-gradient(circle, rgba(255,217,77,.8) 0 1.3px, rgba(255,217,77,0) 2.6px);
+    background-size:110px 110px, 170px 170px; background-position:0 0, 40px 60px;
+    animation:spkDrift 36s ease-in-out infinite alternate, spkFade 5s ease-in-out infinite alternate; }
+  .spkStar { position:absolute; display:block; animation:spkTwinkle 3.4s ease-in-out infinite; }
+  .spkStar svg { display:block; width:100%; height:100%; }
+  body[data-screenfx-level="weak"] .spkStar.fxOpt { display:none; }
+  @keyframes aurDrift { from { transform:translate3d(-2.5%, -1.5%, 0) scale(1); } to { transform:translate3d(2.5%, 2%, 0) scale(1.07); } }
+  @keyframes aurFade { from { opacity:.35; } to { opacity:.9; } }
+  @keyframes spkDrift { from { transform:translate3d(0, 0, 0); } to { transform:translate3d(1.6%, 2.2%, 0); } }
+  @keyframes spkFade { from { opacity:.55; } to { opacity:1; } }
+  @keyframes spkTwinkle { 0%, 100% { transform:scale(.55) rotate(0deg); opacity:.25; } 50% { transform:scale(1.1) rotate(20deg); opacity:1; } }
   body.kakuhen #stage { animation:rainbow 1.2s linear infinite; }
   @keyframes rainbow {
     0%{ border-color:#ff5f9e; box-shadow:0 0 34px #ff5f9e inset, 0 0 22px #ff5f9e; }
@@ -549,6 +607,17 @@
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="smXXGrad" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#f3e8ff"/><stop offset="55%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6d28d9"/></radialGradient></defs></svg>
 <div id="fit"><div id="stage">
   <div id="bgLayer"></div>
+  <div id="screenFx" aria-hidden="true">
+    <div class="fxAurora"><i class="aurA"></i><i class="aurB"></i></div>
+    <div class="fxSparkle"><i class="spkDots"></i>
+      <span class="spkStar" style="left:11%;top:15%;width:22px;height:22px;animation-delay:-.6s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar" style="left:84%;top:11%;width:17px;height:17px;animation-delay:-1.8s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+      <span class="spkStar" style="left:68%;top:64%;width:24px;height:24px;animation-delay:-2.7s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar fxOpt" style="left:26%;top:82%;width:16px;height:16px;animation-delay:-1.2s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+      <span class="spkStar fxOpt" style="left:44%;top:7%;width:15px;height:15px;animation-delay:-3.1s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar fxOpt" style="left:90%;top:86%;width:19px;height:19px;animation-delay:-2.2s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+    </div>
+  </div>
   <div id="particles"></div>
   <div id="goal" class="panel movable">
     <div class="label" id="goalLabel">カード支払いまで あと</div>
@@ -2398,6 +2467,22 @@
   }
   applyFrame();
 
+  /* ---------- 全画面フィルター（テーマ/枠と同じくサーバー保存・全クライアント同期。手動選択が優先） ---------- */
+  const SCREENFX_MODES = ["off", "aurora", "sparkle", "both"];
+  const SCREENFX_LEVELS = ["weak", "mid", "strong"];
+  let screenFxState = { mode: "off", level: "mid" };
+  try { const j = JSON.parse(localStorage.getItem("overlayScreenFxV1") || "null");
+    if(j){ if(SCREENFX_MODES.indexOf(j.mode) >= 0) screenFxState.mode = j.mode; if(SCREENFX_LEVELS.indexOf(j.level) >= 0) screenFxState.level = j.level; } } catch(e) {}
+  function applyScreenFx(){ document.body.dataset.screenfx = screenFxState.mode; document.body.dataset.screenfxLevel = screenFxState.level; }
+  function setScreenFx(mode, level){
+    if(SCREENFX_MODES.indexOf(mode) >= 0) screenFxState.mode = mode;
+    if(SCREENFX_LEVELS.indexOf(level) >= 0) screenFxState.level = level;
+    try { localStorage.setItem("overlayScreenFxV1", JSON.stringify(screenFxState)); } catch(e) {}
+    applyScreenFx();
+  }
+  window.__screenFx = { get: function(){ return { mode: screenFxState.mode, level: screenFxState.level }; }, set: setScreenFx };
+  applyScreenFx();
+
   let cutinTimer = null;
   let skipCutinSoundOnce = false; // 特大ギフトでカスタム音を鳴らした時だけ、そのカットイン音を1回飛ばす
   function cutinSound(){
@@ -2781,6 +2866,9 @@
       }
       else if(msg.type === "frame" && msg.style){
         setFrame(msg.style);
+      }
+      else if(msg.type === "screenfx"){
+        setScreenFx(msg.mode, msg.level);
       }
       else if(msg.type === "simple" && msg.simple){
         setSimple(msg.simple);
