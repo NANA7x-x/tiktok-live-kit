@@ -780,21 +780,29 @@ connection.on(EV('CHAT', 'chat'), (data) => {
 
 // --- いいね（合計数の増えた分だけゲージに入れる。再送・再接続でも二重に数えない） ---
 let likeEvBuf = 0, likeEvTimer = null;
+let likeLogged = false;
 connection.on(EV('LIKE', 'like'), (data) => {
   if (!data) return;
-  const total = toPosNum(data.totalLikeCount) || toPosNum(data.total);
-  const inc = toPosNum(data.likeCount) || toPosNum(data.count);
+  if (!likeLogged) { likeLogged = true; console.log('[like] いいねを受信しました（以後は省略）'); }
+  const total = toPosNum(data.totalLikeCount) || toPosNum(data.total) || toPosNum(data.totalLikes);
+  const inc = toPosNum(data.likeCount) || toPosNum(data.count) || toPosNum(data.likes);
+  // ゲージ用：配信の合計数が増えた分だけ数える（再送・再接続で二重にならない）。
+  // 合計が大きく減った＝新しい配信なのに同じルーム扱いだった等 → その場で合わせ直す
   let delta = 0;
-  if (total > 0) { if (total > K.likeTotal) { delta = total - K.likeTotal; K.likeTotal = total; } }
-  else if (inc > 0) { delta = inc; K.likeTotal += inc; }
+  if (total > 0) {
+    if (total > K.likeTotal) { delta = total - K.likeTotal; K.likeTotal = total; }
+    else if (total + 1000 < K.likeTotal) { K.likeTotal = total; delta = inc; }
+  } else if (inc > 0) { delta = inc; K.likeTotal += inc; }
   if (reportStats && K.likeTotal > reportStats.likesTotal) reportStats.likesTotal = K.likeTotal;
-  // いいねランキング：そのイベントでその人が押した数（likeCount）を足す
+  // いいねランキング：そのイベントでその人が押した数を足す
   const liker = String(nameOf(data) || '');
-  if (liker && inc > 0) { rankAddLike(liker, Math.min(inc, 500)); pushState(); }
-  if (delta <= 0) return;
-  teamAdd(delta * K.settings.teamW.like);
-  likeEvBuf += delta;
-  if (!likeEvTimer) likeEvTimer = setTimeout(() => { likeEvTimer = null; broadcast({ type: 'ev', kind: 'like', count: likeEvBuf }); likeEvBuf = 0; }, 500);
+  if (liker && inc > 0) rankAddLike(liker, Math.min(inc, 500));
+  if (delta > 0) teamAdd(delta * K.settings.teamW.like); else pushState();
+  // 画面のハート：その人が押した数で出す（合計の増え方に関係なく、押されたら必ず出る）
+  const show = inc > 0 ? inc : delta;
+  if (show <= 0) return;
+  likeEvBuf += show;
+  if (!likeEvTimer) likeEvTimer = setTimeout(() => { likeEvTimer = null; broadcast({ type: 'ev', kind: 'like', count: likeEvBuf }); likeEvBuf = 0; }, 400);
 });
 connection.on(EV('ROOM_USER', 'roomUser'), (data) => {
   const v = toPosNum(data && data.viewerCount) || toPosNum(data && data.total);
