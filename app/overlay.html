@@ -334,6 +334,16 @@ body:not(.L-back) #sceneBack{display:none}
 @keyframes neonPulse{0%,100%{opacity:.95}45%{opacity:.75}50%{opacity:.35}53%{opacity:.9}}
 @keyframes neonHue{to{filter:hue-rotate(360deg)}}
 @keyframes holoLoop{0%{left:-60%}60%,100%{left:110%}}
+/* シーン用のゆっくり動くアニメーション */
+@keyframes scFloat{0%,100%{transform:translate(0,0) scale(1);opacity:var(--o,.5)}50%{transform:translate(var(--fx,30px),var(--fy,-40px)) scale(1.18);opacity:calc(var(--o,.5)*1.5)}}
+@keyframes scBreathe{0%,100%{opacity:var(--o1,.35);transform:scale(1)}50%{opacity:var(--o2,.7);transform:scale(1.08)}}
+@keyframes scDrift{from{transform:translateX(-30%)}to{transform:translateX(30%)}}
+@keyframes scSweep{0%{transform:translateX(-120%) skewX(-18deg)}55%,100%{transform:translateX(160%) skewX(-18deg)}}
+@keyframes scSpin{to{transform:rotate(360deg)}}
+@keyframes scHue{to{filter:hue-rotate(360deg) blur(var(--b,30px))}}
+@keyframes scMw{0%,100%{transform:rotate(-24deg) translateX(-4%);opacity:.28}50%{transform:rotate(-20deg) translateX(4%);opacity:.5}}
+@keyframes neonGrid{to{background-position:0 0,0 90px}}
+@keyframes scSun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-26px) scale(1.06)}}
 #connWarn{position:absolute;left:20px;top:20px;font:900 22px "M PLUS 1p";background:#c00;color:#fff;padding:4px 12px;display:none;z-index:9}
 .preview.disconnected #connWarn{display:block}
 </style>
@@ -727,38 +737,59 @@ function onEv(e){
 }
 
 /* ===== 画面エフェクト（時間つきの雰囲気シーン） ===== */
-const SCN={name:null,B:[],F:[],t:0,spawn:null};
+const SCN={name:null,B:[],F:[],t:0,spawn:null,spawnB:null};
 const scBx=$("scBc").getContext("2d"),scFx=$("scFc").getContext("2d");
 const rr=(a,b)=>a+Math.random()*(b-a);
 function sx(layer,html){const d=document.createElement("div");d.className="sx";d.innerHTML=html;$(layer).appendChild(d);return d;}
-function clearScene(){SCN.B=[];SCN.F=[];SCN.spawn=null;scBx.clearRect(0,0,1080,1920);scFx.clearRect(0,0,1080,1920);
+function clearScene(){SCN.B=[];SCN.F=[];SCN.spawn=null;SCN.spawnB=null;scBx.clearRect(0,0,1080,1920);scFx.clearRect(0,0,1080,1920);
   for(const id of ["sceneBack","sceneFront"])$(id).querySelectorAll(".sx").forEach(e=>e.remove());}
 // それぞれのシーン：back＝アバターの後ろ（back.html）／front＝アバターの前（overlay.html・うっすら）
+// ふわっと漂う光の玉（ボケ）を n 個
+const bokeh=(n,cols,o)=>Array.from({length:n},()=>{const w=rr(70,190);return`<div style="position:absolute;left:${rr(-5,95)}%;top:${rr(10,95)}%;width:${w}px;height:${w}px;border-radius:50%;filter:blur(${rr(10,24)}px);--o:${rr(o*.5,o)};--fx:${rr(-60,60)}px;--fy:${rr(-80,30)}px;background:${rnd(cols)};animation:scFloat ${rr(8,16)}s ease-in-out infinite;animation-delay:${-rr(0,16)}s"></div>`;}).join("");
+// 光の帯がゆっくり横切る
+const sweep=(c,o,sec)=>`<div style="position:absolute;top:-10%;bottom:-10%;width:38%;opacity:${o};background:linear-gradient(90deg,transparent,${c},transparent);filter:blur(30px);animation:scSweep ${sec}s ease-in-out infinite"></div>`;
+// それぞれのシーン：back＝アバターの後ろ（back.html）／front＝アバターの前（overlay.html・うっすら）
+// どのシーンも、手前だけ・奥だけのどちらで見ても何かがずっと動いているようにしてある
 const SCENES={
-  "ラメ":{front(){SCN.spawn=()=>{for(let i=0;i<5;i++)SCN.F.push({k:"tw",x:rr(0,1080),y:rr(180,1150),s:rr(3,12),l:rr(30,80),L:80,c:rnd(["#fff","#fff4c2",css("--gold"),"#ffd1f0","#c8f6ff"])});};
-     sx("sceneFront",'<div class="holo" style="animation:holoLoop 4.5s linear infinite;opacity:.35"></div>');}},
+  "ラメ":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(90% 60% at 50% 35%,#2a1f45,#0c0a18)"></div>'+bokeh(16,["#ffd6f5","#fff2b8","#c8f6ff","#e3c8ff"],.45));
+       for(let i=0;i<120;i++)SCN.B.push({k:"tw",x:rr(0,1080),y:rr(0,1920),s:rr(2,6),l:rr(10,200),L:200,c:rnd(["#fff","#fff4c2","#ffd1f0"]),loop:1});},
+     front(){SCN.spawn=()=>{for(let i=0;i<5;i++)SCN.F.push({k:"tw",x:rr(0,1080),y:rr(180,1150),s:rr(3,12),l:rr(30,80),L:80,c:rnd(["#fff","#fff4c2",css("--gold"),"#ffd1f0","#c8f6ff"])});
+         if(Math.random()<.5)SCN.F.push({k:"glit",x:rr(0,1080),y:-10,vx:rr(-.3,.3),vy:rr(1.5,3.5),s:rr(2,4),r:rr(0,6),vr:rr(-.2,.2),l:700,L:700,c:rnd(["#fff","#ffe9a8","#ffc8ee","#bdf3ff"])});};
+       sx("sceneFront",'<div class="holo" style="animation:holoLoop 4.5s linear infinite;opacity:.35"></div><div style="position:absolute;inset:-20%;--b:50px;opacity:.16;background:conic-gradient(from 0deg,#ff9ad5,#ffe08a,#9af0ff,#c79aff,#ff9ad5);animation:scHue 9s linear infinite"></div>');}},
   "オーロラ":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#030818,#0b1a3a 55%,#0a0f22)"></div>'+[0,1,2].map(i=>`<div style="position:absolute;left:-20%;right:-20%;top:${4+i*9}%;height:38%;filter:blur(${34+i*10}px);opacity:.8;background:linear-gradient(90deg,transparent,${["rgba(80,255,190,.75)","rgba(120,110,255,.6)","rgba(60,210,255,.6)"][i]},transparent);animation:aurWave ${9+i*3}s ease-in-out infinite;animation-delay:${-i*2}s"></div>`).join(""));starsInto(SCN.B,160,.0,.6);},
-     front(){sx("sceneFront",'<div style="position:absolute;left:-10%;right:-10%;top:0;height:42%;filter:blur(40px);opacity:.38;background:linear-gradient(90deg,rgba(80,255,190,.6),rgba(140,120,255,.55),rgba(60,210,255,.5));animation:aurWave 10s ease-in-out infinite"></div>');}},
-  "ステンドグラス":{back(){drawGlass();},
-     front(){sx("sceneFront",["#ff4d6d","#ffd166","#06d6a0","#4cc9f0","#b388ff"].map((c,i)=>`<div style="position:absolute;top:-20%;left:${8+i*19}%;width:150px;height:140%;--r:${-18+i*4}deg;transform-origin:top center;filter:blur(26px);opacity:.22;background:linear-gradient(${c},transparent 80%);animation:beamSway ${7+i}s ease-in-out infinite"></div>`).join(""));
+     front(){sx("sceneFront",[0,1].map(i=>`<div style="position:absolute;left:-15%;right:-15%;top:${i*12}%;height:42%;filter:blur(${40+i*14}px);opacity:${.38-i*.1};background:linear-gradient(90deg,rgba(80,255,190,.6),rgba(140,120,255,.55),rgba(60,210,255,.5));animation:aurWave ${10+i*4}s ease-in-out infinite;animation-delay:${-i*3}s"></div>`).join(""));
+       SCN.spawn=()=>{if(Math.random()<.25)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(200,1100),vx:rr(-.2,.2),vy:rr(-.4,-.1),s:rr(1.5,3.5),l:rr(150,260),L:260,c:rnd(["#b8ffe6","#c9c2ff","#aef0ff"])});};}},
+  "ステンドグラス":{back(){drawGlass();sx("sceneBack",sweep("rgba(255,250,230,.55)",.8,7)+'<div style="position:absolute;left:50%;top:30%;width:1600px;height:1600px;margin:-800px;opacity:.18;background:repeating-conic-gradient(rgba(255,255,255,.9) 0 6deg,transparent 6deg 20deg);filter:blur(20px);animation:scSpin 60s linear infinite"></div>');},
+     front(){sx("sceneFront",["#ff4d6d","#ffd166","#06d6a0","#4cc9f0","#b388ff"].map((c,i)=>`<div style="position:absolute;top:-20%;left:${8+i*19}%;width:150px;height:140%;--r:${-18+i*4}deg;transform-origin:top center;filter:blur(26px);opacity:.22;background:linear-gradient(${c},transparent 80%);animation:beamSway ${7+i}s ease-in-out infinite"></div>`).join("")+sweep("rgba(255,240,210,.35)",.6,9));
        SCN.spawn=()=>{if(Math.random()<.4)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(200,1100),vx:rr(-.2,.2),vy:rr(-.25,-.05),s:rr(2,4),l:rr(120,240),L:240,c:"#fff6d8"});};}},
-  "星空":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 0%,#1c1550,#070b24 60%,#03040e)"></div><div style="position:absolute;left:-20%;right:-20%;top:20%;height:30%;transform:rotate(-24deg);filter:blur(40px);opacity:.35;background:linear-gradient(90deg,transparent,rgba(190,170,255,.7),rgba(255,220,240,.5),transparent)"></div>');starsInto(SCN.B,380,0,1);},
-     front(){SCN.spawn=()=>{if(Math.random()<.012)SCN.F.push({k:"met",x:rr(-100,500),y:rr(180,500),vx:rr(18,26),vy:rr(7,11),l:60,L:60,c:rnd(["#fff",css("--cyan"),"#fff4c2"])});if(Math.random()<.3)SCN.F.push({k:"tw",x:rr(0,1080),y:rr(180,700),s:rr(2,6),l:rr(40,90),L:90,c:"#fff"});};}},
-  "夕暮れ":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#2a1748 0%,#7b2f6b 30%,#e8606a 55%,#ffb36b 72%,#ffe0a3 85%)"></div><div style="position:absolute;left:50%;top:66%;width:520px;height:520px;margin:-260px;border-radius:50%;background:radial-gradient(#fff6d6,rgba(255,200,120,.7) 35%,transparent 70%);filter:blur(6px)"></div>');},
-     front(){sx("sceneFront",'<div style="position:absolute;inset:0;background:linear-gradient(rgba(120,40,110,.22),transparent 30%,transparent 70%,rgba(255,150,80,.22))"></div><div style="position:absolute;right:-200px;top:-200px;width:900px;height:900px;border-radius:50%;filter:blur(60px);background:radial-gradient(rgba(255,170,90,.45),transparent 65%)"></div>');
+  "星空":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 0%,#1c1550,#070b24 60%,#03040e)"></div><div style="position:absolute;left:-20%;right:-20%;top:20%;height:30%;filter:blur(40px);background:linear-gradient(90deg,transparent,rgba(190,170,255,.7),rgba(255,220,240,.5),transparent);animation:scMw 18s ease-in-out infinite"></div>');starsInto(SCN.B,380,0,1);
+       SCN.spawnB=()=>{if(Math.random()<.02)SCN.B.push({k:"met",x:rr(-100,700),y:rr(0,700),vx:rr(18,26),vy:rr(7,11),l:60,L:60,c:rnd(["#fff","#cfe6ff","#fff4c2"])});};},
+     front(){sx("sceneFront",'<div style="position:absolute;left:-30%;right:-30%;top:5%;height:35%;--b:60px;opacity:.18;background:radial-gradient(closest-side,rgba(170,140,255,.8),transparent);animation:scDrift 22s ease-in-out infinite alternate"></div>');
+       SCN.spawn=()=>{if(Math.random()<.02)SCN.F.push({k:"met",x:rr(-100,500),y:rr(180,500),vx:rr(18,26),vy:rr(7,11),l:60,L:60,c:rnd(["#fff",css("--cyan"),"#fff4c2"])});if(Math.random()<.3)SCN.F.push({k:"tw",x:rr(0,1080),y:rr(180,700),s:rr(2,6),l:rr(40,90),L:90,c:"#fff"});};}},
+  "夕暮れ":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#2a1748 0%,#7b2f6b 30%,#e8606a 55%,#ffb36b 72%,#ffe0a3 85%)"></div><div style="position:absolute;left:50%;top:66%;width:520px;height:520px;margin:-260px;border-radius:50%;background:radial-gradient(#fff6d6,rgba(255,200,120,.7) 35%,transparent 70%);filter:blur(6px);animation:scSun 10s ease-in-out infinite"></div>'
+         +[0,1,2,3].map(i=>`<div style="position:absolute;left:-40%;width:180%;top:${18+i*13}%;height:${50+i*12}px;border-radius:50%;filter:blur(${14+i*4}px);opacity:${.5-i*.07};background:linear-gradient(90deg,transparent,${["#ffb0a0","#ff8fa3","#ffc58a","#ffd9b0"][i]},transparent);animation:scDrift ${30+i*9}s ease-in-out infinite alternate;animation-delay:${-i*7}s"></div>`).join(""));},
+     front(){sx("sceneFront",'<div style="position:absolute;inset:0;background:linear-gradient(rgba(120,40,110,.22),transparent 30%,transparent 70%,rgba(255,150,80,.22))"></div><div style="position:absolute;right:-200px;top:-200px;width:900px;height:900px;border-radius:50%;filter:blur(60px);background:radial-gradient(rgba(255,170,90,.45),transparent 65%);--o1:.6;--o2:1;animation:scBreathe 7s ease-in-out infinite"></div><div style="position:absolute;right:-700px;top:-700px;width:1900px;height:1900px;opacity:.12;background:repeating-conic-gradient(rgba(255,220,160,.9) 0 5deg,transparent 5deg 18deg);filter:blur(16px);animation:scSpin 80s linear infinite"></div>');
        SCN.spawn=()=>{if(Math.random()<.35)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(250,1100),vx:rr(-.15,.25),vy:rr(-.3,-.05),s:rr(2,5),l:rr(150,260),L:260,c:"#ffd9a0"});};}},
-  "雨の窓":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#0d1424,#1b2740)"></div>'+Array.from({length:22},()=>`<div style="position:absolute;left:${rr(-5,95)}%;top:${rr(20,95)}%;width:${rr(60,160)}px;height:${rr(60,160)}px;border-radius:50%;filter:blur(${rr(10,22)}px);opacity:${rr(.3,.7)};background:${rnd(["#ffb347","#ff6f91","#6fd3ff","#fff1a8","#b39bff"])}"></div>`).join(""));},
+  "雨の窓":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#0d1424,#1b2740)"></div>'+bokeh(22,["#ffb347","#ff6f91","#6fd3ff","#fff1a8","#b39bff"],.7));
+       SCN.spawnB=()=>{for(let i=0;i<3;i++)SCN.B.push({k:"streak",x:rr(0,1200),y:rr(-200,0),vx:-2,vy:rr(22,30),l:120,L:120,s:rr(30,70)});};},
      front(){sx("sceneFront",'<div style="position:absolute;inset:0;background:rgba(150,180,220,.12);backdrop-filter:blur(1.5px)"></div>');for(let i=0;i<200;i++)SCN.F.push({k:"drop",x:rr(0,1080),y:rr(180,1110),s:rr(4,13),l:1e9,L:1e9,run:0});
-       SCN.spawn=()=>{if(Math.random()<.08){const d=SCN.F.find(p=>p.k==="drop"&&!p.run&&p.s>6);if(d){d.run=1;d.vy=rr(3,7);}}if(Math.random()<.25)SCN.F.push({k:"drop",x:rr(0,1080),y:rr(180,1110),s:rr(2,6),l:1e9,L:1e9,run:0});if(SCN.F.length>260)SCN.F.splice(0,20);};}},
-  "桜吹雪":{front(){SCN.spawn=()=>{if(Math.random()<.5)SCN.F.push({k:"petal",x:rr(-50,1080),y:-30,vx:rr(.6,2.2),vy:rr(1.6,3.2),s:rr(10,20),r:rr(0,6),vr:rr(-.06,.06),ph:rr(0,6),l:900,L:900,c:rnd(["#ffc1d9","#ffd6e6","#ffb0cf","#fff0f6"])});};}},
-  "雪":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(rgba(170,200,255,.18),transparent 60%)"></div>');},
-     front(){SCN.spawn=()=>{if(Math.random()<.7)SCN.F.push({k:"snow",x:rr(0,1080),y:-20,vx:rr(-.4,.4),vy:rr(1,2.6),s:rr(2,7),ph:rr(0,6),l:900,L:900,c:"#fff"});};}},
-  "ホタル":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#020a08,#0b2016 70%,#0f2a1b)"></div>');},
+       SCN.spawn=()=>{if(Math.random()<.18){const d=SCN.F.find(p=>p.k==="drop"&&!p.run&&p.s>5);if(d){d.run=1;d.vy=rr(3,7);}}if(Math.random()<.35)SCN.F.push({k:"drop",x:rr(0,1080),y:rr(180,1110),s:rr(2,6),l:1e9,L:1e9,run:0});
+         if(Math.random()<.6)SCN.F.push({k:"streak",x:rr(0,1200),y:rr(-100,100),vx:-1.5,vy:rr(20,28),l:90,L:90,s:rr(20,45),a:.18});if(SCN.F.length>300)SCN.F.splice(0,20);};}},
+  "桜吹雪":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#ffe6f0,#ffc9dc 55%,#f7a8c4)"></div>'+bokeh(14,["#fff","#ffd6e6","#ffb0cf"],.55));
+       SCN.spawnB=()=>{if(Math.random()<.4)SCN.B.push({k:"petal",x:rr(-50,1080),y:-30,vx:rr(.4,1.4),vy:rr(1,2),s:rr(6,11),r:rr(0,6),vr:rr(-.05,.05),ph:rr(0,6),l:1400,L:1400,c:rnd(["#ffc1d9","#fff0f6"]),a:.6});};},
+     front(){sx("sceneFront",'<div style="position:absolute;inset:0;--o1:.0;--o2:.18;background:radial-gradient(80% 50% at 30% 20%,#ffd0e2,transparent);animation:scBreathe 6s ease-in-out infinite"></div>');
+       SCN.spawn=()=>{if(Math.random()<.5)SCN.F.push({k:"petal",x:rr(-50,1080),y:-30,vx:rr(.6,2.2),vy:rr(1.6,3.2),s:rr(10,20),r:rr(0,6),vr:rr(-.06,.06),ph:rr(0,6),l:900,L:900,c:rnd(["#ffc1d9","#ffd6e6","#ffb0cf","#fff0f6"])});};}},
+  "雪":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#1a2440,#34466e 60%,#6b7fa8)"></div><div style="position:absolute;inset:0;--o1:.15;--o2:.35;background:radial-gradient(70% 40% at 50% 10%,#dfe9ff,transparent);animation:scBreathe 9s ease-in-out infinite"></div>');
+       SCN.spawnB=()=>{if(Math.random()<.8)SCN.B.push({k:"snow",x:rr(0,1080),y:-20,vx:rr(-.3,.3),vy:rr(.6,1.4),s:rr(1,3),ph:rr(0,6),l:2000,L:2000,c:"#fff",a:.6});};},
+     front(){sx("sceneFront",'<div style="position:absolute;inset:0;--o1:.05;--o2:.18;background:linear-gradient(rgba(200,220,255,.9),transparent 55%);animation:scBreathe 8s ease-in-out infinite"></div>');
+       SCN.spawn=()=>{if(Math.random()<.7)SCN.F.push({k:"snow",x:rr(0,1080),y:-20,vx:rr(-.4,.4),vy:rr(1,2.6),s:rr(2,7),ph:rr(0,6),l:900,L:900,c:"#fff"});};}},
+  "ホタル":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#020a08,#0b2016 70%,#0f2a1b)"></div>'+[0,1].map(i=>`<div style="position:absolute;left:-40%;width:180%;bottom:${i*14}%;height:30%;filter:blur(40px);opacity:.3;background:linear-gradient(90deg,transparent,rgba(120,200,150,.5),transparent);animation:scDrift ${26+i*10}s ease-in-out infinite alternate"></div>`).join(""));
+       for(let i=0;i<30;i++)SCN.B.push(ffly(.6));},
      front(){for(let i=0;i<40;i++)SCN.F.push(ffly());SCN.spawn=()=>{if(SCN.F.length<55&&Math.random()<.05)SCN.F.push(ffly());};}},
-  "ネオン":{front(){sx("sceneFront",'<div style="position:absolute;inset:26px;border:8px solid #ff3dbb;border-radius:40px;box-shadow:0 0 20px #ff3dbb,0 0 60px #ff3dbb,inset 0 0 30px #ff3dbb;animation:neonPulse 2.6s infinite,neonHue 12s linear infinite"></div><div style="position:absolute;left:60px;right:60px;top:200px;height:6px;border-radius:6px;background:#3df5ff;box-shadow:0 0 18px #3df5ff,0 0 50px #3df5ff;animation:neonPulse 3.4s infinite .7s,neonHue 12s linear infinite"></div><div style="position:absolute;left:60px;right:60px;bottom:830px;height:6px;border-radius:6px;background:#ffe23d;box-shadow:0 0 18px #ffe23d,0 0 50px #ffe23d;animation:neonPulse 4s infinite 1.3s,neonHue 12s linear infinite"></div>');},
-     back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,#2a0b3a,#0a0412)"></div>');}},
+  "ネオン":{front(){sx("sceneFront",'<div style="position:absolute;inset:26px;border:8px solid #ff3dbb;border-radius:40px;box-shadow:0 0 20px #ff3dbb,0 0 60px #ff3dbb,inset 0 0 30px #ff3dbb;animation:neonPulse 2.6s infinite,neonHue 12s linear infinite"></div><div style="position:absolute;left:60px;right:60px;top:200px;height:6px;border-radius:6px;background:#3df5ff;box-shadow:0 0 18px #3df5ff,0 0 50px #3df5ff;animation:neonPulse 3.4s infinite .7s,neonHue 12s linear infinite"></div><div style="position:absolute;left:60px;right:60px;bottom:830px;height:6px;border-radius:6px;background:#ffe23d;box-shadow:0 0 18px #ffe23d,0 0 50px #ffe23d;animation:neonPulse 4s infinite 1.3s,neonHue 12s linear infinite"></div>'+sweep("rgba(255,120,230,.35)",.7,5));},
+     back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,#2a0b3a,#0a0412)"></div><div style="position:absolute;left:-50%;right:-50%;bottom:-10%;height:55%;transform:perspective(500px) rotateX(62deg);background:repeating-linear-gradient(90deg,rgba(255,61,187,.55) 0 3px,transparent 3px 90px),repeating-linear-gradient(0deg,rgba(61,245,255,.5) 0 3px,transparent 3px 90px);background-size:auto,100% 90px;animation:neonGrid 2.5s linear infinite;filter:drop-shadow(0 0 8px #ff3dbb)"></div>');}},
 };
-function ffly(){return{k:"fly",x:rr(0,1080),y:rr(300,1100),vx:rr(-.5,.5),vy:rr(-.5,.5),s:rr(3,6),ph:rr(0,6),l:1e9,L:1e9,c:rnd(["#e8ff7a","#b8ff6a","#fff59a"])};}
+function ffly(a){return{k:"fly",a:a||1,x:rr(0,1080),y:rr(300,1100),vx:rr(-.5,.5),vy:rr(-.5,.5),s:rr(3,6),ph:rr(0,6),l:1e9,L:1e9,c:rnd(["#e8ff7a","#b8ff6a","#fff59a"])};}
 function starsInto(arr,n,a0,a1){for(let i=0;i<n;i++)arr.push({k:"star",x:rr(0,1080),y:rr(0,1300),s:rr(.6,2.4),ph:rr(0,6),sp:rr(.02,.08),l:1e9,L:1e9,c:rnd(["#fff","#dfe8ff","#fff4d6"])});}
 function drawGlass(){const W=1080,H=1920,g=scBx,cell=150,pts=[];g.fillStyle="#120a18";g.fillRect(0,0,W,H);
   for(let y=-1;y<=H/cell+1;y++)for(let x=-1;x<=W/cell+1;x++)pts.push([x*cell+rr(-50,50),y*cell+rr(-50,50)]);
@@ -776,12 +807,12 @@ function setScene(name){
 // シーンの粒（星・ラメ・雨粒・花びら・雪・ホタル・流れ星）
 let scLast=performance.now();
 (function scLoop(now){now=now||performance.now();const dt=Math.min(3,Math.max(.25,(now-scLast)/16.667));scLast=now;
-  if(SCN.name){if(SCN.spawn)SCN.spawn();
+  if(SCN.name){if(SCN.spawn)SCN.spawn();if(SCN.spawnB&&LAYERS.includes("back")){SCN.spawnB();if(SCN.B.length>900)SCN.B.splice(0,50);}
     if(!SCN.staticBack){scBx.clearRect(0,0,1080,1920);drawParts(scBx,SCN.B,dt);}
     scFx.clearRect(0,0,1080,1920);drawParts(scFx,SCN.F,dt);}
   requestAnimationFrame(scLoop);})();
 function drawParts(g,arr,dt){
-  for(let i=arr.length-1;i>=0;i--){const p=arr[i];p.l-=dt;if(p.l<=0||p.y>1950||p.x<-200||p.x>1300){arr.splice(i,1);continue;}
+  for(let i=arr.length-1;i>=0;i--){const p=arr[i];p.l-=dt;if(p.l<=0&&p.loop){p.l=p.L;p.x=rr(0,1080);p.y=rr(0,1920);}if(p.l<=0||p.y>1950||p.x<-200||p.x>1300){arr.splice(i,1);continue;}
     const fa=Math.min(1,p.l/25,(p.L-p.l)/20+.0001);g.save();
     if(p.k==="tw"){const t=Math.sin((p.L-p.l)/p.L*Math.PI);g.globalAlpha=t;g.fillStyle=p.c;g.shadowColor=p.c;g.shadowBlur=12;g.translate(p.x,p.y);sparkle(g,p.s*(.4+t));}
     else if(p.k==="star"){p.ph+=p.sp*dt;g.globalAlpha=.35+.65*Math.abs(Math.sin(p.ph));g.fillStyle=p.c;g.beginPath();g.arc(p.x,p.y,p.s,0,7);g.fill();}
@@ -789,10 +820,12 @@ function drawParts(g,arr,dt){
     else if(p.k==="met"){p.x+=p.vx*dt;p.y+=p.vy*dt;const L=8,gr=g.createLinearGradient(p.x,p.y,p.x-p.vx*L,p.y-p.vy*L);gr.addColorStop(0,"#fff");gr.addColorStop(.3,p.c);gr.addColorStop(1,"rgba(255,255,255,0)");g.strokeStyle=gr;g.lineWidth=4;g.lineCap="round";g.shadowColor=p.c;g.shadowBlur=14;g.beginPath();g.moveTo(p.x,p.y);g.lineTo(p.x-p.vx*L,p.y-p.vy*L);g.stroke();}
     else if(p.k==="drop"){if(p.run){p.y+=p.vy*dt;p.vy=Math.min(9,p.vy+.05*dt);g.globalAlpha=.35;g.strokeStyle="rgba(220,235,255,.7)";g.lineWidth=p.s*.5;g.beginPath();g.moveTo(p.x,p.y-p.s*6);g.lineTo(p.x,p.y);g.stroke();}
       g.globalAlpha=.8;g.shadowColor="rgba(255,255,255,.5)";g.shadowBlur=4;const gr=g.createRadialGradient(p.x-p.s*.3,p.y-p.s*.35,0,p.x,p.y,p.s);gr.addColorStop(0,"rgba(255,255,255,.95)");gr.addColorStop(.45,"rgba(210,225,255,.45)");gr.addColorStop(1,"rgba(90,120,170,.35)");g.fillStyle=gr;g.beginPath();g.ellipse(p.x,p.y,p.s*.8,p.s,0,0,7);g.fill();}
-    else if(p.k==="petal"){p.ph+=.05*dt;p.x+=(p.vx+Math.sin(p.ph)*1.2)*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;g.globalAlpha=.85;g.fillStyle=p.c;g.translate(p.x,p.y);g.rotate(p.r);g.scale(1,.55+.45*Math.sin(p.ph*1.7));g.beginPath();g.ellipse(0,0,p.s,p.s*.6,0,0,7);g.fill();}
-    else if(p.k==="snow"){p.ph+=.03*dt;p.x+=(p.vx+Math.sin(p.ph)*.6)*dt;p.y+=p.vy*dt;g.globalAlpha=.85;g.fillStyle="#fff";g.shadowColor="#fff";g.shadowBlur=6;g.beginPath();g.arc(p.x,p.y,p.s,0,7);g.fill();}
+    else if(p.k==="petal"){p.ph+=.05*dt;p.x+=(p.vx+Math.sin(p.ph)*1.2)*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;g.globalAlpha=.85*(p.a||1);g.fillStyle=p.c;g.translate(p.x,p.y);g.rotate(p.r);g.scale(1,.55+.45*Math.sin(p.ph*1.7));g.beginPath();g.ellipse(0,0,p.s,p.s*.6,0,0,7);g.fill();}
+    else if(p.k==="snow"){p.ph+=.03*dt;p.x+=(p.vx+Math.sin(p.ph)*.6)*dt;p.y+=p.vy*dt;g.globalAlpha=.85*(p.a||1);g.fillStyle="#fff";g.shadowColor="#fff";g.shadowBlur=6;g.beginPath();g.arc(p.x,p.y,p.s,0,7);g.fill();}
+    else if(p.k==="streak"){p.x+=p.vx*dt;p.y+=p.vy*dt;g.globalAlpha=p.a||.28;g.strokeStyle="rgba(210,225,255,.9)";g.lineWidth=1.6;g.beginPath();g.moveTo(p.x,p.y);g.lineTo(p.x-p.vx/p.vy*p.s,p.y-p.s);g.stroke();}
+    else if(p.k==="glit"){p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;const t=Math.abs(Math.cos(p.r*2));g.globalAlpha=.4+.6*t;g.fillStyle=p.c;g.shadowColor=p.c;g.shadowBlur=6*t;g.translate(p.x,p.y);g.rotate(p.r);g.fillRect(-p.s,-p.s*.5*(.3+t),p.s*2,p.s*(.3+t));}
     else if(p.k==="fly"){p.ph+=.04*dt;p.vx+=rr(-.05,.05);p.vy+=rr(-.05,.05);p.vx=Math.max(-.8,Math.min(.8,p.vx));p.vy=Math.max(-.8,Math.min(.8,p.vy));p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.y<200||p.y>1110)p.vy*=-1;
-      const a=.25+.75*Math.max(0,Math.sin(p.ph));g.globalAlpha=a;const gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s*5);gr.addColorStop(0,p.c);gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.beginPath();g.arc(p.x,p.y,p.s*5,0,7);g.fill();}
+      const a=(.25+.75*Math.max(0,Math.sin(p.ph)))*(p.a||1);g.globalAlpha=a;const gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s*5);gr.addColorStop(0,p.c);gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.beginPath();g.arc(p.x,p.y,p.s*5,0,7);g.fill();}
     g.restore();}
 }
 
