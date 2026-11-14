@@ -160,10 +160,11 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><b>効果音（OBS）</b><button id="sOn">ON/OFF</button><label style="flex:1">音量 <input type="range" id="sVol" min="0" max="100"></label></div>
     </div></details>
 
-    <details data-k="bg"><summary>🫧 ゆらめき・背景ムービーを増やす</summary><div class="body">
+    <details data-k="bg"><summary>🫧 画面エフェクト・前エフェクト・ハプニング</summary><div class="body">
       <div class="note"><b>背景ムービー（200コイン）</b>：キットの<b>「背景」フォルダ</b>に 動画（mp4 / webm / mov）か 画像（jpg / png / gif / webp）を入れるだけで、順番に追加されます（15秒くらいで自動で反映）。ファイル名がそのまま名前になります（例：<code>夜の海.mp4</code> →「背景ムービー：夜の海」）。動画は音なし・くり返し再生、画像はゆっくりズームします。</div>
       <div class="row"><button id="bgScan">↻ いますぐ更新</button><span class="note" id="bgCount"></span></div>
       <div class="note" id="bgList"></div>
+      <div class="note"><b>前エフェクト（88コイン）</b>：アバターの前に重なる飾り。レアカード／金の縁取り／メタル／桜ふる／雪ふる／水の中／炭酸のコップ／瓶づめ。<b>ハプニング（400コイン）</b>：川に流される／海に出ていく／化け物に連れ去られる／UFOにさらわれる（約8秒。VTube Studio 連携がONならアバターも動いて、最後は元の位置に戻ります）。ゆらめき・背景ムービー・前エフェクトは、別の段のギフトが来てもその場で切り替わって時間が足されます。</div>
       <div class="note"><b>ゆらめき（100コイン）</b>：下の「ギフト表」の 100 の段の「順番リスト」に色を足せます。使える色の名前：ピンク／ラベンダー／ミント／水色／ゴールド／ピーチ／ブルー／ローズ／ホワイト／レッド／グリーン／オレンジ／パープル／シアン。好きな色にしたいときは <code>さくら色#ffb7d5</code> のように名前のうしろに色コードをつけます（画面には「さくら色」とだけ出ます）。</div>
     </div></details>
 
@@ -224,7 +225,7 @@ connect();
 
 /* ===== 描画 ===== */
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
-const SLOTN={voice:"🗣 声（語尾・一人称など）",cam:"🎥 手元カメラ",vfx:"🤖 ボイスエフェクト",scene:"🌌 画面エフェクト"};
+const SLOTN={voice:"🗣 声（語尾・一人称など）",cam:"🎥 手元カメラ",vfx:"🤖 ボイスエフェクト",scene:"🌌 画面エフェクト",deco:"✨ 前エフェクト"};
 function renderLive(){
   if(!S)return;const now=Date.now()+clockOff;
   $("slotList").innerHTML=Object.keys(SLOTN).map(k=>{const s=S.slots[k]||{},c=s.cur&&s.cur.end>now?s.cur:null,q=(s.q||[]).length;
@@ -371,7 +372,7 @@ function bandRow(b){
   <td><input class="ic ico" value="${esc(b.ico)}"></td>
   <td><input class="fx" value="${esc(b.fx)}"></td>
   <td><input class="short" value="${esc(b.short||"")}" placeholder="レール用(任意)"></td>
-  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="scene" ${kind==="scene"?"selected":""}>変身：画面エフェクト</option><option value="scenebg" ${kind==="scenebg"?"selected":""}>変身：背景ムービー（＋背景フォルダ）</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option></select></td>
+  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="scene" ${kind==="scene"?"selected":""}>変身：画面エフェクト</option><option value="scenebg" ${kind==="scenebg"?"selected":""}>変身：背景ムービー（＋背景フォルダ）</option><option value="deco" ${kind==="deco"?"selected":""}>変身：前エフェクト</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option><option value="happen" ${kind==="happen"?"selected":""}>ハプニング（約8秒の演出）</option></select></td>
   <td><input class="list" value="${esc((b.list||[]).join("／"))}" placeholder="例：にゃん／ぴょん（起きることに {x}）"></td>
   <td><input class="link" value="${esc(b.link||"")}" placeholder="例：vts:jump vts:rainbow"></td>
   <td><input class="m min" type="number" min="0" value="${b.min||""}" placeholder="分"></td>
@@ -384,8 +385,8 @@ $("bandAdd").onclick=()=>{$("bandRows").insertAdjacentHTML("beforeend",bandRow({
 $("bandSave").onclick=()=>{
   const rows=[...$("bandRows").querySelectorAll("tr")].map(tr=>{const q=c=>tr.querySelector("."+c);const kind=q("kind").value;
     return {on:q("on").checked,from:+q("from").value,ico:q("ico").value,fx:q("fx").value,short:q("short").value,tier:q("tier").value,
-      slot:["voice","cam","vfx","scene"].includes(kind)?kind:kind==="scenebg"?"scene":undefined,bg:kind==="scenebg"||undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
-      use:kind==="line"||kind==="challenge"?kind:undefined,link:q("link").value.trim(),list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
+      slot:["voice","cam","vfx","scene","deco"].includes(kind)?kind:kind==="scenebg"?"scene":undefined,bg:kind==="scenebg"||undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
+      use:kind==="line"||kind==="challenge"||kind==="happen"?kind:undefined,link:q("link").value.trim(),list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
   send({type:"setBands",bands:rows});$("bandSave").textContent="保存しました ✓";setTimeout(()=>{$("bandSave").textContent="ギフト表を保存";if(S)loadBands(S.bands);},800);
 };
 $("bandReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと初期値に戻す")){send({type:"resetBands"});setTimeout(()=>S&&loadBands(S.bands),500);}};
