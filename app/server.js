@@ -58,17 +58,27 @@ function confPath(name) {
 const STATE_FILE = path.join(CONF_DIR, 'kit_state.json');
 const TIERS = ['S', 'M', 'L', 'XL'];
 const SLOTS = ['voice', 'cam', 'vfx'];
+// 種類の多いもの（語尾・しゃべり方・マイクエフェクト・セリフ・早口言葉）は「決まった順番で次へ進む」。
+// 次に何が来るかは画面のギフト表に「つぎ：〇〇」と出るので、運の要素にはならない。
+// fx の {x} に、順番リストの今の項目が入る。use:'line' はセリフ集、use:'challenge' は早口言葉リストを使う。
 const DEFAULT_BANDS = [
   { from: 1, tier: 'S', ico: '🌹', fx: 'なながお名前を呼ぶ', short: 'お名前コール' },
-  { from: 10, tier: 'M', ico: '🐱', fx: '語尾「にゃん」', min: 3, slot: 'voice' },
-  { from: 30, tier: 'M', ico: '😤', fx: '一人称「俺」固定', min: 5, slot: 'voice', short: '一人称「俺」' },
-  { from: 50, tier: 'M', ico: '🤖', fx: 'ボイスエフェクト（ロボ声）', min: 2, slot: 'vfx', short: 'ロボ声' },
-  { from: 100, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット' },
+  { from: 5, tier: 'M', ico: '💬', fx: 'セリフ「{x}」', use: 'line', short: 'セリフ' },
+  { from: 10, tier: 'M', ico: '🐱', fx: '語尾「{x}」', min: 3, slot: 'voice', short: '語尾チェンジ', list: ['にゃん', 'ぴょん', 'でござる', 'っす', 'だぞ', 'ですわ', 'なのだ'] },
+  { from: 20, tier: 'M', ico: '✏️', fx: 'お名前であいうえお作文', short: 'あいうえお作文' },
+  { from: 30, tier: 'M', ico: '🎭', fx: '{x}でしゃべる', min: 5, slot: 'voice', short: 'しゃべり方', list: ['関西弁', 'お嬢様口調', '執事口調', 'ツンデレ', '一人称「俺」', '実況アナウンサー風', '博多弁'] },
+  { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
+  { from: 100, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
+  { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット' },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲' },
   { from: 5000, tier: 'XL', ico: '🎤', fx: 'ピアノ弾き語り1曲', req: '弾き語り', short: '弾き語り' },
 ];
+// セリフ集・早口言葉・罰ゲーム（リモコンで編集できる）
+const DEFAULT_LINES = ['おかえり、待ってたよ', '今日もがんばったね、えらい！', 'べ、別にうれしくなんかないんだからね！', 'いっしょにがんばろ！', 'まかせて！', 'ずっと応援してくれてありがとう', 'ちょっとだけ、こっち見て？', 'ふふ、いい名前だね', '今日来てくれて、ほんとにうれしい', 'おやすみ、いい夢見てね'];
+const DEFAULT_TWISTERS = ['生麦生米生卵', '隣の客はよく柿食う客だ', '東京特許許可局', '赤巻紙青巻紙黄巻紙', 'バスガス爆発', '坊主が屏風に上手に坊主の絵を描いた', '新春シャンソンショー', '除雪車除雪作業中', '骨粗鬆症訴訟勝訴', '貨客船の旅客'];
+const DEFAULT_PENALTIES = ['ぶりっ子で「ごめんにゃさい♡」', '全力の「ありがとう！」を3回', '自分のいいところを3つ言う', '1分間 語尾「にゃん」', 'アバターで変顔10秒', 'イケボで「次は負けない」'];
 const PALETTES = {
   neon: { accent: '#ff1f7a', gold: '#ffcf3a', cyan: '#20e6ff', plate: '#0a0710', frame: '#ff1f7a', ink: '#ffffff' },
 };
@@ -120,11 +130,18 @@ function sanitizeBands(arr) {
     if (SLOTS.includes(b.slot) && min > 0) { o.slot = b.slot; o.min = min; }
     const req = str(b.req, 12, '');
     if (req && !o.slot) o.req = req;
+    if ((b.use === 'line' || b.use === 'challenge') && !o.slot && !o.req) o.use = b.use;
+    if (Array.isArray(b.list)) { const l = b.list.map((x) => str(x, 30, '').trim()).filter(Boolean).slice(0, 30); if (l.length) o.list = l; }
     out.push(o);
   }
   out.sort((a, b) => a.from - b.from);
   out.forEach((b, i) => { b.id = 'b' + b.from; b.to = out[i + 1] ? out[i + 1].from - 1 : null; });
   return out.length ? out : null;
+}
+function sanitizeList(arr, max, d) {
+  if (!Array.isArray(arr)) return d.slice();
+  const l = arr.map((x) => str(x, 60, '').trim()).filter(Boolean).slice(0, max);
+  return l.length ? l : d.slice();
 }
 function sanitizeStyle(s) {
   const d = DEFAULT_STYLE;
@@ -188,6 +205,9 @@ let K = {
   team: { value: 0 },
   slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] } },
   requests: [],
+  lines: DEFAULT_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
+  idx: {},           // 順番リストの進み具合（段ごと）
+  challenge: { cur: null, q: [] }, // 早口言葉チャレンジ
   roomId: null,
   likeTotal: 0,
   // その日の配信のランキング元データ（新しい配信で自動リセット）
@@ -209,6 +229,9 @@ try {
       }
     }
     if (Array.isArray(j.requests)) K.requests = j.requests.slice(0, 100);
+    K.lines = sanitizeList(j.lines, 100, DEFAULT_LINES); K.twisters = sanitizeList(j.twisters, 100, DEFAULT_TWISTERS); K.penalties = sanitizeList(j.penalties, 100, DEFAULT_PENALTIES);
+    if (j.idx && typeof j.idx === 'object') K.idx = j.idx;
+    if (j.challenge && typeof j.challenge === 'object') K.challenge = { cur: j.challenge.cur || null, q: Array.isArray(j.challenge.q) ? j.challenge.q.slice(0, 30) : [] };
     if (j.roomId) K.roomId = String(j.roomId);
     if (Number.isFinite(j.likeTotal)) K.likeTotal = j.likeTotal;
     if (j.rank && typeof j.rank === 'object') K.rank = { gift: j.rank.gift || {}, like: j.rank.like || {} };
@@ -227,9 +250,10 @@ function saveState() {
 function stateMsg() {
   return {
     type: 'state', serverNow: Date.now(),
-    settings: K.settings, bands: K.bands, style: K.style,
+    settings: K.settings, bands: K.bands.map((b) => Object.assign({}, b, { next: nextOf(b) })), style: K.style,
     team: { value: Math.round(K.team.value), max: K.settings.teamMax, label: K.settings.teamLabel },
     slots: K.slots, requests: K.requests,
+    challenge: K.challenge, lists: { lines: K.lines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vrc: { enabled: vrcEnabled },
     layout: K.layout,
@@ -253,10 +277,53 @@ function bandOf(coins) {
   return hit;
 }
 let seq = 0;
+// 順番リストの「今の項目」を取り出して次へ進める
+function poolOf(b) { return b.use === 'line' ? K.lines : b.use === 'challenge' ? K.twisters : (b.list || null); }
+function nextOf(b) { const p = poolOf(b); return p && p.length ? p[(K.idx[b.id] || 0) % p.length] : null; }
+function takeItem(b) {
+  const p = poolOf(b);
+  if (!p || !p.length) return { fx: b.fx.replace('{x}', ''), item: null };
+  const i = (K.idx[b.id] || 0) % p.length;
+  K.idx[b.id] = i + 1;
+  const item = p[i];
+  return { fx: b.fx.includes('{x}') ? b.fx.replace('{x}', item) : b.fx, item };
+}
+
+// 早口言葉チャレンジ：3回続けて言えたら成功。途中で噛んだら罰ゲーム（罰ゲームも順番）。判定はリモコンで なな がする
+function chStartNext() {
+  const C = K.challenge;
+  const x = C.q.shift();
+  C.cur = x ? Object.assign(x, { reps: [], state: 'active', startedAt: Date.now() }) : null;
+  if (C.cur) broadcast({ type: 'ev', kind: 'challenge', phase: 'start', ch: C.cur });
+}
+function chMark(ok) {
+  const C = K.challenge, c = C.cur;
+  if (!c || c.state !== 'active') return;
+  c.reps.push(!!ok);
+  if (!ok) {
+    const pl = K.penalties;
+    const i = (K.idx.__penalty || 0) % pl.length;
+    K.idx.__penalty = i + 1;
+    c.state = 'ng'; c.penalty = pl[i]; c.until = Date.now() + 9000;
+    broadcast({ type: 'ev', kind: 'challenge', phase: 'ng', ch: c });
+    if (!c.test) recordHighlight(`👅 早口言葉『${c.phrase}』失敗 → 罰ゲーム「${c.penalty}」（${c.user}さん）`);
+  } else if (c.reps.length >= 3) {
+    c.state = 'ok'; c.until = Date.now() + 6000;
+    broadcast({ type: 'ev', kind: 'challenge', phase: 'ok', ch: c });
+    if (!c.test) recordHighlight(`👅 早口言葉『${c.phrase}』成功！（${c.user}さん）`);
+  } else broadcast({ type: 'ev', kind: 'challenge', phase: 'mark', ch: c });
+  pushState();
+}
+setInterval(() => {
+  const c = K.challenge.cur;
+  if (c && c.until && c.until <= Date.now()) { chStartNext(); pushState(); }
+  else if (!c && K.challenge.q.length) { chStartNext(); pushState(); }
+}, 500);
+
 function slotAdd(slot, item) {
   const S = K.slots[slot];
   const ms = item.min * 60000 * item.count;
-  if (S.cur && S.cur.bandId === item.bandId && S.cur.end > Date.now()) { S.cur.end += ms; return true; } // 同じ変身中 → 延長
+  if (S.cur && S.cur.bandId === item.bandId && S.cur.end > Date.now()) { S.cur.end += ms; return true; } // 同じ変身中 → 延長（bandId は段＋項目）
   const q = S.q.find((x) => x.bandId === item.bandId);
   if (q) { q.ms += ms; return true; }
   S.q.push({ bandId: item.bandId, user: item.user, fx: item.fx, ico: item.ico, short: item.short, ms });
@@ -325,20 +392,31 @@ function processGift({ user, giftName, coins, count, test }) {
   const b = bandOf(coins || 1);
   rankAddGift(user, coins, count, giftName, giftIcon(giftName, b));
   let ext = false;
+  let fx = b ? b.fx : '', item = null;
   if (b) {
-    if (b.slot) ext = slotAdd(b.slot, { bandId: b.id, user, fx: b.fx, ico: b.ico, short: b.short, min: b.min, count });
+    ({ fx, item } = takeItem(b));
+    if (b.slot) {
+      // 同じ段・同じ項目が発動中なら延長。同じ段の別の項目なら切り替え＋時間を足す
+      const key = b.id + (item ? ':' + item : '');
+      const S = K.slots[b.slot];
+      if (b.list && S.cur && S.cur.bandId && S.cur.bandId.startsWith(b.id + ':') && S.cur.bandId !== key && S.cur.end > Date.now()) {
+        // 同じ段の別の項目が発動中 → その場で次の項目に切り替えて、時間を足す（「つぎ：〇〇」の表示どおりに進む）
+        Object.assign(S.cur, { bandId: key, user, fx, end: S.cur.end + b.min * 60000 * count });
+      } else ext = slotAdd(b.slot, { bandId: key, user, fx, ico: b.ico, short: b.short, min: b.min, count });
+    }
     if (b.req) for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, at: Date.now() });
+    if (b.use === 'challenge') { K.challenge.q.push({ id: 'c' + Date.now().toString(36) + (seq++), user, phrase: item || '生麦生米生卵', test: !!test }); if (!K.challenge.cur) chStartNext(); }
   }
   broadcast({
     type: 'ev', kind: 'gift', user, giftName, giftIco: giftIcon(giftName, b), coins, count, test: !!test,
-    band: b ? { id: b.id, tier: b.tier, ico: b.ico, fx: b.fx, min: b.min || 0, slot: b.slot || null, req: b.req || null } : null, ext,
+    band: b ? { id: b.id, tier: b.tier, ico: b.ico, fx, item, use: b.use || null, min: b.min || 0, slot: b.slot || null, req: b.req || null } : null, ext,
   });
   const w = K.settings.teamW;
   teamAdd(Math.min(w.giftCap, 8 + Math.sqrt(coins || 1) * 6) * Math.min(count, 10), test);
   pushState();
   if (!test && b) {
-    if (b.tier === 'L' || b.tier === 'XL') recordHighlight(`${b.ico} ${user}さん → ${b.fx}`);
-    try { vrcOnGift(user, giftName, count, b, ext); } catch (e) { /* VRC送信で止めない */ }
+    if ((b.tier === 'L' || b.tier === 'XL') && b.use !== 'challenge') recordHighlight(`${b.ico} ${user}さん → ${fx}`);
+    try { vrcOnGift(user, giftName, count, Object.assign({}, b, { fx }), ext); } catch (e) { /* VRC送信で止めない */ }
     if (thanksList && !thanksList.has(user)) thanksList.add(user);
   }
 }
@@ -410,6 +488,14 @@ wss.on('connection', (ws) => {
       }
       case 'slotEnd': if (SLOTS.includes(m.slot)) { K.slots[m.slot].cur = null; slotNext(m.slot); pushState(); } break;
       case 'slotClear': if (SLOTS.includes(m.slot)) { K.slots[m.slot] = { cur: null, q: [] }; pushState(); } break;
+      case 'chMark': chMark(!!m.ok); break;
+      case 'chSkip': K.challenge.cur = null; chStartNext(); pushState(); break;
+      case 'chClear': K.challenge = { cur: null, q: [] }; pushState(); break;
+      case 'setLists':
+        if (m.lines) K.lines = sanitizeList(m.lines, 100, DEFAULT_LINES);
+        if (m.twisters) K.twisters = sanitizeList(m.twisters, 100, DEFAULT_TWISTERS);
+        if (m.penalties) K.penalties = sanitizeList(m.penalties, 100, DEFAULT_PENALTIES);
+        pushState(); break;
       case 'reqDone': K.requests = K.requests.filter((r) => r.id !== m.id); pushState(); break;
       case 'reqClear': K.requests = []; pushState(); break;
       case 'setLayout': {
