@@ -79,6 +79,8 @@ const DEFAULT_BANDS = [
 // セリフ集・早口言葉・罰ゲーム（リモコンで編集できる）
 const DEFAULT_LINES = ['おかえり、待ってたよ', '今日もがんばったね、えらい！', 'べ、別にうれしくなんかないんだからね！', 'いっしょにがんばろ！', 'まかせて！', 'ずっと応援してくれてありがとう', 'ちょっとだけ、こっち見て？', 'ふふ、いい名前だね', '今日来てくれて、ほんとにうれしい', 'おやすみ、いい夢見てね'];
 const DEFAULT_TWISTERS = ['生麦生米生卵', '隣の客はよく柿食う客だ', '東京特許許可局', '赤巻紙青巻紙黄巻紙', 'バスガス爆発', '坊主が屏風に上手に坊主の絵を描いた', '新春シャンソンショー', '除雪車除雪作業中', '骨粗鬆症訴訟勝訴', '貨客船の旅客'];
+// みんなで達成したときに なな が読む長めのセリフ（順番に使う）
+const DEFAULT_TEAM_LINES = ["みんな、本当にありがとう！ひとりじゃ絶対ここまで来られなかったよ。今日いっしょにいてくれて、すっごくうれしい！", "ゲージ満タン、達成〜！いいねもコメントもギフトも、ぜんぶ届いてたよ。みんなのおかげで、今日がもっと好きな日になりました。", "やったー！みんなで達成！画面の向こうでポチポチしてくれた指、ぜんぶにありがとうを言いたい気分です。", "達成できたのは、ここにいるみんなが少しずつ力を貸してくれたから。ちいさな一歩の積み重ねって、ほんとにすごいね。", "ねえ聞いて、みんなで達成したよ！こういう瞬間のために配信してるんだなって、今あらためて思ってる。ありがとう！", "はじめましての人も、いつも来てくれる人も、みんなまとめて大好きです！今日の達成は、みんなの名前で記念日にしちゃおう。", "いっぱい応援してくれてありがとう。正直ちょっと泣きそう…。この気持ち、ピアノの音にのせて返すから聴いててね。", "みんなで達成〜！今日のゲージ、いつもよりあったかい色に見えるのは気のせいじゃないと思う。ほんとにありがとう！", "コメントひとつ、いいねひとつが、ちゃんと力になってるんだよ。今日はそれを全部まとめて受け取りました。ありがとう！", "達成おめでとう、わたしたち！こうやって一緒に何かをやりとげられるの、本当に幸せなことだなって思います。", "ありがとう、ありがとう、ありがとう！何回言っても足りないけど、とりあえず三回言っとくね。みんな最高！", "今日ここに集まってくれたみんなは、もう立派なチームです。これからも一緒に、いろんな景色を見に行こうね。", "ゲージがいっぱいになるのを見てたら、心までいっぱいになっちゃった。来てくれて、残ってくれて、ありがとう。", "みんなの「がんばれ」が、ちゃんと届いてました。今度はわたしが、みんなの毎日をちょっとだけ明るくする番だね。", "達成しました〜！いつも見守ってくれている人、今日たまたま来てくれた人、どっちも大切な仲間です。ありがとう！", "ひとりで弾くピアノもいいけど、みんなに聴いてもらえるピアノはもっと好き。その気持ちを、今から一曲にこめるね。", "すごいすごい、みんなで達成だよ！こんなに応援してもらえる配信者でいられること、ちゃんと誇りに思ってます。", "ここまで連れてきてくれてありがとう。次の目標も、みんなと一緒ならきっと大丈夫って思えるよ。", "達成の瞬間、画面の前でガッツポーズしちゃった。見えてないと思うけど、ほんとにしたからね！みんなありがとう！", "いいねを押してくれた回数だけ、わたしの元気がチャージされてます。今日はもう満タンどころかあふれてるよ！", "みんなで達成できたから、今日はちょっとだけ自分のことも褒めてあげようかな。…いや、やっぱりみんなを褒めたい！", "この配信が、誰かの「今日いいことあった」になってたらうれしいな。わたしにとっては、みんなが今日のいいことです。", "ねえ、今日のこと忘れないでね。わたしは絶対に忘れないから。みんなで達成した、この瞬間のこと。", "疲れてる日も、なんとなく来てくれた日も、ここにいてくれてありがとう。みんなの居場所になれてたら、すごくうれしい。", "達成〜！みんなの応援は、わたしの一番のエネルギーです。ここからもう一段ギア上げていくので、ついてきてね！", "今日のチームワーク、百点満点です！コメント欄のあったかさに、ずっと助けられてました。本当にありがとう。", "みんなの力が集まると、こんなに大きなことができるんだね。ちいさな「好き」がたくさん集まった、すてきなゲージでした。", "約束どおり、ここからはお礼の時間！みんなが集めてくれた気持ちに負けないくらい、心をこめて弾きます。", "またひとつ、みんなとの思い出が増えました。これからもたくさん一緒に作っていこうね。ありがとう、大好き！", "最後まで一緒に走ってくれてありがとう！今日のこの景色は、ここにいるみんなにしか見られない特別なものだよ。"];
 const DEFAULT_PENALTIES = ['ぶりっ子で「ごめんにゃさい♡」', '全力の「ありがとう！」を3回', '自分のいいところを3つ言う', '1分間 語尾「にゃん」', 'アバターで変顔10秒', 'イケボで「次は負けない」'];
 const PALETTES = {
   neon: { accent: '#ff1f7a', gold: '#ffcf3a', cyan: '#20e6ff', plate: '#0a0710', frame: '#ff1f7a', ink: '#ffffff' },
@@ -143,9 +145,9 @@ function sanitizeBands(arr) {
   out.forEach((b, i) => { b.id = 'b' + b.from; b.to = out[i + 1] ? out[i + 1].from - 1 : null; });
   return out.length ? out : null;
 }
-function sanitizeList(arr, max, d) {
+function sanitizeList(arr, max, d, len) {
   if (!Array.isArray(arr)) return d.slice();
-  const l = arr.map((x) => str(x, 60, '').trim()).filter(Boolean).slice(0, max);
+  const l = arr.map((x) => str(x, len || 60, '').trim()).filter(Boolean).slice(0, max);
   return l.length ? l : d.slice();
 }
 function sanitizeStyle(s) {
@@ -224,7 +226,7 @@ let K = {
   team: { value: 0 },
   slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] } },
   requests: [],
-  lines: DEFAULT_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
+  lines: DEFAULT_LINES.slice(), teamLines: DEFAULT_TEAM_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
   idx: {},           // 順番リストの進み具合（段ごと）
   challenge: { cur: null, q: [] }, // 早口言葉チャレンジ
   roomId: null,
@@ -249,6 +251,7 @@ try {
     }
     if (Array.isArray(j.requests)) K.requests = j.requests.slice(0, 100);
     K.lines = sanitizeList(j.lines, 100, DEFAULT_LINES); K.twisters = sanitizeList(j.twisters, 100, DEFAULT_TWISTERS); K.penalties = sanitizeList(j.penalties, 100, DEFAULT_PENALTIES);
+    K.teamLines = sanitizeList(j.teamLines, 100, DEFAULT_TEAM_LINES, 160);
     if (j.idx && typeof j.idx === 'object') K.idx = j.idx;
     if (j.challenge && typeof j.challenge === 'object') K.challenge = { cur: j.challenge.cur || null, q: Array.isArray(j.challenge.q) ? j.challenge.q.slice(0, 30) : [] };
     if (j.roomId) K.roomId = String(j.roomId);
@@ -272,7 +275,7 @@ function stateMsg() {
     settings: K.settings, bands: K.bands.map((b) => Object.assign({}, b, { next: nextOf(b) })), style: K.style,
     team: { value: Math.round(K.team.value), max: K.settings.teamMax, label: K.settings.teamLabel },
     slots: K.slots, requests: K.requests,
-    challenge: K.challenge, lists: { lines: K.lines, twisters: K.twisters, penalties: K.penalties },
+    challenge: K.challenge, lists: { lines: K.lines, teamLines: K.teamLines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
     sfxFiles,
@@ -376,8 +379,10 @@ function teamAdd(v, test) {
   K.team.value += v;
   if (K.team.value >= K.settings.teamMax) {
     K.team.value = 0;
-    K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: 'みんな', kind: 'TEAM達成', at: Date.now() });
-    broadcast({ type: 'ev', kind: 'team', label: K.settings.teamLabel, test: !!test });
+    const tl = K.teamLines.length ? K.teamLines[(K.idx.__team || 0) % K.teamLines.length] : '';
+    K.idx.__team = (K.idx.__team || 0) + 1;
+    K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: 'みんな', kind: 'TEAM達成', line: tl, at: Date.now() });
+    broadcast({ type: 'ev', kind: 'team', label: K.settings.teamLabel, line: tl, test: !!test });
     if (!test) recordHighlight(`🎉 みんなで達成（${K.settings.teamLabel}）`);
     console.log('[team] みんなで達成！');
   }
@@ -532,6 +537,7 @@ wss.on('connection', (ws) => {
         if (m.lines) K.lines = sanitizeList(m.lines, 100, DEFAULT_LINES);
         if (m.twisters) K.twisters = sanitizeList(m.twisters, 100, DEFAULT_TWISTERS);
         if (m.penalties) K.penalties = sanitizeList(m.penalties, 100, DEFAULT_PENALTIES);
+        if (m.teamLines) K.teamLines = sanitizeList(m.teamLines, 100, DEFAULT_TEAM_LINES, 160);
         pushState(); break;
       case 'reqDone': K.requests = K.requests.filter((r) => r.id !== m.id); pushState(); break;
       case 'reqClear': K.requests = []; pushState(); break;

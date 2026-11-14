@@ -142,6 +142,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="note">1行に1つ。上から順番に使われて、最後まで行ったら最初に戻ります（運の要素なし）。</div>
       <div class="row" style="align-items:flex-start;gap:12px">
         <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">セリフ集<textarea id="lsLines" rows="10"></textarea></label>
+        <label style="flex-direction:column;align-items:stretch;flex:2;min-width:320px">みんなで達成のセリフ（長め）<textarea id="lsTeam" rows="10"></textarea></label>
         <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">早口言葉<textarea id="lsTw" rows="10"></textarea></label>
         <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">罰ゲーム<textarea id="lsPen" rows="10"></textarea></label>
       </div>
@@ -226,7 +227,7 @@ function renderLive(){
 function render(first){
   $("dTT").classList.toggle("ok",!!S.conn.live);$("tTT").textContent=S.conn.live?`TikTok 接続中（${S.conn.user}）`:`TikTok 未接続（${S.conn.auto?"自動で再試行中":"手動モード"}）`;
   renderLive();
-  $("reqList").innerHTML=S.requests.length?S.requests.map((r,i)=>`<div class="item"><div class="t"><b>${i+1}. ${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span> <small>${new Date(r.at).toLocaleTimeString().slice(0,5)}</small></div><button class="sm pri" data-done="${esc(r.id)}">済</button></div>`).join(""):'<div class="note">なし</div>';
+  $("reqList").innerHTML=S.requests.length?S.requests.map((r,i)=>`<div class="item"><div class="t"><b>${i+1}. ${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span> <small>${new Date(r.at).toLocaleTimeString().slice(0,5)}</small>${r.line?`<br><small style="color:#fff">「${esc(r.line)}」</small>`:""}</div><button class="sm pri" data-done="${esc(r.id)}">済</button></div>`).join(""):'<div class="note">なし</div>';
   const st=S.settings;
   if(first||document.activeElement!==$("topic"))$("topic").value=st.topic;
   $("mAvatar").classList.toggle("on",st.mode==="avatar");$("mGame").classList.toggle("on",st.mode==="game");
@@ -257,7 +258,7 @@ function render(first){
   if(C){$("chWho").textContent=`${C.user}さん${S.challenge.q.length?`（つぎ ${S.challenge.q.length}件）`:""}`;$("chPhrase").textContent=C.phrase;
     $("chReps").textContent=C.reps.map(r=>r?"○":"×").join(" ")+(C.state==="ok"?"　成功！":C.state==="ng"?`　罰ゲーム：${C.penalty}`:"");
     $("chOk").disabled=$("chNg").disabled=C.state!=="active";}
-  if(first||!["lsLines","lsTw","lsPen"].includes(document.activeElement&&document.activeElement.id)){const L=S.lists||{};$("lsLines").value=(L.lines||[]).join("\n");$("lsTw").value=(L.twisters||[]).join("\n");$("lsPen").value=(L.penalties||[]).join("\n");}
+  if(first||!["lsLines","lsTeam","lsTw","lsPen"].includes(document.activeElement&&document.activeElement.id)){const L=S.lists||{};$("lsLines").value=(L.lines||[]).join("\n");$("lsTeam").value=(L.teamLines||[]).join("\n");$("lsTw").value=(L.twisters||[]).join("\n");$("lsPen").value=(L.penalties||[]).join("\n");}
 }
 setInterval(renderLive,500);
 
@@ -296,7 +297,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-th]");if(t
 $("sfxScan").onclick=()=>send({type:"sfxRescan"});
 $("sfxSave").onclick=()=>{const map={};document.querySelectorAll("[data-sfx]").forEach(sel=>{if(sel.value)map[sel.dataset.sfx]=sel.value;});setS({sound:{map}});$("sfxSave").textContent="保存しました ✓";setTimeout(()=>$("sfxSave").textContent="効果音を保存",1500);};
 $("chOk").onclick=()=>send({type:"chMark",ok:true});$("chNg").onclick=()=>send({type:"chMark",ok:false});$("chSkip").onclick=()=>send({type:"chSkip"});
-$("lsSave").onclick=()=>{const sp=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);send({type:"setLists",lines:sp("lsLines"),twisters:sp("lsTw"),penalties:sp("lsPen")});$("lsSave").textContent="保存しました ✓";setTimeout(()=>$("lsSave").textContent="保存",1500);};
+$("lsSave").onclick=()=>{const sp=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);send({type:"setLists",lines:sp("lsLines"),teamLines:sp("lsTeam"),twisters:sp("lsTw"),penalties:sp("lsPen")});$("lsSave").textContent="保存しました ✓";setTimeout(()=>$("lsSave").textContent="保存",1500);};
 $("lhOn").onclick=()=>setS({likeHearts:S.settings.likeHearts===false});
 $("lkPanel").onclick=()=>setS({look:"panel"});$("lkAiry").onclick=()=>setS({look:"airy"});
 $("fxN").onclick=()=>setS({fxLevel:"normal"});$("fxD").onclick=()=>setS({fxLevel:"dopa"});
