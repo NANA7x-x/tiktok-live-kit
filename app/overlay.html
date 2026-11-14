@@ -343,6 +343,7 @@ body:not(.L-back) #sceneBack{display:none}
 @keyframes scHue{to{filter:hue-rotate(360deg) blur(var(--b,30px))}}
 @keyframes scMw{0%,100%{transform:rotate(-24deg) translateX(-4%);opacity:.28}50%{transform:rotate(-20deg) translateX(4%);opacity:.5}}
 @keyframes neonGrid{to{background-position:0 0,0 90px}}
+@keyframes scKen{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(-3%,2%)}}
 @keyframes scSun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-26px) scale(1.06)}}
 #connWarn{position:absolute;left:20px;top:20px;font:900 22px "M PLUS 1p";background:#c00;color:#fff;padding:4px 12px;display:none;z-index:9}
 .preview.disconnected #connWarn{display:block}
@@ -502,7 +503,7 @@ function tick(){
   if(!v||v.end<=now){n.classList.add("idle");$("nName").textContent="通常モード";$("nBy").textContent="";}
   else{n.classList.remove("idle");$("nName").textContent=v.fx;$("nBy").textContent="by "+v.user;$("nTime").textContent=mmss(v.end-now);
     const ql=(sl.voice.q||[]).length;$("nQ").textContent=ql?`NEXT ${ql}`:"";}
-  {const c=sl.scene&&sl.scene.cur;const nm=c&&c.end>now?String(c.bandId||"").split(":")[1]||null:null;setScene(nm);}
+  {const c=sl.scene&&sl.scene.cur;const nm=c&&c.end>now?String(c.bandId||"").split(":").slice(1).join(":")||null:null;setScene(nm);}
   for(const k of ["cam","vfx","scene"]){const c=sl[k]&&sl[k].cur,on=!!(c&&c.end>now);$(k).classList.toggle("hide",!on);if(on){$(k+"T").textContent=mmss(c.end-now);$(k+"L").textContent=c.fx||shortFx(c);}}
 }
 setInterval(tick,250);
@@ -759,9 +760,6 @@ const SCENES={
   "オーロラ":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:linear-gradient(#030818,#0b1a3a 55%,#0a0f22)"></div>'+[0,1,2].map(i=>`<div style="position:absolute;left:-20%;right:-20%;top:${4+i*9}%;height:38%;filter:blur(${34+i*10}px);opacity:.8;background:linear-gradient(90deg,transparent,${["rgba(80,255,190,.75)","rgba(120,110,255,.6)","rgba(60,210,255,.6)"][i]},transparent);animation:aurWave ${9+i*3}s ease-in-out infinite;animation-delay:${-i*2}s"></div>`).join(""));starsInto(SCN.B,160,.0,.6);},
      front(){sx("sceneFront",[0,1].map(i=>`<div style="position:absolute;left:-15%;right:-15%;top:${i*12}%;height:42%;filter:blur(${40+i*14}px);opacity:${.38-i*.1};background:linear-gradient(90deg,rgba(80,255,190,.6),rgba(140,120,255,.55),rgba(60,210,255,.5));animation:aurWave ${10+i*4}s ease-in-out infinite;animation-delay:${-i*3}s"></div>`).join(""));
        SCN.spawn=()=>{if(Math.random()<.25)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(200,1100),vx:rr(-.2,.2),vy:rr(-.4,-.1),s:rr(1.5,3.5),l:rr(150,260),L:260,c:rnd(["#b8ffe6","#c9c2ff","#aef0ff"])});};}},
-  "ステンドグラス":{back(){drawGlass();sx("sceneBack",sweep("rgba(255,250,230,.55)",.8,7)+'<div style="position:absolute;left:50%;top:30%;width:1600px;height:1600px;margin:-800px;opacity:.18;background:repeating-conic-gradient(rgba(255,255,255,.9) 0 6deg,transparent 6deg 20deg);filter:blur(20px);animation:scSpin 60s linear infinite"></div>');},
-     front(){sx("sceneFront",["#ff4d6d","#ffd166","#06d6a0","#4cc9f0","#b388ff"].map((c,i)=>`<div style="position:absolute;top:-20%;left:${8+i*19}%;width:150px;height:140%;--r:${-18+i*4}deg;transform-origin:top center;filter:blur(26px);opacity:.22;background:linear-gradient(${c},transparent 80%);animation:beamSway ${7+i}s ease-in-out infinite"></div>`).join("")+sweep("rgba(255,240,210,.35)",.6,9));
-       SCN.spawn=()=>{if(Math.random()<.4)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(200,1100),vx:rr(-.2,.2),vy:rr(-.25,-.05),s:rr(2,4),l:rr(120,240),L:240,c:"#fff6d8"});};}},
   "星空":{back(){sx("sceneBack",'<div style="position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 0%,#1c1550,#070b24 60%,#03040e)"></div><div style="position:absolute;left:-20%;right:-20%;top:20%;height:30%;filter:blur(40px);background:linear-gradient(90deg,transparent,rgba(190,170,255,.7),rgba(255,220,240,.5),transparent);animation:scMw 18s ease-in-out infinite"></div>');starsInto(SCN.B,380,0,1);
        SCN.spawnB=()=>{if(Math.random()<.02)SCN.B.push({k:"met",x:rr(-100,700),y:rr(0,700),vx:rr(18,26),vy:rr(7,11),l:60,L:60,c:rnd(["#fff","#cfe6ff","#fff4c2"])});};},
      front(){sx("sceneFront",'<div style="position:absolute;left:-30%;right:-30%;top:5%;height:35%;--b:60px;opacity:.18;background:radial-gradient(closest-side,rgba(170,140,255,.8),transparent);animation:scDrift 22s ease-in-out infinite alternate"></div>');
@@ -791,16 +789,31 @@ const SCENES={
 };
 function ffly(a){return{k:"fly",a:a||1,x:rr(0,1080),y:rr(300,1100),vx:rr(-.5,.5),vy:rr(-.5,.5),s:rr(3,6),ph:rr(0,6),l:1e9,L:1e9,c:rnd(["#e8ff7a","#b8ff6a","#fff59a"])};}
 function starsInto(arr,n,a0,a1){for(let i=0;i<n;i++)arr.push({k:"star",x:rr(0,1080),y:rr(0,1300),s:rr(.6,2.4),ph:rr(0,6),sp:rr(.02,.08),l:1e9,L:1e9,c:rnd(["#fff","#dfe8ff","#fff4d6"])});}
-function drawGlass(){const W=1080,H=1920,g=scBx,cell=150,pts=[];g.fillStyle="#120a18";g.fillRect(0,0,W,H);
-  for(let y=-1;y<=H/cell+1;y++)for(let x=-1;x<=W/cell+1;x++)pts.push([x*cell+rr(-50,50),y*cell+rr(-50,50)]);
-  const cols=["#ff4d6d","#ffd166","#06d6a0","#4cc9f0","#b388ff","#f72585","#ff9e00","#3a86ff"];const cw=Math.ceil(W/cell)+3;
-  for(let y=0;y<H/cell+1;y++)for(let x=0;x<W/cell+1;x++){const a=pts[y*cw+x],b=pts[y*cw+x+1],c=pts[(y+1)*cw+x],d=pts[(y+1)*cw+x+1];if(!a||!b||!c||!d)continue;
-    for(const tri of [[a,b,d],[a,d,c]]){g.beginPath();g.moveTo(...tri[0]);g.lineTo(...tri[1]);g.lineTo(...tri[2]);g.closePath();g.globalAlpha=.55;g.fillStyle=rnd(cols);g.fill();g.globalAlpha=1;g.lineWidth=7;g.strokeStyle="#0d0710";g.stroke();}}
-  const gr=g.createRadialGradient(540,600,50,540,600,1100);gr.addColorStop(0,"rgba(255,255,255,.25)");gr.addColorStop(1,"rgba(0,0,0,.45)");g.fillStyle=gr;g.fillRect(0,0,W,H);SCN.staticBack=true;}
+// ===== ゆらめき（単色の光がゆっくり漂う）と、「背景」フォルダの動画・画像 =====
+const YURA={"ピンク":"#ff7eb6","ラベンダー":"#b49cff","ミント":"#5fe8bd","水色":"#6cc8ff","ゴールド":"#ffcf5c","ピーチ":"#ffa98a","ブルー":"#5b7cff","ローズ":"#ff5f8f","ホワイト":"#f2efff","レッド":"#ff4d5e","グリーン":"#6bdc7a","オレンジ":"#ff9a3d","パープル":"#9b6bff","シアン":"#3fe0f0"};
+function mixHex(h,w,t){const n=parseInt(h.slice(1),16),m=parseInt(w.slice(1),16),f=(x,y)=>Math.round(x+(y-x)*t);
+  return "#"+[f(n>>16,m>>16),f(n>>8&255,m>>8&255),f(n&255,m&255)].map(v=>v.toString(16).padStart(2,"0")).join("");}
+function blobs(n,cols,o,big,move){return Array.from({length:n},(_,i)=>{const w=rr(big*.6,big);return`<div style="position:absolute;left:${rr(-25,75)}%;top:${rr(-15,85)}%;width:${w}px;height:${w}px;border-radius:50%;filter:blur(${Math.round(w*.18)}px);--o:${rr(o*.55,o)};--fx:${rr(-move,move)}px;--fy:${rr(-move,move)}px;background:radial-gradient(closest-side,${cols[i%cols.length]},transparent);animation:scFloat ${rr(12,22)}s ease-in-out infinite;animation-delay:${-rr(0,22)}s"></div>`;}).join("");}
+function yuraScene(hex){const lite=mixHex(hex,"#ffffff",.45),deep=mixHex(hex,"#000000",.55),dark=mixHex(hex,"#05040a",.86);
+  return{back(){sx("sceneBack",`<div style="position:absolute;inset:0;background:radial-gradient(90% 60% at 50% 40%,${mixHex(hex,"#05040a",.7)},${dark})"></div>`+blobs(7,[hex,lite,deep,hex],.75,1100,220)
+      +`<div style="position:absolute;inset:0;--o1:.0;--o2:.22;background:radial-gradient(60% 40% at 50% 30%,${lite},transparent);animation:scBreathe 9s ease-in-out infinite"></div>`);
+      SCN.spawnB=()=>{if(Math.random()<.25)SCN.B.push({k:"mote",x:rr(0,1080),y:rr(300,1900),vx:rr(-.2,.2),vy:rr(-.5,-.15),s:rr(1.5,3.5),l:rr(200,360),L:360,c:lite});};},
+    front(){sx("sceneFront",`<div style="position:absolute;inset:0;mix-blend-mode:screen">`+blobs(4,[hex,lite],.32,1000,200)+`</div>`
+      +`<div style="position:absolute;inset:0;--o1:.12;--o2:.3;background:linear-gradient(${hexA(hex,.55)},transparent 28%,transparent 72%,${hexA(hex,.55)});animation:scBreathe 7s ease-in-out infinite"></div>`);
+      SCN.spawn=()=>{if(Math.random()<.18)SCN.F.push({k:"mote",x:rr(0,1080),y:rr(250,1150),vx:rr(-.2,.2),vy:rr(-.45,-.1),s:rr(1.5,3),l:rr(150,260),L:260,c:lite});};}};}
+const BG_VIDEO=/\.(mp4|m4v|webm|mov)$/i;
+function fileScene(f){const url="/bg/"+encodeURIComponent(f),vid=BG_VIDEO.test(f);
+  const el=st=>vid?`<video src="${url}" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;${st}"></video>`
+    :`<img src="${url}" style="position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;animation:scKen 26s ease-in-out infinite alternate;${st}">`;
+  return{back(){sx("sceneBack",el(""));},front(){sx("sceneFront",el("opacity:.3;mix-blend-mode:screen"));}};}
+function sceneOf(name){if(SCENES[name])return SCENES[name];
+  const hx=/#([0-9a-f]{6})\b/i.exec(name);if(hx)return yuraScene("#"+hx[1].toLowerCase());
+  if(YURA[name])return yuraScene(YURA[name]);
+  const f=(S&&S.bgFiles||[]).find(x=>x.replace(/\.[^.]+$/,"").slice(0,30)===name);return f?fileScene(f):null;}
 function setScene(name){
   if(name===SCN.name)return;const was=SCN.name;SCN.name=name;
   const fade=()=>{$("sceneBack").classList.remove("on");$("sceneFront").classList.remove("on");};
-  fade();setTimeout(()=>{if(SCN.name!==name)return;clearScene();SCN.staticBack=false;if(!name)return;const sc=SCENES[name];if(!sc)return;
+  fade();setTimeout(()=>{if(SCN.name!==name)return;clearScene();SCN.staticBack=false;if(!name)return;const sc=sceneOf(name);if(!sc)return;
     if(sc.back&&LAYERS.includes("back"))sc.back();if(sc.front&&LAYERS.includes("main"))sc.front();
     $("sceneBack").classList.add("on");$("sceneFront").classList.add("on");if(IS_MAIN&&was!==name)SFX.scene();},was?900:50);
 }

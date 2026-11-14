@@ -68,9 +68,10 @@ const DEFAULT_BANDS = [
   { from: 20, tier: 'M', ico: '✏️', fx: 'お名前であいうえお作文', short: 'あいうえお作文' },
   { from: 30, tier: 'M', ico: '🎭', fx: '{x}でしゃべる', min: 5, slot: 'voice', short: 'しゃべり方', list: ['関西弁', 'お嬢様口調', '執事口調', 'ツンデレ', '一人称「俺」', '実況アナウンサー風', '博多弁'] },
   { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
-  { from: 100, tier: 'L', ico: '🌌', fx: '画面エフェクト：{x}', min: 2, slot: 'scene', short: '画面エフェクト', list: ['ラメ', 'オーロラ', 'ステンドグラス', '星空', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
+  { from: 100, tier: 'L', ico: '🫧', fx: 'ゆらめき：{x}', min: 2, slot: 'scene', short: 'ゆらめき', list: ['ピンク', 'ラベンダー', 'ミント', '水色', 'ゴールド', 'ピーチ', 'ブルー', 'ローズ'] },
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
+  { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
@@ -137,6 +138,7 @@ function sanitizeBands(arr) {
     if (sh) o.short = sh;
     const min = clamp(b.min, 0, 120, 0);
     if (SLOTS.includes(b.slot) && min > 0) { o.slot = b.slot; o.min = min; }
+    if (b.bg && o.slot === 'scene') o.bg = true; // 「背景」フォルダの動画・画像も順番に入れる
     const req = str(b.req, 12, '');
     if (req && !o.slot) o.req = req;
     if ((b.use === 'line' || b.use === 'challenge') && !o.slot && !o.req) o.use = b.use;
@@ -175,6 +177,21 @@ function safeSfxName(n) { return typeof n === 'string' && n.length < 120 && /\.(
 let sfxFiles = [];
 function scanSfx() { try { fs.mkdirSync(SFX_DIR, { recursive: true }); sfxFiles = fs.readdirSync(SFX_DIR).filter(safeSfxName).slice(0, 300); } catch (e) { sfxFiles = []; } }
 scanSfx();
+// 背景ムービー（キットの「背景」フォルダに入れた 動画 mp4 / webm / mov、画像 jpg / png / gif / webp）
+const BG_DIR = path.join(__dirname, '..', '背景');
+const BG_TYPES = { mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+function safeBgName(n) { return typeof n === 'string' && n.length < 120 && /\.(mp4|m4v|webm|mov|jpe?g|png|gif|webp)$/i.test(n) && !/[\\/:]|\.\./.test(n); }
+const bgStem = (f) => f.replace(/\.[^.]+$/, '').slice(0, 30);
+let bgFiles = [];
+function scanBg() {
+  let l = [];
+  try { fs.mkdirSync(BG_DIR, { recursive: true }); l = fs.readdirSync(BG_DIR).filter(safeBgName).sort().slice(0, 100); } catch (e) { l = []; }
+  const changed = JSON.stringify(l) !== JSON.stringify(bgFiles);
+  bgFiles = l;
+  return changed;
+}
+scanBg();
+setInterval(() => { if (scanBg()) pushState(); }, 15000); // ファイルを入れるだけで自動で追加される
 function sanitizeSettings(s, base) {
   const b = base || DEFAULT_SETTINGS;
   const o = JSON.parse(JSON.stringify(b));
@@ -243,6 +260,17 @@ try {
   if (j && typeof j === 'object') {
     K.settings = sanitizeSettings(j.settings);
     K.bands = sanitizeBands(j.bands) || K.bands;
+    // 前の初期値の「画面エフェクト（100）」のままなら、100＝ゆらめき／200＝背景ムービー に入れ替える
+    {
+      const OLD = JSON.stringify(['ラメ', 'オーロラ', 'ステンドグラス', '星空', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン']);
+      const i = K.bands.findIndex((b) => b.from === 100 && b.slot === 'scene' && JSON.stringify(b.list) === OLD);
+      if (i >= 0) {
+        const nb = K.bands.slice();
+        nb[i] = Object.assign({}, DEFAULT_BANDS.find((b) => b.from === 100), { on: K.bands[i].on });
+        if (!nb.some((b) => b.from === 200)) nb.push(Object.assign({}, DEFAULT_BANDS.find((b) => b.from === 200)));
+        K.bands = sanitizeBands(nb) || K.bands;
+      }
+    }
     K.style = sanitizeStyle(j.style);
     if (j.team && Number.isFinite(j.team.value)) K.team.value = Math.max(0, j.team.value);
     if (j.slots && typeof j.slots === 'object') {
@@ -282,6 +310,7 @@ function stateMsg() {
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
     sfxFiles,
+    bgFiles,
     vrc: { enabled: vrcEnabled },
     layout: K.layout,
     rank: rankView(),
@@ -305,15 +334,22 @@ function bandOf(coins) {
 }
 let seq = 0;
 // 順番リストの「今の項目」を取り出して次へ進める
-function poolOf(b) { return b.use === 'line' ? K.lines : b.use === 'challenge' ? K.twisters : (b.list || null); }
-function nextOf(b) { const p = poolOf(b); return p && p.length ? p[(K.idx[b.id] || 0) % p.length] : null; }
+function poolOf(b) {
+  if (b.use === 'line') return K.lines;
+  if (b.use === 'challenge') return K.twisters;
+  if (b.bg) { const l = (b.list || []).slice(); for (const f of bgFiles) { const n = bgStem(f); if (!l.includes(n)) l.push(n); } return l.length ? l : null; }
+  return b.list || null;
+}
+// 「さくら色#ffb7d5」のような色指定は、表示では色コードを消す
+const itemLabel = (x) => (typeof x === 'string' ? (x.replace(/\s*#[0-9a-f]{6}\b/i, '').trim() || x) : x);
+function nextOf(b) { const p = poolOf(b); return p && p.length ? itemLabel(p[(K.idx[b.id] || 0) % p.length]) : null; }
 function takeItem(b) {
   const p = poolOf(b);
   if (!p || !p.length) return { fx: b.fx.replace('{x}', ''), item: null };
   const i = (K.idx[b.id] || 0) % p.length;
   K.idx[b.id] = i + 1;
   const item = p[i];
-  return { fx: b.fx.includes('{x}') ? b.fx.replace('{x}', item) : b.fx, item };
+  return { fx: b.fx.includes('{x}') ? b.fx.replace('{x}', itemLabel(item)) : b.fx, item };
 }
 
 // 早口言葉チャレンジ：3回続けて言えたら成功。途中で噛んだら罰ゲーム（罰ゲームも順番）。判定はリモコンで なな がする
@@ -480,6 +516,26 @@ const httpServer = http.createServer((req, res) => {
     });
     return;
   }
+  if (p.startsWith('/bg/')) {
+    const name = p.slice(4);
+    if (!safeBgName(name)) { res.writeHead(404); res.end(); return; }
+    const fp = path.join(BG_DIR, name), type = BG_TYPES[name.split('.').pop().toLowerCase()];
+    fs.stat(fp, (err, st) => {
+      if (err || !st.isFile()) { res.writeHead(404); res.end(); return; }
+      const m = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+      if (m) { // 動画のループ・シーク用
+        let a = m[1] === '' ? Math.max(0, st.size - Number(m[2])) : Number(m[1]);
+        let z = m[1] !== '' && m[2] !== '' ? Number(m[2]) : st.size - 1;
+        if (!(a <= z && z < st.size)) { res.writeHead(416, { 'Content-Range': `bytes */${st.size}` }); res.end(); return; }
+        res.writeHead(206, { 'Content-Type': type, 'Content-Range': `bytes ${a}-${z}/${st.size}`, 'Accept-Ranges': 'bytes', 'Content-Length': z - a + 1 });
+        fs.createReadStream(fp, { start: a, end: z }).pipe(res);
+      } else {
+        res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': st.size });
+        fs.createReadStream(fp).pipe(res);
+      }
+    });
+    return;
+  }
   if (p === '/version') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ overlay: kitVersion('overlay.html'), remote: kitVersion('remote.html') }));
@@ -556,6 +612,7 @@ wss.on('connection', (ws) => {
       case 'connectNow': console.log('[bridge] リモコンから「今すぐ接続」を受けました'); try { connectTikTokNow(); } catch (e) { /* ignore */ } break;
       case 'vrcTest': handleVrcTest(); break;
       case 'sfxRescan': scanSfx(); pushState(); break;
+      case 'bgRescan': scanBg(); pushState(); break;
       case 'vtsTest': if (typeof m.action === 'string') linkOn('vts:' + m.action.slice(0, 60), 6000); break;
       case 'vtsReconnect': vtsClose(); vtsConnect(); break;
       default: break;
