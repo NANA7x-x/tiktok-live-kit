@@ -172,6 +172,9 @@ body:not(.L-main) #main{display:none}
 .mBox .a{font:400 50px var(--fTitle),"Dela Gothic One";line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mBox .b{font:700 26px var(--fBody);color:var(--gold);margin-top:4px}
 .mBox .f{display:inline-block;margin-top:14px;padding:8px 22px;background:var(--accent);color:var(--onAccent);font:900 34px var(--fBody)}
+.mBox.mm .b{font:900 34px var(--fBody);color:var(--gold);margin:0 0 10px}
+.mBox.mm .ppl{display:flex;flex-wrap:wrap;gap:8px}
+.mBox.mm .ppl span{font:900 28px var(--fBody);background:var(--accent);color:var(--onAccent);padding:4px 14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @keyframes mIn{from{transform:translateX(1100px) skewX(-25deg)}70%{transform:translateX(-20px) skewX(4deg)}to{transform:none}}
 .band{position:absolute;left:-10%;right:-10%;top:860px;height:300px;transform:skewY(-7deg);background:#000;border-top:10px solid var(--accent);border-bottom:10px solid var(--accent);animation:bandIn .3s cubic-bezier(.1,1,.3,1) both;overflow:hidden;z-index:3}
 .band::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 40px,color-mix(in srgb,var(--accent) 25%,transparent) 40px 46px);animation:sl .3s linear infinite}
@@ -474,17 +477,18 @@ window.__unlockAudio=()=>{if(ensureAC())AC.resume&&AC.resume();};
 
 /* ===== パーティクル ===== */
 const cv=$("fx"),cx=cv.getContext("2d");let P=[];
-function burst(x,y,n,col,{sp=16,g=.4,sz=[6,16],life=80,slow=false}={}){if(P.length>900)return;for(let i=0;i<n;i++){const a=Math.random()*6.283,v=sp*(.3+Math.random());P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g,s:sz[0]+Math.random()*(sz[1]-sz[0]),c:rnd(col),r:Math.random()*6,vr:(Math.random()-.5)*.4,l:life*(.6+Math.random()*.7),f:slow?.96:.985,star:Math.random()<.35});}}
+const PMAX=650; // 画面に出す粒の上限（大量ギフトでもたまらない・重くならない）
+function burst(x,y,n,col,{sp=16,g=.4,sz=[6,16],life=80,slow=false}={}){n=Math.min(n,PMAX-P.length);if(n<=0)return;for(let i=0;i<n;i++){const a=Math.random()*6.283,v=sp*(.3+Math.random());P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g,s:sz[0]+Math.random()*(sz[1]-sz[0]),c:rnd(col),r:Math.random()*6,vr:(Math.random()-.5)*.4,l:life*(.6+Math.random()*.7),f:slow?.96:.985,star:Math.random()<.35});}}
 function star(c,s){c.beginPath();for(let i=0;i<8;i++){const r=i%2?s*.2:s;c.lineTo(Math.cos(i*.785)*r,Math.sin(i*.785)*r);}c.fill();}
 // いいねのハート：画面の下（コメント欄の上）から、ゆらゆら上っていく
 function heartPath(c,s){c.beginPath();c.moveTo(0,s*.35);c.bezierCurveTo(-s*1.1,-s*.35,-s*.45,-s*1.05,0,-s*.45);c.bezierCurveTo(s*.45,-s*1.05,s*1.1,-s*.35,0,s*.35);c.fill();}
-function hearts(n,big){if(P.length>900)return;const cols=[css("--accent"),"#ff5f9e","#ff8fc0",css("--gold"),"#ffffff"];
+function hearts(n,big){n=Math.min(n,PMAX-P.length);if(n<=0)return;const cols=[css("--accent"),"#ff5f9e","#ff8fc0",css("--gold"),"#ffffff"];
   // 顔にかぶらないよう、左右の端寄りからわく
   for(let i=0;i<n;i++){const S=big?50+Math.random()*50:16+Math.random()*26,side=Math.random()<.5;P.push({x:big?(side?120+Math.random()*200:760+Math.random()*200):(side?210+Math.random()*120:750+Math.random()*120),y:1110+Math.random()*40,vx:0,vy:-(big?7:3.2)-Math.random()*3,g:-.012,s:S,c:rnd(cols),r:(Math.random()-.5)*.4,vr:0,l:big?150:110+Math.random()*60,f:1,heart:true,ph:Math.random()*6.28,sw:.8+Math.random()*1.6});}}
 let likeAcc=0;
 // ギフトのときに降ってくる星のきらめき（ドパドパのとき）。キラッと瞬きながら自然な速さで落ちて、下で消える
 function sparkle(c,s){c.beginPath();c.moveTo(0,-s);c.quadraticCurveTo(s*.12,-s*.12,s,0);c.quadraticCurveTo(s*.12,s*.12,0,s);c.quadraticCurveTo(-s*.12,s*.12,-s,0);c.quadraticCurveTo(-s*.12,-s*.12,0,-s);c.fill();}
-function starRain(n){if(P.length>900)return;const cols=[css("--gold"),"#ffffff","#fff4c2",css("--accent"),css("--cyan")];
+function starRain(n){n=Math.min(n,PMAX-P.length);if(n<=0)return;const cols=[css("--gold"),"#ffffff","#fff4c2",css("--accent"),css("--cyan")];
   for(let i=0;i<n;i++)P.push({x:40+Math.random()*1000,y:-30-Math.random()*260,vx:(Math.random()-.5)*2.2,vy:7+Math.random()*7,g:.6,s:10+Math.random()*24,c:rnd(cols),r:Math.random()*.8,vr:(Math.random()-.5)*.08,l:120,f:.99,spark:true,ph:Math.random()*6.28,tw:.25+Math.random()*.3});}
 // 物理は「時間」基準（OBSのブラウザソースは30fpsのことが多く、コマ数基準だと遅く見えるため）
 let lpLast=performance.now();
@@ -541,33 +545,56 @@ function toast(u,ico,label,cnt=1){const key=u+"|"+label,now=Date.now();let t=TM.
  const r=t.e.getBoundingClientRect(),sr=$("stage").getBoundingClientRect(),k=1080/sr.width;burst((r.right-sr.left)*k,(r.top-sr.top+r.height/2)*k,8+Math.min(t.n,20),PINK(),{sp:9,sz:[5,11],life:40});}
 
 /* ===== 演出キュー（大きい演出は1つずつ） ===== */
+/* 演出キュー。大量に来ても画面にたまらないように：
+   ・同じ人の同じ段は1つにまとめる（×N）
+   ・待ちが増えたら中ギフト（M）を「まとめてありがとう」1枚にする
+   ・待ちが多いほど1つ1つを短く速く流す（特大の溜めも省略） */
 const EQ=[];let busy=false;
-function enq(e){if(EQ.length>30)EQ.shift();EQ.push(e);if(!busy)nx();}
+const MAXQ=6;
+function collapseM(){
+  const ms=EQ.filter(x=>x.k==="M"||x.k==="MM");if(ms.length<2)return false;
+  const people=[];for(const x of ms){for(const p of (x.k==="MM"?x.people:[{user:x.user,ico:x.giftIco||x.band.ico,count:x.count||1}])){const q=people.find(y=>y.user===p.user);if(q)q.count+=p.count;else people.push(Object.assign({},p));}}
+  const at=EQ.indexOf(ms[0]);for(const x of ms)EQ.splice(EQ.indexOf(x),1);EQ.splice(at,0,{k:"MM",people,test:ms.some(x=>x.test)});return true;
+}
+function enq(e){
+  const last=EQ[EQ.length-1];
+  if(e.k!=="team"&&last&&last.k===e.k&&last.user===e.user&&last.band&&e.band&&last.band.id===e.band.id){last.count=(last.count||1)+(e.count||1);last.ext=last.ext||e.ext;return;}
+  EQ.push(e);
+  if(EQ.length>=3)collapseM();
+  // それでも多すぎるとき：古い大ギフト（L）も「まとめ」に入れる（特大とTEAMは必ず単独で出す）
+  while(EQ.length>MAXQ){const i=EQ.findIndex(x=>x.k==="L");if(i<0)break;const x=EQ.splice(i,1)[0];x.k="M";EQ.splice(i,0,x);collapseM();}
+  if(!busy)nx();
+}
 function add(html){const d=document.createElement("div");d.innerHTML=html;const el=d.firstElementChild;$("ev").appendChild(el);return el;}
-function nx(){const e=EQ.shift();if(!e){busy=false;return;}busy=true;let d=2000;try{d=PLAY[e.k](e);}catch(err){}
- setTimeout(()=>{[...$("ev").children].forEach(c=>c.classList.add("fadeAll"));setTimeout(()=>{$("ev").innerHTML="";nx();},300);},d);}
+function nx(){const e=EQ.shift();if(!e){busy=false;return;}busy=true;
+ e.sp=EQ.length>=3?.5:EQ.length>=1?.72:1;let d=2000;try{d=PLAY[e.k](e);}catch(err){}
+ setTimeout(()=>{[...$("ev").children].forEach(c=>c.classList.add("fadeAll"));setTimeout(()=>{$("ev").innerHTML="";nx();},250);},d);}
 const fxLine=e=>e.ext?`⏱ 延長 +${e.band.min*e.count}分`:e.band.fx+(e.band.min?` ${e.band.min*e.count}分`:"");
 const giftLine=e=>`${esc(e.giftIco||"🎁")} ${esc(e.giftName||"ギフト")}${e.count>1?" ×"+e.count:""}`;
 const testB=e=>e.test?add('<div class="testBadge">TEST</div>'):null;
 const PLAY={
- M(e){testB(e);add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">${esc(fxLine(e))}</div></div>`);
-  SFX.M();setTimeout(()=>{burst(860,900,40,PINK(),{sp:18});shake(5,250);},300);return 2300;},
- L(e){testB(e);const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));
+ M(e){const T=x=>x*e.sp;testB(e);add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">${esc(fxLine(e))}</div></div>`);
+  SFX.M();setTimeout(()=>{burst(860,900,40,PINK(),{sp:18});shake(5,250);},T(300));return T(2300);},
+ MM(e){const T=x=>x*e.sp;testB(e);const ps=e.people,show=ps.slice(0,6),more=ps.length-show.length;
+  add(`<div class="mBox mm"><div class="b">🎁 まとめてありがとう！</div><div class="ppl">${show.map(p=>`<span>${esc(p.ico)} ${esc(p.user)}${p.count>1?" ×"+p.count:""}</span>`).join("")}${more>0?`<span>ほか ${more}人</span>`:""}</div></div>`);
+  SFX.M();setTimeout(()=>{burst(860,900,50,PINK(),{sp:20});shake(5,250);},T(300));return T(2800);},
+ L(e){const T=x=>x*e.sp;testB(e);const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));
   add(`<div class="lb t"></div>`);add(`<div class="lb b"></div>`);add(`<div class="speed"></div>`);
   SFX.L();setTimeout(()=>{add(`<div class="band"></div>`);add(`<div class="lT"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">${esc(fxLine(e))}</div></div>`);
-   add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);shake(14,500);burst(540,960,90,PINK(),{sp:28});},420);return 3400;},
- XL(e){testB(e);const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));
-  add(`<div class="lb t"></div>`);add(`<div class="lb b"></div>`);const c=add(`<div class="core"></div>`);const ct=add(`<div class="chargeTxt">!!!!</div>`);
-  SFX.charge();let sh=0;const si=setInterval(()=>shake(2+sh++*.8,120),130);
-  setTimeout(()=>{clearInterval(si);c.remove();ct.remove();SFX.boom();
+   add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);shake(14,500);burst(540,960,90,PINK(),{sp:28});},T(420));return T(3400);},
+ XL(e){const T=x=>x*e.sp,quick=e.sp<1;testB(e);const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));
+  add(`<div class="lb t"></div>`);add(`<div class="lb b"></div>`);
+  let c=null,ct=null,si=null;
+  if(!quick){c=add(`<div class="core"></div>`);ct=add(`<div class="chargeTxt">!!!!</div>`);SFX.charge();let sh=0;si=setInterval(()=>shake(2+sh++*.8,120),130);}
+  setTimeout(()=>{if(si)clearInterval(si);if(c)c.remove();if(ct)ct.remove();SFX.boom();
    add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);setTimeout(()=>add(`<div class="ring"></div>`),120);add(`<div class="speed"></div>`);add(`<div class="rays"></div>`);
    add(`<div class="xl"><div class="k">MEGA GIFT</div><div class="i">${esc(e.giftIco||e.band.ico)}</div><div class="a">${esc(e.user)}</div><div class="f">${esc(e.band.ico)} ${esc(fxLine(e))}</div></div>`);
    shake(22,900);burst(540,880,200,GOLD(),{sp:40,life:130,sz:[8,22],slow:true});
-   let k=0;const ri=setInterval(()=>{burst(Math.random()*1080,300+Math.random()*900,25,GOLD(),{sp:14,life:70});if(++k>8)clearInterval(ri);},280);
-  },1700);return 7400;},
- team(e){const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);add(`<div class="speed"></div>`);
+   let k=0;const ri=setInterval(()=>{burst(Math.random()*1080,300+Math.random()*900,25,GOLD(),{sp:14,life:70});if(++k>(quick?3:8))clearInterval(ri);},280);
+  },quick?60:1700);return quick?T(5600)+60:7400;},
+ team(e){const T=x=>x*e.sp;const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);add(`<div class="speed"></div>`);
   add(`<div class="tm"><div class="k">TEAM CLEAR</div><div class="a">みんなで達成！</div><div class="f">${esc(e.label||"")}</div></div>`);
-  SFX.team();shake(12,600);burst(540,880,180,[css("--cyan"),"#fff",css("--gold")],{sp:36,life:120,slow:true});return 5200;}
+  SFX.team();shake(12,600);burst(540,880,180,[css("--cyan"),"#fff",css("--gold")],{sp:36,life:120,slow:true});return T(5200);}
 };
 
 /* ===== サーバーからのイベント ===== */
