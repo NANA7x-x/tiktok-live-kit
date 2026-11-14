@@ -6,3 +6,6 @@ simple.json
 connect_mode.json
 discord_webhook.txt
 tokudai_log.json
+kit_state.json
+like_state.json
+stream_reports.txt
