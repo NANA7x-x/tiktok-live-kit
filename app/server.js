@@ -57,7 +57,7 @@ function confPath(name) {
 }
 const STATE_FILE = path.join(CONF_DIR, 'kit_state.json');
 const TIERS = ['S', 'M', 'L', 'XL'];
-const SLOTS = ['voice', 'cam', 'vfx'];
+const SLOTS = ['voice', 'cam', 'vfx', 'scene'];
 // 種類の多いもの（語尾・しゃべり方・マイクエフェクト・セリフ・早口言葉）は「決まった順番で次へ進む」。
 // 次に何が来るかは画面のギフト表に「つぎ：〇〇」と出るので、運の要素にはならない。
 // fx の {x} に、順番リストの今の項目が入る。use:'line' はセリフ集、use:'challenge' は早口言葉リストを使う。
@@ -68,7 +68,8 @@ const DEFAULT_BANDS = [
   { from: 20, tier: 'M', ico: '✏️', fx: 'お名前であいうえお作文', short: 'あいうえお作文' },
   { from: 30, tier: 'M', ico: '🎭', fx: '{x}でしゃべる', min: 5, slot: 'voice', short: 'しゃべり方', list: ['関西弁', 'お嬢様口調', '執事口調', 'ツンデレ', '一人称「俺」', '実況アナウンサー風', '博多弁'] },
   { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
-  { from: 100, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
+  { from: 100, tier: 'L', ico: '🌌', fx: '画面エフェクト：{x}', min: 2, slot: 'scene', short: '画面エフェクト', list: ['ラメ', 'オーロラ', 'ステンドグラス', '星空', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
+  { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
@@ -91,7 +92,8 @@ const DEFAULT_STYLE = {
 const DEFAULT_SETTINGS = {
   topic: '※ ピアノ歌枠です', mode: 'avatar',
   atmo: { on: true, strength: 0.85 },
-  sound: { on: true, volume: 0.5 },
+  // 効果音：theme＝標準の音の雰囲気（arcade ゲーセン／sparkle キラキラ／soft やさしい）、map＝自分の音声ファイルに差し替え（効果音フォルダ）
+  sound: { on: true, volume: 0.5, theme: 'arcade', map: {} },
   chainSec: 10,
   vts: { on: false, port: 8001 },  // VTube Studio 連携
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
@@ -162,6 +164,13 @@ function sanitizeStyle(s) {
     plateAlpha: clamp(s.plateAlpha, 0.3, 1, 1),
   };
 }
+// 効果音の差し替え（キットの「効果音」フォルダに入れた mp3 / wav / ogg / m4a）
+const SFX_KEYS = ['S', 'M', 'L', 'XL', 'team', 'chain', 'mile', 'lv', 'feverIn', 'pop', 'likeBig', 'jackpot', 'ok', 'buzz', 'scene'];
+const SFX_DIR = path.join(__dirname, '..', '効果音');
+function safeSfxName(n) { return typeof n === 'string' && n.length < 120 && /\.(mp3|wav|ogg|m4a)$/i.test(n) && !/[\\/]|\.\./.test(n); }
+let sfxFiles = [];
+function scanSfx() { try { fs.mkdirSync(SFX_DIR, { recursive: true }); sfxFiles = fs.readdirSync(SFX_DIR).filter(safeSfxName).slice(0, 300); } catch (e) { sfxFiles = []; } }
+scanSfx();
 function sanitizeSettings(s, base) {
   const b = base || DEFAULT_SETTINGS;
   const o = JSON.parse(JSON.stringify(b));
@@ -180,6 +189,12 @@ function sanitizeSettings(s, base) {
   if (s.sound && typeof s.sound === 'object') {
     if (typeof s.sound.on === 'boolean') o.sound.on = s.sound.on;
     o.sound.volume = clamp(s.sound.volume, 0, 1, o.sound.volume);
+    if (['arcade', 'sparkle', 'soft'].includes(s.sound.theme)) o.sound.theme = s.sound.theme;
+    if (s.sound.map && typeof s.sound.map === 'object') {
+      const mp = {};
+      for (const k of SFX_KEYS) { const v = s.sound.map[k]; if (typeof v === 'string' && v && safeSfxName(v)) mp[k] = v; }
+      o.sound.map = mp;
+    }
   }
   o.chainSec = Math.round(clamp(s.chainSec, 3, 60, o.chainSec));
   o.teamMax = Math.round(clamp(s.teamMax, 50, 1000000, o.teamMax));
@@ -207,7 +222,7 @@ let K = {
   bands: sanitizeBands(DEFAULT_BANDS),
   style: sanitizeStyle(null),
   team: { value: 0 },
-  slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] } },
+  slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] } },
   requests: [],
   lines: DEFAULT_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
   idx: {},           // 順番リストの進み具合（段ごと）
@@ -260,6 +275,7 @@ function stateMsg() {
     challenge: K.challenge, lists: { lines: K.lines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
+    sfxFiles,
     vrc: { enabled: vrcEnabled },
     layout: K.layout,
     rank: rankView(),
@@ -445,6 +461,17 @@ function kitFileStamp(rel) { try { return Math.floor(fs.statSync(path.join(__dir
 function kitVersion(file) { return kitFileStamp(file) + '.' + kitFileStamp('server.js'); }
 const httpServer = http.createServer((req, res) => {
   const p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p.startsWith('/sfx/')) {
+    const name = p.slice(5);
+    if (!safeSfxName(name)) { res.writeHead(404); res.end(); return; }
+    const ext = name.split('.').pop().toLowerCase();
+    const type = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4' }[ext];
+    fs.readFile(path.join(SFX_DIR, name), (err, data) => {
+      if (err) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store' }); res.end(data);
+    });
+    return;
+  }
   if (p === '/version') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ overlay: kitVersion('overlay.html'), remote: kitVersion('remote.html') }));
@@ -519,6 +546,7 @@ wss.on('connection', (ws) => {
       case 'connectMode': if (typeof m.auto === 'boolean') { setConnectMode(m.auto); pushState(); } break;
       case 'connectNow': console.log('[bridge] リモコンから「今すぐ接続」を受けました'); try { connectTikTokNow(); } catch (e) { /* ignore */ } break;
       case 'vrcTest': handleVrcTest(); break;
+      case 'sfxRescan': scanSfx(); pushState(); break;
       case 'vtsTest': if (typeof m.action === 'string') linkOn('vts:' + m.action.slice(0, 60), 6000); break;
       case 'vtsReconnect': vtsClose(); vtsConnect(); break;
       default: break;
