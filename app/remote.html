@@ -160,6 +160,13 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><b>効果音（OBS）</b><button id="sOn">ON/OFF</button><label style="flex:1">音量 <input type="range" id="sVol" min="0" max="100"></label></div>
     </div></details>
 
+    <details data-k="bg"><summary>🫧 ゆらめき・背景ムービーを増やす</summary><div class="body">
+      <div class="note"><b>背景ムービー（200コイン）</b>：キットの<b>「背景」フォルダ</b>に 動画（mp4 / webm / mov）か 画像（jpg / png / gif / webp）を入れるだけで、順番に追加されます（15秒くらいで自動で反映）。ファイル名がそのまま名前になります（例：<code>夜の海.mp4</code> →「背景ムービー：夜の海」）。動画は音なし・くり返し再生、画像はゆっくりズームします。</div>
+      <div class="row"><button id="bgScan">↻ いますぐ更新</button><span class="note" id="bgCount"></span></div>
+      <div class="note" id="bgList"></div>
+      <div class="note"><b>ゆらめき（100コイン）</b>：下の「ギフト表」の 100 の段の「順番リスト」に色を足せます。使える色の名前：ピンク／ラベンダー／ミント／水色／ゴールド／ピーチ／ブルー／ローズ／ホワイト／レッド／グリーン／オレンジ／パープル／シアン。好きな色にしたいときは <code>さくら色#ffb7d5</code> のように名前のうしろに色コードをつけます（画面には「さくら色」とだけ出ます）。</div>
+    </div></details>
+
     <details data-k="sfx"><summary>🔊 効果音を変える</summary><div class="body">
       <div class="row"><b>標準の音の雰囲気</b><button data-th="arcade">🕹 ゲーセン</button><button data-th="sparkle">✨ キラキラ（鈴っぽい・こだま）</button><button data-th="soft">☁ やさしい（丸い・小さめ）</button></div>
       <div class="note">自分の音にしたいとき：キットの<b>「効果音」フォルダ</b>に mp3 / wav / ogg / m4a を入れて「↻ ファイル一覧を更新」→ 下の表で選ぶ。選んだところだけ、標準の音の代わりに鳴ります。</div>
@@ -253,7 +260,7 @@ function render(first){
   if(first||document.activeElement!==$("teamLabel"))$("teamLabel").value=S.team.label;
   if(first||document.activeElement!==$("teamMax"))$("teamMax").value=S.team.max;
   if(first){loadStyle(S.style);loadBands(S.bands);}
-  renderTestBtns();renderSfx();document.querySelectorAll("[data-th]").forEach(b=>b.classList.toggle("on",(st.sound.theme||"arcade")===b.dataset.th));
+  renderTestBtns();renderSfx();renderBg();document.querySelectorAll("[data-th]").forEach(b=>b.classList.toggle("on",(st.sound.theme||"arcade")===b.dataset.th));
   const C=S.challenge&&S.challenge.cur;$("chBox").style.display=C?"flex":"none";
   if(C){$("chWho").textContent=`${C.user}さん${S.challenge.q.length?`（つぎ ${S.challenge.q.length}件）`:""}`;$("chPhrase").textContent=C.phrase;
     $("chReps").textContent=C.reps.map(r=>r?"○":"×").join(" ")+(C.state==="ok"?"　成功！":C.state==="ng"?`　罰ゲーム：${C.penalty}`:"");
@@ -295,6 +302,8 @@ function renderSfx(){const files=S.sfxFiles||[],map=S.settings.sound.map||{},k=J
   $("sfxRows").innerHTML=Object.entries(SFXN).map(([key,label])=>`<tr><td style="width:180px">${label}</td><td><select data-sfx="${key}"><option value="">（標準の音）</option>${files.map(f=>`<option ${map[key]===f?"selected":""}>${esc(f)}</option>`).join("")}</select></td><td><button class="sm" data-play="${key}">▶</button></td></tr>`).join("");}
 document.addEventListener("click",e=>{const t=e.target.closest("[data-th]");if(t)setS({sound:{theme:t.dataset.th}});const p=e.target.closest("[data-play]");if(p){const f=document.querySelector(`[data-sfx="${p.dataset.play}"]`).value;if(f){const a=new Audio("/sfx/"+encodeURIComponent(f));a.volume=.6;a.play().catch(()=>{});}}});
 $("sfxScan").onclick=()=>send({type:"sfxRescan"});
+$("bgScan").onclick=()=>send({type:"bgRescan"});
+let bgKey="";function renderBg(){const f=S.bgFiles||[],k=f.join("|");if(k===bgKey)return;bgKey=k;$("bgCount").textContent=`背景フォルダのファイル：${f.length}件`;$("bgList").textContent=f.length?f.join("　/　"):"（まだありません）";}
 $("sfxSave").onclick=()=>{const map={};document.querySelectorAll("[data-sfx]").forEach(sel=>{if(sel.value)map[sel.dataset.sfx]=sel.value;});setS({sound:{map}});$("sfxSave").textContent="保存しました ✓";setTimeout(()=>$("sfxSave").textContent="効果音を保存",1500);};
 $("chOk").onclick=()=>send({type:"chMark",ok:true});$("chNg").onclick=()=>send({type:"chMark",ok:false});$("chSkip").onclick=()=>send({type:"chSkip"});
 $("lsSave").onclick=()=>{const sp=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);send({type:"setLists",lines:sp("lsLines"),teamLines:sp("lsTeam"),twisters:sp("lsTw"),penalties:sp("lsPen")});$("lsSave").textContent="保存しました ✓";setTimeout(()=>$("lsSave").textContent="保存",1500);};
@@ -356,13 +365,13 @@ $("styleSave").onclick=()=>{send({type:"setStyle",style:readStyle()});$("styleSa
 
 /* ===== ギフト表の編集 ===== */
 function bandRow(b){
-  const kind=b.slot?b.slot:b.req?"req":b.use?b.use:"none";
+  const kind=b.slot==="scene"&&b.bg?"scenebg":b.slot?b.slot:b.req?"req":b.use?b.use:"none";
   return `<tr><td><input type="checkbox" class="on" ${b.on!==false?"checked":""}></td>
   <td><input class="n from" type="number" min="1" value="${b.from}"></td>
   <td><input class="ic ico" value="${esc(b.ico)}"></td>
   <td><input class="fx" value="${esc(b.fx)}"></td>
   <td><input class="short" value="${esc(b.short||"")}" placeholder="レール用(任意)"></td>
-  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="scene" ${kind==="scene"?"selected":""}>変身：画面エフェクト</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option></select></td>
+  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="scene" ${kind==="scene"?"selected":""}>変身：画面エフェクト</option><option value="scenebg" ${kind==="scenebg"?"selected":""}>変身：背景ムービー（＋背景フォルダ）</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option></select></td>
   <td><input class="list" value="${esc((b.list||[]).join("／"))}" placeholder="例：にゃん／ぴょん（起きることに {x}）"></td>
   <td><input class="link" value="${esc(b.link||"")}" placeholder="例：vts:jump vts:rainbow"></td>
   <td><input class="m min" type="number" min="0" value="${b.min||""}" placeholder="分"></td>
@@ -375,7 +384,7 @@ $("bandAdd").onclick=()=>{$("bandRows").insertAdjacentHTML("beforeend",bandRow({
 $("bandSave").onclick=()=>{
   const rows=[...$("bandRows").querySelectorAll("tr")].map(tr=>{const q=c=>tr.querySelector("."+c);const kind=q("kind").value;
     return {on:q("on").checked,from:+q("from").value,ico:q("ico").value,fx:q("fx").value,short:q("short").value,tier:q("tier").value,
-      slot:["voice","cam","vfx","scene"].includes(kind)?kind:undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
+      slot:["voice","cam","vfx","scene"].includes(kind)?kind:kind==="scenebg"?"scene":undefined,bg:kind==="scenebg"||undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
       use:kind==="line"||kind==="challenge"?kind:undefined,link:q("link").value.trim(),list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
   send({type:"setBands",bands:rows});$("bandSave").textContent="保存しました ✓";setTimeout(()=>{$("bandSave").textContent="ギフト表を保存";if(S)loadBands(S.bands);},800);
 };
