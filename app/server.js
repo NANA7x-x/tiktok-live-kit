@@ -87,6 +87,7 @@ const DEFAULT_SETTINGS = {
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
   rank: { on: true, showCoins: false, likes: true, mvp: true },
+  likeHearts: true,   // いいねで画面にハートがわく
   teamMax: 1000, teamLabel: '🎹 ピアノ1曲',
   // みんなで達成ゲージの入り方（ギフト1回はgiftCapまで。ギフトだけで一気に埋まらないように）
   teamW: { like: 0.6, comment: 6, follow: 25, share: 20, giftCap: 350 },
@@ -149,6 +150,7 @@ function sanitizeSettings(s, base) {
   if (s.mode === 'avatar' || s.mode === 'game') o.mode = s.mode;
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
+  if (typeof s.likeHearts === 'boolean') o.likeHearts = s.likeHearts;
   if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
   if (s.atmo && typeof s.atmo === 'object') {
     if (typeof s.atmo.on === 'boolean') o.atmo.on = s.atmo.on;

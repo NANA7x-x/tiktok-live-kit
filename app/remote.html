@@ -91,6 +91,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><b>画面モード</b><button id="mAvatar">🧍 アバター中心</button><button id="mGame">🎮 ゲーム配信（上＝情報／真ん中＝ゲーム／下＝アバター）</button></div>
       <div class="row"><b>パネル</b><button id="lkPanel">しっかり</button><button id="lkAiry">すっきり（アバター重視）</button></div>
       <div class="row"><b>演出の強さ</b><button id="fxN">ふつう</button><button id="fxD">🔥 ドパドパ</button><span class="note">ドパドパ：ギフトの絵が降ってくる・CHAINの節目でカットイン・盛り上がるとFEVER TIME（結果は変わらず見た目と音だけ）</span></div>
+      <div class="row"><b>いいねのハート</b><button id="lhOn">ON/OFF</button><span class="note">いいねが来ると画面の下からハートがわく（500いいねごとに大きなハート）</span></div>
       <div class="row"><b>ふんわりエフェクト</b><button id="atmoOn">ON/OFF</button><label style="flex:1">強さ <input type="range" id="atmoV" min="0" max="100"></label></div>
       <div class="note">OBSでは /back.html（アバターの下）と /front.html（アバターの上）に分かれて出ます。</div>
     </div></details>
@@ -193,6 +194,7 @@ function render(first){
   const R=S.rank||{};$("rkList").innerHTML=(R.mvp?`<div class="item"><div class="t">👑 MVP <b>${esc(R.mvp.user)}</b> <small>${esc(R.mvp.ico||"")} ${esc(R.mvp.giftName||"")}・${Number(R.mvp.coins).toLocaleString()}コイン</small></div></div>`:"")+
     `<div class="item"><div class="t">🎁 ${(R.gifts||[]).slice(0,5).map((g,i)=>`${i+1}. ${esc(g.user)} <small>${Number(g.coins).toLocaleString()}</small>`).join("　")||"まだなし"}</div></div>`+
     `<div class="item"><div class="t">❤️ ${(R.likes||[]).slice(0,5).map((g,i)=>`${i+1}. ${esc(g.user)} <small>${Number(g.count).toLocaleString()}</small>`).join("　")||"まだなし"}</div></div>`;
+  $("lhOn").classList.toggle("on",st.likeHearts!==false);$("lhOn").textContent=st.likeHearts!==false?"ON":"OFF";
   $("lkPanel").classList.toggle("on",st.look!=="airy");$("lkAiry").classList.toggle("on",st.look==="airy");
   $("fxN").classList.toggle("on",st.fxLevel!=="dopa");$("fxD").classList.toggle("on",st.fxLevel==="dopa");
   $("atmoOn").classList.toggle("on",st.atmo.on);$("atmoOn").textContent=st.atmo.on?"ON":"OFF";
@@ -232,6 +234,7 @@ $("rkReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すとリ
 let pvEdit=false;
 $("pvEdit").onclick=()=>{pvEdit=!pvEdit;$("pvEdit").classList.toggle("on",pvEdit);$("editNote").style.display=pvEdit?"":"none";$("pv").contentWindow.postMessage({type:"previewEdit",on:pvEdit},"*");};
 $("pvLayReset").onclick=e=>{if(confirmBox(e.currentTarget,"今のモードの配置を全部戻す？もう一度"))send({type:"resetLayout",mode:S.settings.mode});};
+$("lhOn").onclick=()=>setS({likeHearts:S.settings.likeHearts===false});
 $("lkPanel").onclick=()=>setS({look:"panel"});$("lkAiry").onclick=()=>setS({look:"airy"});
 $("fxN").onclick=()=>setS({fxLevel:"normal"});$("fxD").onclick=()=>setS({fxLevel:"dopa"});
 $("mAvatar").onclick=()=>setS({mode:"avatar"});$("mGame").onclick=()=>setS({mode:"game"});
