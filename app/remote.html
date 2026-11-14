@@ -35,6 +35,7 @@ button.pri{background:var(--pink);border-color:var(--pink)}
 button.sm{padding:4px 8px;font-size:12px}
 button.danger{background:#3a1420;border-color:#6a2438}
 input,select{font:700 13px "M PLUS 1p";color:#fff;background:#0f0b18;border:1px solid #3a2d55;border-radius:8px;padding:7px 9px}
+textarea{font:700 13px "M PLUS 1p";color:#fff;background:#0f0b18;border:1px solid #3a2d55;border-radius:8px;padding:7px 9px;margin-top:4px;resize:vertical}
 input[type=color]{padding:0;width:44px;height:32px}
 input[type=range]{flex:1;min-width:120px}
 label{display:flex;align-items:center;gap:6px}
@@ -80,6 +81,11 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
 
   <div class="right">
     <details open data-k="live"><summary>⏱ 発動中・リクエスト</summary><div class="body">
+      <div class="item" id="chBox" style="display:none;flex-direction:column;align-items:stretch">
+        <div class="t"><span class="pill">👅 早口言葉チャレンジ</span> <small id="chWho"></small><br><b id="chPhrase" style="font-size:22px"></b> <span id="chReps"></span></div>
+        <div class="row" style="margin-top:6px"><button class="pri" id="chOk" style="font-size:16px;padding:10px 22px">○ 言えた</button><button class="danger" id="chNg" style="font-size:16px;padding:10px 22px">× 噛んだ</button><button class="sm" id="chSkip" style="margin-left:auto">スキップ</button></div>
+        <div class="note">3回続けて言えたら成功。途中で噛んだら、その場で罰ゲーム（順番）が出ます。</div>
+      </div>
       <div class="list" id="slotList"></div>
       <div class="row"><b>🎹 リクエスト待ち</b><span class="note">弾き終わったら「済」を押す</span><button class="sm danger" id="reqClear" style="margin-left:auto">全部消す</button></div>
       <div class="list" id="reqList"></div>
@@ -121,7 +127,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
 
     <details data-k="bands"><summary>🪙 ギフト表（コイン数 → 起きること）</summary><div class="body">
       <div class="note">ギフトの「1個あたりのコイン数」で、必ず同じことが起きます（運の要素なし）。種類：変身＝時間つきで画面に残る／リクエスト＝順番待ちリストに入る。大きさ：演出の派手さ（S=小さく表示／M=カード／L=カットイン／XL=画面ジャック）。</div>
-      <table><thead><tr><th>ON</th><th>何コインから</th><th>絵</th><th>起きること</th><th>短い名前</th><th>種類</th><th>分</th><th>大きさ</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
+      <table><thead><tr><th>ON</th><th>何コインから</th><th>絵</th><th>起きること</th><th>短い名前</th><th>種類</th><th>順番リスト（／区切り）</th><th>分</th><th>大きさ</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
       <div class="row"><button id="bandAdd">＋ 行を追加</button><button class="pri" id="bandSave">ギフト表を保存</button><button class="danger" id="bandReset" style="margin-left:auto">初期値に戻す</button></div>
     </div></details>
 
@@ -130,6 +136,16 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="note">ギフトランキングは「その日の配信でくれたコインの合計」の順。初期はコイン数を出さず、順位と名前だけ（金額を画面に出さないほうが、ギフトの催促と取られにくいため）。ランキングを出している間、ギフト表は左のレールにまとまります。新しい配信が始まると自動でリセット。</div>
       <div class="row"><button class="danger" id="rkReset">今のランキングをリセット</button></div>
       <div class="list" id="rkList"></div>
+    </div></details>
+
+    <details data-k="lists"><summary>💬 セリフ集・早口言葉・罰ゲーム</summary><div class="body">
+      <div class="note">1行に1つ。上から順番に使われて、最後まで行ったら最初に戻ります（運の要素なし）。</div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">セリフ集<textarea id="lsLines" rows="10"></textarea></label>
+        <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">早口言葉<textarea id="lsTw" rows="10"></textarea></label>
+        <label style="flex-direction:column;align-items:stretch;flex:1;min-width:220px">罰ゲーム<textarea id="lsPen" rows="10"></textarea></label>
+      </div>
+      <div class="row"><button class="pri" id="lsSave">保存</button><span class="note">罰ゲームは軽いもの（手・指・喉に負担がない・自分を下げすぎない）にしてください。</span></div>
     </div></details>
 
     <details data-k="team"><summary>🎹 みんなで達成ゲージ</summary><div class="body">
@@ -209,6 +225,11 @@ function render(first){
   if(first||document.activeElement!==$("teamMax"))$("teamMax").value=S.team.max;
   if(first){loadStyle(S.style);loadBands(S.bands);}
   renderTestBtns();
+  const C=S.challenge&&S.challenge.cur;$("chBox").style.display=C?"flex":"none";
+  if(C){$("chWho").textContent=`${C.user}さん${S.challenge.q.length?`（つぎ ${S.challenge.q.length}件）`:""}`;$("chPhrase").textContent=C.phrase;
+    $("chReps").textContent=C.reps.map(r=>r?"○":"×").join(" ")+(C.state==="ok"?"　成功！":C.state==="ng"?`　罰ゲーム：${C.penalty}`:"");
+    $("chOk").disabled=$("chNg").disabled=C.state!=="active";}
+  if(first||!["lsLines","lsTw","lsPen"].includes(document.activeElement&&document.activeElement.id)){const L=S.lists||{};$("lsLines").value=(L.lines||[]).join("\n");$("lsTw").value=(L.twisters||[]).join("\n");$("lsPen").value=(L.penalties||[]).join("\n");}
 }
 setInterval(renderLive,500);
 
@@ -234,6 +255,8 @@ $("rkReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すとリ
 let pvEdit=false;
 $("pvEdit").onclick=()=>{pvEdit=!pvEdit;$("pvEdit").classList.toggle("on",pvEdit);$("editNote").style.display=pvEdit?"":"none";$("pv").contentWindow.postMessage({type:"previewEdit",on:pvEdit},"*");};
 $("pvLayReset").onclick=e=>{if(confirmBox(e.currentTarget,"今のモードの配置を全部戻す？もう一度"))send({type:"resetLayout",mode:S.settings.mode});};
+$("chOk").onclick=()=>send({type:"chMark",ok:true});$("chNg").onclick=()=>send({type:"chMark",ok:false});$("chSkip").onclick=()=>send({type:"chSkip"});
+$("lsSave").onclick=()=>{const sp=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);send({type:"setLists",lines:sp("lsLines"),twisters:sp("lsTw"),penalties:sp("lsPen")});$("lsSave").textContent="保存しました ✓";setTimeout(()=>$("lsSave").textContent="保存",1500);};
 $("lhOn").onclick=()=>setS({likeHearts:S.settings.likeHearts===false});
 $("lkPanel").onclick=()=>setS({look:"panel"});$("lkAiry").onclick=()=>setS({look:"airy"});
 $("fxN").onclick=()=>setS({fxLevel:"normal"});$("fxD").onclick=()=>setS({fxLevel:"dopa"});
@@ -292,13 +315,14 @@ $("styleSave").onclick=()=>{send({type:"setStyle",style:readStyle()});$("styleSa
 
 /* ===== ギフト表の編集 ===== */
 function bandRow(b){
-  const kind=b.slot?b.slot:(b.req?"req":"none");
+  const kind=b.slot?b.slot:b.req?"req":b.use?b.use:"none";
   return `<tr><td><input type="checkbox" class="on" ${b.on!==false?"checked":""}></td>
   <td><input class="n from" type="number" min="1" value="${b.from}"></td>
   <td><input class="ic ico" value="${esc(b.ico)}"></td>
   <td><input class="fx" value="${esc(b.fx)}"></td>
   <td><input class="short" value="${esc(b.short||"")}" placeholder="レール用(任意)"></td>
-  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option></select></td>
+  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option></select></td>
+  <td><input class="list" value="${esc((b.list||[]).join("／"))}" placeholder="例：にゃん／ぴょん（起きることに {x}）"></td>
   <td><input class="m min" type="number" min="0" value="${b.min||""}" placeholder="分"></td>
   <td><select class="tier">${["S","M","L","XL"].map(t=>`<option ${b.tier===t?"selected":""}>${t}</option>`).join("")}</select></td>
   <td><button class="sm danger del">✕</button></td></tr>`;
@@ -309,7 +333,8 @@ $("bandAdd").onclick=()=>{$("bandRows").insertAdjacentHTML("beforeend",bandRow({
 $("bandSave").onclick=()=>{
   const rows=[...$("bandRows").querySelectorAll("tr")].map(tr=>{const q=c=>tr.querySelector("."+c);const kind=q("kind").value;
     return {on:q("on").checked,from:+q("from").value,ico:q("ico").value,fx:q("fx").value,short:q("short").value,tier:q("tier").value,
-      slot:["voice","cam","vfx"].includes(kind)?kind:undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined};}).filter(b=>b.from>0&&b.fx);
+      slot:["voice","cam","vfx"].includes(kind)?kind:undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
+      use:kind==="line"||kind==="challenge"?kind:undefined,list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
   send({type:"setBands",bands:rows});$("bandSave").textContent="保存しました ✓";setTimeout(()=>{$("bandSave").textContent="ギフト表を保存";if(S)loadBands(S.bands);},800);
 };
 $("bandReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと初期値に戻す")){send({type:"resetBands"});setTimeout(()=>S&&loadBands(S.bands),500);}};

@@ -116,7 +116,7 @@ body:not(.L-main) #main{display:none}
 .li .ic{font-size:72px;line-height:1.05}
 .li .co{font:900 30px var(--fNum),"Orbitron";color:var(--gold);-webkit-text-stroke:5px #000;paint-order:stroke fill}
 .li .tx{font:900 27px var(--fBody);line-height:1.15;white-space:nowrap}
-.li .tx small{display:block;font-size:22px;color:color-mix(in srgb,var(--accent) 45%,#fff)}
+.li .tx small{display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:22px;color:color-mix(in srgb,var(--accent) 45%,#fff)}
 .li.hit{animation:liHit 1.2s ease}
 @keyframes liHit{0%,40%{background:var(--accent);transform:scale(1.1)}100%{background:transparent}}
 
@@ -304,6 +304,22 @@ body:not(.L-main) #main{display:none}
 .ebox .en{position:absolute;left:-3px;top:-34px;font:900 20px "M PLUS 1p";background:#00e5ff;color:#000;padding:2px 10px;white-space:nowrap}
 .ebox:hover .en,.ebox.drag .en{background:#ffe000}
 .ebox .rz{position:absolute;right:-18px;bottom:-18px;width:36px;height:36px;border-radius:50%;background:#00e5ff;border:4px solid #000;cursor:nwse-resize}
+/* 早口言葉チャレンジ（3回続けて言えたら成功） */
+#chal{position:absolute;left:220px;right:220px;top:530px;padding:14px 20px 16px;--edge:var(--accent);text-align:center;z-index:2}
+#chal .ct{display:flex;align-items:center;gap:10px;justify-content:center}
+#chal .cu{font:700 24px var(--fBody);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chal .cp{font:400 46px var(--fTitle),"Dela Gothic One";line-height:1.2;margin:8px 0;word-break:break-all}
+#chal .cr{display:flex;gap:16px;justify-content:center}
+#chal .cr i{width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.35)}
+#chal .cr i.ok{background:var(--gold);border-color:var(--gold);box-shadow:0 0 18px var(--gold)}
+#chal .cr i.ng{background:#ff3b3b;border-color:#ff3b3b;box-shadow:0 0 18px #ff3b3b}
+#chal .cx{font:900 34px var(--fBody);margin-top:8px;display:none}
+#chal.ok .cx{display:block;color:var(--gold);font:400 64px var(--fTitle),"Dela Gothic One";-webkit-text-stroke:10px #000;paint-order:stroke fill;animation:slam .35s both}
+#chal.ng .cx{display:block;animation:slam .35s both}
+#chal.ng .cx b{display:block;font:400 54px var(--fTitle),"Dela Gothic One";color:#ff5b5b;-webkit-text-stroke:10px #000;paint-order:stroke fill}
+#chal.ng .cx span{display:inline-block;margin-top:6px;background:var(--accent);color:var(--onAccent);padding:6px 18px}
+.game #chal{top:200px;left:14px;right:14px;transform:scale(.82);transform-origin:top center}
+.mBox .quote{font:400 46px var(--fTitle),"Dela Gothic One";line-height:1.3;margin-top:10px;word-break:break-all}
 #connWarn{position:absolute;left:20px;top:20px;font:900 22px "M PLUS 1p";background:#c00;color:#fff;padding:4px 12px;display:none;z-index:9}
 .preview.disconnected #connWarn{display:block}
 </style>
@@ -352,6 +368,8 @@ body:not(.L-main) #main{display:none}
       <div class="k">CHAIN</div><div class="n" id="cN">×0</div><div class="bonus" id="cB">10秒以内</div>
     </div>
     <div id="toasts"></div>
+    <div class="plate" id="chal" style="display:none"><div class="ct"><span class="tag">早口言葉チャレンジ</span><span class="cu" id="chU"></span></div>
+      <div class="cp" id="chP"></div><div class="cr" id="chR"><i></i><i></i><i></i></div><div class="cx" id="chX"></div></div>
     <div id="ev"></div>
     <div id="frame"></div>
     <canvas id="fx" width="1080" height="1920"></canvas>
@@ -415,11 +433,11 @@ function buildAtmo(cols){
 
 /* ===== ギフト表（レール） ===== */
 const SHORT={"なながお名前を呼ぶ":"お名前コール","ピアノ サビだけ1曲":"サビだけ","ピアノ フルで1曲":"フルで1曲","ピアノ弾き語り1曲":"弾き語り"};
-const shortFx=b=>b.short||SHORT[b.fx]||b.fx;
+const shortFx=b=>b.short||SHORT[b.fx]||String(b.fx||"").replace("{x}","…");
 let legKey="";
 function renderLegend(bands,rankOn){
   const list=bands.filter(b=>b.on!==false),key=JSON.stringify(list)+rankOn;if(key===legKey)return;legKey=key;
-  const html=a=>a.map(g=>`<div class="li" data-b="${esc(g.id)}"><div class="ic">${esc(g.ico)}</div><div><div class="co">${Number(g.from).toLocaleString()}〜</div><div class="tx">${esc(shortFx(g))}${g.min?`<small>${g.min}分</small>`:""}</div></div></div>`).join("");
+  const html=a=>a.map(g=>`<div class="li" data-b="${esc(g.id)}"><div class="ic">${esc(g.ico)}</div><div><div class="co">${Number(g.from).toLocaleString()}〜</div><div class="tx">${esc(shortFx(g))}${(g.min||(g.list&&g.next))?`<small>${g.min?g.min+"分":""}${g.list&&g.next?`${g.min?"・":""}つぎ ${esc(g.next)}`:""}</small>`:""}</div></div></div>`).join("");
   // ランキングを出すときは、ギフト表は左レールに全部
   const half=rankOn?list.length:Math.ceil(list.length/2),L=list.slice(0,half),R=list.slice(half);
   const fill=(id,arr)=>{const still=arr.length<=3;$(id).innerHTML=`<div class="track${still?" still":""}" style="--n:${arr.length}">${html(arr)}${still?"":html(arr)}</div>`;};
@@ -440,10 +458,16 @@ function render(){
   const t=S.team,p=Math.max(0,Math.min(100,Math.floor(t.value/t.max*100)));
   $("tP").textContent=p+"%";$("tG").textContent="→ "+(t.label||"");
   [...$("segs").children].forEach((e,i)=>e.classList.toggle("on",i<Math.floor(p/5)));$("segs").classList.toggle("hot",p>=85);lastTeamP=p;
+  renderChal();
   const R=S.requests||[];$("req").classList.toggle("hide",!R.length);
   if(R.length){$("reqN").textContent=R.length;$("reqNext").textContent=`つぎ：${R[0].user}（${R[0].kind}）`;}
   tick();
 }
+function renderChal(){const c=S.challenge&&S.challenge.cur,el=$("chal");
+  if(!c){el.style.display="none";return;}el.style.display="";el.className="plate"+(c.state==="ok"?" ok":c.state==="ng"?" ng":"");
+  $("chU").textContent=c.user+(S.challenge.q.length?`（つぎ ${S.challenge.q.length}件）`:"");$("chP").textContent=c.phrase;
+  [...$("chR").children].forEach((e,i)=>{const r=c.reps[i];e.className=r===true?"ok":r===false?"ng":"";});
+  $("chX").innerHTML=c.state==="ok"?"成功！":c.state==="ng"?`<b>罰ゲーム</b><span>${esc(c.penalty||"")}</span>`:"";}
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
 function tick(){
   if(!S)return;const sl=S.slots||{},now=nowS();
@@ -451,7 +475,7 @@ function tick(){
   if(!v||v.end<=now){n.classList.add("idle");$("nName").textContent="通常モード";$("nBy").textContent="";}
   else{n.classList.remove("idle");$("nName").textContent=v.fx;$("nBy").textContent="by "+v.user;$("nTime").textContent=mmss(v.end-now);
     const ql=(sl.voice.q||[]).length;$("nQ").textContent=ql?`NEXT ${ql}`:"";}
-  for(const k of ["cam","vfx"]){const c=sl[k]&&sl[k].cur,on=!!(c&&c.end>now);$(k).classList.toggle("hide",!on);if(on){$(k+"T").textContent=mmss(c.end-now);$(k+"L").textContent=c.ico+" "+shortFx(c);}}
+  for(const k of ["cam","vfx"]){const c=sl[k]&&sl[k].cur,on=!!(c&&c.end>now);$(k).classList.toggle("hide",!on);if(on){$(k+"T").textContent=mmss(c.end-now);$(k+"L").textContent=c.fx||shortFx(c);}}
 }
 setInterval(tick,250);
 
@@ -487,6 +511,7 @@ const SFX={
  beat(i){kick(0,i%4===0?.55:.38);if(i%2===1)nz(0,.04,{v:.08,hp:7000});if(i%8===4)nz(0,.12,{v:.12,bp:1800});},
  likeBig(){[84,88,91,96].forEach((m,i)=>o(N(m),i*.06,.3,{type:"triangle",v:.09}));o(N(100),.26,.5,{v:.06});},
  pop(sz){if(popN>4)return;popN++;setTimeout(()=>popN--,200);nz(0,.25+sz*.08,{v:.1+sz*.05,hp:800});o(120-sz*15,0,.3,{v:.25,to:45});for(let i=0;i<4+sz*3;i++)nz(.08+Math.random()*.5,.02,{v:.05,hp:5000});},
+ buzz(){o(140,0,.5,{type:"square",v:.12,lp:900});o(147,0,.5,{type:"square",v:.1,lp:900});o(110,.5,.6,{type:"square",v:.12,lp:700});},
  jackpot(){for(let i=0;i<14;i++)o(N(96+(i%4)*3),i*.07,.12,{type:"triangle",v:.07});}
 };
 window.__unlockAudio=()=>{if(ensureAC())AC.resume&&AC.resume();};
@@ -612,7 +637,10 @@ const fxLine=e=>e.ext?`⏱ 延長 +${e.band.min*e.count}分`:e.band.fx+(e.band.m
 const giftLine=e=>`${esc(e.giftName||"ギフト")}${e.count>1?" ×"+e.count:""}`;
 const testB=e=>e.test?add('<div class="testBadge">TEST</div>'):null;
 const PLAY={
- M(e){const T=x=>x*e.sp;testB(e);add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">${esc(fxLine(e))}</div></div>`);
+ M(e){const T=x=>x*e.sp;testB(e);
+  if(e.band&&e.band.use==="line"&&e.band.item){add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}　セリフ</div><div class="quote">「${esc(e.band.item)}」</div></div>`);SFX.M();return T(4200);}
+  if(e.band&&e.band.use==="challenge"){add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">早口言葉チャレンジ！</div></div>`);SFX.M();return T(2000);}
+  add(`<div class="mBox"><div class="a">${esc(e.user)}</div><div class="b">${giftLine(e)}</div><div class="f">${esc(fxLine(e))}</div></div>`);
   SFX.M();setTimeout(()=>{burst(860,900,40,PINK(),{sp:18});shake(5,250);},T(300));return T(2300);},
  MM(e){const T=x=>x*e.sp;testB(e);const ps=e.people,show=ps.slice(0,6),more=ps.length-show.length;
   add(`<div class="mBox mm"><div class="b">まとめてありがとう！</div><div class="ppl">${show.map(p=>`<span>${esc(p.user)}${p.count>1?" ×"+p.count:""}</span>`).join("")}${more>0?`<span>ほか ${more}人</span>`:""}</div></div>`);
@@ -655,6 +683,11 @@ function onEv(e){
   else if(e.kind==="comment"){addHeat(4);}
   else if(e.kind==="follow"){addHeat(15);toast(e.user,"","フォローありがとう！");}
   else if(e.kind==="share"){addHeat(10);toast(e.user,"","シェアありがとう！");}
+  else if(e.kind==="challenge"){
+    if(e.phase==="mark")SFX.S(e.ch.reps.length*3);
+    else if(e.phase==="ok"){SFX.team();sparkleAt({coins:500,count:1});punch(1.05);}
+    else if(e.phase==="ng"){SFX.buzz();shake(14,500);}
+    else if(e.phase==="start"){SFX.M();}}
   else if(e.kind==="team"){enq({k:"team",label:e.label});}
 }
 
