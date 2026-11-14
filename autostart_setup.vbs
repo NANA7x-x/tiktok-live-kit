@@ -4,8 +4,8 @@
 ' Double-click this file ONCE. It creates:
 '   1) Startup shortcut "TikTokLiveServer.lnk"
 '      -> the bridge server starts (minimized) at Windows sign-in
-'   2) Desktop shortcut "TikTokRemote.url"
-'      -> opens the remote page in the default browser
+'   2) Desktop icon "NANA LIVE.lnk"
+'      -> opens the remote page (starts the server if needed)
 '
 ' Safe to run again: existing shortcuts are simply overwritten.
 ' To undo, run autostart_remove.vbs.
@@ -13,7 +13,7 @@
 Option Explicit
 
 Dim sh, fso, kitFolder, serverJs, nodePath
-Dim startupFolder, desktopFolder, lnk, urlFile
+Dim startupFolder, desktopFolder, lnk
 
 Set sh  = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -50,17 +50,22 @@ lnk.WindowStyle      = 7   ' 7 = start minimized (stays on the taskbar)
 lnk.Description      = "TikTok LIVE kit server (auto start)"
 lnk.Save
 
-' --- 2) Desktop shortcut for the remote page ---
+' --- 2) Desktop icon "NANA LIVE": opens the remote (starts the server if it is not running) ---
 desktopFolder = sh.SpecialFolders("Desktop")
-Set urlFile = fso.CreateTextFile(fso.BuildPath(desktopFolder, "TikTokRemote.url"), True, False)
-urlFile.WriteLine "[InternetShortcut]"
-urlFile.WriteLine "URL=http://localhost:21213/remote.html"
-urlFile.Close
+Set lnk = sh.CreateShortcut(fso.BuildPath(desktopFolder, "NANA LIVE.lnk"))
+lnk.TargetPath       = nodePath
+lnk.Arguments        = """" & fso.BuildPath(kitFolder, "start.js") & """"
+lnk.WorkingDirectory = kitFolder
+lnk.WindowStyle      = 7
+lnk.IconLocation     = nodePath & ",0"
+lnk.Description      = "TikTok LIVE kit: open remote (start server if needed)"
+lnk.Save
+If fso.FileExists(fso.BuildPath(desktopFolder, "TikTokRemote.url")) Then fso.DeleteFile fso.BuildPath(desktopFolder, "TikTokRemote.url"), True
 
 MsgBox "Settei kanryou!" & vbCrLf & vbCrLf & _
        "Jikai no sign-in kara, server ga jidou de tachiagarimasu." & vbCrLf & _
        "(Kuroi gamen wa taskbar ni chiisaku nokorimasu.)" & vbCrLf & vbCrLf & _
-       "Desktop ni ""TikTokRemote"" ga dekimashita." & vbCrLf & _
+       "Desktop ni ""NANA LIVE"" ga dekimashita." & vbCrLf & _
        "Haishin mae wa sore wo hiraku dake de OK desu.", _
        vbInformation, "TikTok LIVE kit - Setup"
 
