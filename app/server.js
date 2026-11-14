@@ -79,6 +79,10 @@ const DEFAULT_BANDS = [
 // セリフ集・早口言葉・罰ゲーム（リモコンで編集できる）
 const DEFAULT_LINES = ['おかえり、待ってたよ', '今日もがんばったね、えらい！', 'べ、別にうれしくなんかないんだからね！', 'いっしょにがんばろ！', 'まかせて！', 'ずっと応援してくれてありがとう', 'ちょっとだけ、こっち見て？', 'ふふ、いい名前だね', '今日来てくれて、ほんとにうれしい', 'おやすみ、いい夢見てね'];
 const DEFAULT_TWISTERS = ['生麦生米生卵', '隣の客はよく柿食う客だ', '東京特許許可局', '赤巻紙青巻紙黄巻紙', 'バスガス爆発', '坊主が屏風に上手に坊主の絵を描いた', '新春シャンソンショー', '除雪車除雪作業中', '骨粗鬆症訴訟勝訴', '貨客船の旅客'];
+// みんなで達成したときに なな が読む長めのセリフ（「今日もお疲れさま」系・順番に使う）
+const DEFAULT_TEAM_LINES = ["今日もお疲れさま。ちゃんとがんばってたの、知ってるよ。ここではもう肩の力ぬいて、ゆっくりしていってね。", "おかえり。今日も一日、よくがんばったね。…えらいえらい。ほら、もっとこっちおいで。", "疲れた顔してない？大丈夫、ここではなんにも頑張らなくていいよ。わたしの声だけ聴いてて。", "今日もお疲れさま。誰も見てなくても、わたしはちゃんと見てたからね。ほんとに、えらかったよ。", "がんばりすぎるところ、嫌いじゃないよ。でもね、たまにはわたしに甘えてくれたら、もっとうれしいな。", "一日の最後に会いにきてくれて、ありがとう。今日のしんどいこと、ぜんぶここに置いていってね。", "ねえ、今日もちゃんとごはん食べた？…ふふ、心配してるんだよ。みんなのこと、大事だから。", "お疲れさま。今日もすごくがんばってたね。…え、見えてないって？わかるよ、ちゃんと伝わってる。", "よしよし、今日もよくがんばりました。ごほうびに、今夜はわたしのピアノ、ここにいるみんなのためだけに弾いてあげる。", "今日うまくいかなかったことがあっても、大丈夫。明日はきっと、今日よりちょっとだけ強くなれてるから。", "お疲れさま。こうして一日の終わりに、となりにいられるの、わたしけっこう幸せなんだよ。", "ちょっとだけ目、閉じてみて。…うん、そのまま。今日の「おつかれさま」、ちゃんと届いた？", "がんばったごほうびに、特別にひとつだけ。…いつもありがとう。みんながいてくれて、ほんとによかった。", "今日もお疲れさま。無理して笑わなくていいからね。ここでは、そのままでいて。", "ね、知ってた？みんなが来てくれるだけで、わたしの今日もいい日になるんだよ。だから、ありがとう。", "お疲れさま。明日のことは明日の自分にまかせて、今日はもう、ゆっくりおやすみの準備しよっか。", "今日もちゃんと生きててえらい。…ほんとだよ？それだけで百点なんだから、胸はっていいからね。", "いつもみんなに応援してもらってるから、今日はわたしが応援する番。おつかれさま、だいすきだよ。", "みんなの「おつかれ」、わたしが全部受けとめてあげる。だから今夜は、安心して休んでね。", "今日もここまで来てくれてありがとう。みんなの帰ってくる場所が、ここだったらいいなって思ってる。", "疲れたときは、いつでも会いにきて。わたしはずっと、ここで待ってるから。…ね？", "お疲れさま。がんばってるみんなも好きだけど、ゆるっとしてるみんなも、同じくらい好きだよ。", "今日いちにち、ほんとうによくがんばりました。わたしからの花まる、ちゃんと受けとってね。", "なにかあった？…言わなくてもいいよ。となりにいるから、落ち着くまでここにいて。", "お疲れさま。今夜はね、みんなが眠くなるまで、やさしい曲を弾いていようかな。", "今日もいっぱい人に気をつかったでしょ。わたしの前では、もうがんばらなくていいからね。", "今日も無事にここに来てくれた。それだけで、わたしはうれしいんだよ。おつかれさま。", "ちゃんと休むのも、大事なおしごと。今日はわたしがOK出すから、もう自分を甘やかしちゃお。", "お疲れさま。明日もまた、みんなに会えたらいいな。…待ってるからね。", "いつもありがとう。今日のおつかれさまは、ちょっとだけ特別に、心をこめて言わせて。…おつかれさま。"];
+// 以前の初期セリフのまま保存されていたら、新しい初期セリフに入れ替える
+const OLD_TEAM_LINES_FP = ["cb926843578f82fc65f38c3dd4717ada3377069f", "c2d9be66f8bdb6e824afe413c12b81d05ff72bc3", "3c66ec1570c233f465d89e8a5055be8e33d1a82e"];
 const DEFAULT_PENALTIES = ['ぶりっ子で「ごめんにゃさい♡」', '全力の「ありがとう！」を3回', '自分のいいところを3つ言う', '1分間 語尾「にゃん」', 'アバターで変顔10秒', 'イケボで「次は負けない」'];
 const PALETTES = {
   neon: { accent: '#ff1f7a', gold: '#ffcf3a', cyan: '#20e6ff', plate: '#0a0710', frame: '#ff1f7a', ink: '#ffffff' },
@@ -143,9 +147,9 @@ function sanitizeBands(arr) {
   out.forEach((b, i) => { b.id = 'b' + b.from; b.to = out[i + 1] ? out[i + 1].from - 1 : null; });
   return out.length ? out : null;
 }
-function sanitizeList(arr, max, d) {
+function sanitizeList(arr, max, d, len) {
   if (!Array.isArray(arr)) return d.slice();
-  const l = arr.map((x) => str(x, 60, '').trim()).filter(Boolean).slice(0, max);
+  const l = arr.map((x) => str(x, len || 60, '').trim()).filter(Boolean).slice(0, max);
   return l.length ? l : d.slice();
 }
 function sanitizeStyle(s) {
@@ -224,7 +228,7 @@ let K = {
   team: { value: 0 },
   slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] } },
   requests: [],
-  lines: DEFAULT_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
+  lines: DEFAULT_LINES.slice(), teamLines: DEFAULT_TEAM_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
   idx: {},           // 順番リストの進み具合（段ごと）
   challenge: { cur: null, q: [] }, // 早口言葉チャレンジ
   roomId: null,
@@ -249,6 +253,8 @@ try {
     }
     if (Array.isArray(j.requests)) K.requests = j.requests.slice(0, 100);
     K.lines = sanitizeList(j.lines, 100, DEFAULT_LINES); K.twisters = sanitizeList(j.twisters, 100, DEFAULT_TWISTERS); K.penalties = sanitizeList(j.penalties, 100, DEFAULT_PENALTIES);
+    K.teamLines = sanitizeList(j.teamLines, 100, DEFAULT_TEAM_LINES, 160);
+    try { if (OLD_TEAM_LINES_FP.includes(require('crypto').createHash('sha1').update(JSON.stringify(K.teamLines)).digest('hex'))) K.teamLines = DEFAULT_TEAM_LINES.slice(); } catch (e) {}
     if (j.idx && typeof j.idx === 'object') K.idx = j.idx;
     if (j.challenge && typeof j.challenge === 'object') K.challenge = { cur: j.challenge.cur || null, q: Array.isArray(j.challenge.q) ? j.challenge.q.slice(0, 30) : [] };
     if (j.roomId) K.roomId = String(j.roomId);
@@ -272,7 +278,7 @@ function stateMsg() {
     settings: K.settings, bands: K.bands.map((b) => Object.assign({}, b, { next: nextOf(b) })), style: K.style,
     team: { value: Math.round(K.team.value), max: K.settings.teamMax, label: K.settings.teamLabel },
     slots: K.slots, requests: K.requests,
-    challenge: K.challenge, lists: { lines: K.lines, twisters: K.twisters, penalties: K.penalties },
+    challenge: K.challenge, lists: { lines: K.lines, teamLines: K.teamLines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
     sfxFiles,
@@ -376,8 +382,10 @@ function teamAdd(v, test) {
   K.team.value += v;
   if (K.team.value >= K.settings.teamMax) {
     K.team.value = 0;
-    K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: 'みんな', kind: 'TEAM達成', at: Date.now() });
-    broadcast({ type: 'ev', kind: 'team', label: K.settings.teamLabel, test: !!test });
+    const tl = K.teamLines.length ? K.teamLines[(K.idx.__team || 0) % K.teamLines.length] : '';
+    K.idx.__team = (K.idx.__team || 0) + 1;
+    K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: 'みんな', kind: 'TEAM達成', line: tl, at: Date.now() });
+    broadcast({ type: 'ev', kind: 'team', label: K.settings.teamLabel, line: tl, test: !!test });
     if (!test) recordHighlight(`🎉 みんなで達成（${K.settings.teamLabel}）`);
     console.log('[team] みんなで達成！');
   }
@@ -532,6 +540,7 @@ wss.on('connection', (ws) => {
         if (m.lines) K.lines = sanitizeList(m.lines, 100, DEFAULT_LINES);
         if (m.twisters) K.twisters = sanitizeList(m.twisters, 100, DEFAULT_TWISTERS);
         if (m.penalties) K.penalties = sanitizeList(m.penalties, 100, DEFAULT_PENALTIES);
+        if (m.teamLines) K.teamLines = sanitizeList(m.teamLines, 100, DEFAULT_TEAM_LINES, 160);
         pushState(); break;
       case 'reqDone': K.requests = K.requests.filter((r) => r.id !== m.id); pushState(); break;
       case 'reqClear': K.requests = []; pushState(); break;

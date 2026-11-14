@@ -213,6 +213,8 @@ body:not(.L-main) #main{display:none}
 .tm{position:absolute;left:0;right:0;top:700px;text-align:center;z-index:4}
 .tm .k{font:900 40px var(--fNum),"Orbitron";color:var(--onCyan);background:var(--cyan);display:inline-block;padding:6px 26px;letter-spacing:.3em;animation:slam .25s both}
 .tm .a{font:400 110px var(--fTitle),"Dela Gothic One";-webkit-text-stroke:18px #000;paint-order:stroke fill;text-shadow:0 0 50px var(--cyan);animation:slam .35s .15s both}
+.tm .tl{margin:22px 70px 0;padding:22px 28px;background:color-mix(in srgb,var(--plate) 92%,transparent);border:4px solid var(--cyan);font:900 38px var(--fBody);line-height:1.5;text-align:left;animation:tlIn .6s .9s both}
+@keyframes tlIn{from{opacity:0;transform:translateY(20px)}}
 .tm .f{display:inline-block;margin-top:12px;padding:10px 30px;background:#000;border:4px solid var(--cyan);font:900 40px var(--fBody);animation:slam .3s .6s both}
 .lv{position:absolute;left:0;right:0;top:470px;text-align:center;z-index:6;animation:lvA 1.4s ease forwards}
 .lv b{display:inline-block;font:900 64px var(--fNum),"Orbitron";color:#000;background:var(--hc);padding:6px 30px;letter-spacing:.12em;transform:skewX(-12deg);box-shadow:0 0 50px var(--hc)}
@@ -691,8 +693,10 @@ const PLAY={
    let k=0;const ri=setInterval(()=>{burst(Math.random()*1080,300+Math.random()*900,25,GOLD(),{sp:14,life:70});if(++k>(quick?3:8))clearInterval(ri);},280);
   },quick?60:1700);return quick?T(5600)+60:7400;},
  team(e){const T=x=>x*e.sp;const d=add(`<div class="dark"></div>`);requestAnimationFrame(()=>d.classList.add("on"));add(`<div class="flash"></div>`);add(`<div class="ring"></div>`);add(`<div class="speed"></div>`);
-  add(`<div class="tm"><div class="k">TEAM CLEAR</div><div class="a">みんなで達成！</div><div class="f">${esc(e.label||"")}</div></div>`);
-  SFX.team();shake(12,600);burst(540,880,180,[css("--cyan"),"#fff",css("--gold")],{sp:36,life:120,slow:true});return T(5200);}
+  add(`<div class="tm"><div class="k">TEAM CLEAR</div><div class="a">みんなで達成！</div><div class="f">${esc(e.label||"")}</div>${e.line?`<div class="tl">${esc(e.line)}</div>`:""}</div>`);
+  SFX.team();shake(12,600);burst(540,880,180,[css("--cyan"),"#fff",css("--gold")],{sp:36,life:120,slow:true});sparkleAt({coins:3000,count:1});
+  // セリフがあるときは読み終わるくらいまで出しておく（文字数に合わせて長く）
+  return e.line?Math.max(T(5200),Math.min(16000,3500+e.line.length*150)):T(5200);}
 };
 
 /* ===== サーバーからのイベント ===== */
@@ -719,7 +723,7 @@ function onEv(e){
     else if(e.phase==="ok"){SFX.ok();sparkleAt({coins:500,count:1});punch(1.05);}
     else if(e.phase==="ng"){SFX.buzz();shake(14,500);}
     else if(e.phase==="start"){SFX.M();}}
-  else if(e.kind==="team"){enq({k:"team",label:e.label});}
+  else if(e.kind==="team"){enq({k:"team",label:e.label,line:e.line});}
 }
 
 /* ===== 画面エフェクト（時間つきの雰囲気シーン） ===== */
