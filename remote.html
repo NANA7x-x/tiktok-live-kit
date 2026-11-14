@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NANA LIVE リモコン v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0810;--card:#141020;--line:#2a2140;--mute:#a99ab8;--pink:#ff1f7a;--gold:#ffcf3a;--cyan:#20e6ff}
+html,body{background:var(--bg);color:#fff;font:500 14px "M PLUS 1p",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:17px;font-weight:900}
+header .st{margin-left:auto;font-weight:900}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#c33;margin-right:6px;vertical-align:middle}
+.dot.ok{background:#3c6}
+.wrap{display:flex;gap:18px;padding:16px 18px;align-items:flex-start}
+.left{position:sticky;top:64px;width:min(34vw,420px);flex:none}
+.pv{width:100%;aspect-ratio:9/16;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#000}
+.pv iframe{width:100%;height:100%;border:0}
+.pvbar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.right{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px}
+summary{cursor:pointer;padding:12px 16px;font-weight:900;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px}
+summary::after{content:"▸";margin-left:auto;color:var(--mute)}
+details[open] summary::after{content:"▾"}
+.body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.note{font-size:12px;color:var(--mute);line-height:1.6}
+button{font:900 13px "M PLUS 1p";color:#fff;background:#221a33;border:1px solid #3a2d55;border-radius:10px;padding:8px 12px;cursor:pointer}
+button:hover{background:#2e2346}
+button.on{background:var(--pink);border-color:var(--pink)}
+button.pri{background:var(--pink);border-color:var(--pink)}
+button.sm{padding:4px 8px;font-size:12px}
+button.danger{background:#3a1420;border-color:#6a2438}
+input,select{font:700 13px "M PLUS 1p";color:#fff;background:#0f0b18;border:1px solid #3a2d55;border-radius:8px;padding:7px 9px}
+input[type=color]{padding:0;width:44px;height:32px}
+input[type=range]{flex:1;min-width:120px}
+label{display:flex;align-items:center;gap:6px}
+.gb{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.gb button{text-align:left;line-height:1.35}
+.gb button small{display:block;color:var(--mute);font-weight:700;font-size:11px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:4px 4px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+th{color:var(--mute);font-weight:700}
+td input{width:100%}
+td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:56px}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;align-items:center;gap:8px;background:#0f0b18;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.item .t{flex:1;min-width:0}
+.item .t b{font-size:15px}
+.item .t small{color:var(--mute)}
+.pill{font:900 11px "M PLUS 1p";padding:2px 8px;border-radius:99px;background:#2e2346}
+.sw{display:flex;gap:6px;flex-wrap:wrap}
+.chip{width:30px;height:30px;border-radius:8px;border:2px solid #fff3;cursor:pointer}
+.fontPrev{font-size:22px;padding:6px 10px;background:#0f0b18;border-radius:8px;border:1px solid var(--line)}
+@media (max-width:900px){.wrap{flex-direction:column}.left{position:static;width:100%;max-width:420px;margin:0 auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎛️ NANA LIVE リモコン <span style="color:var(--cyan);font-size:12px">v4</span></h1>
+  <div class="st"><span class="dot" id="dSrv"></span><span id="tSrv">サーバー未接続</span>　<span class="dot" id="dTT"></span><span id="tTT">TikTok 未接続</span></div>
+</header>
+<div class="wrap">
+  <div class="left">
+    <div class="pv"><iframe id="pv" src="/overlay.html?preview=1"></iframe></div>
+    <div class="pvbar">
+      <button id="pvSafe">🚫 安全地帯を表示</button>
+      <button id="pvSound">🔈 プレビューの音</button>
+      <button id="pvReload">↻ 読み直し</button>
+    </div>
+    <div class="note" style="margin-top:6px">プレビューは仮の背景とアバターつき。OBSにはこの背景は出ません。</div>
+  </div>
+
+  <div class="right">
+    <details open data-k="live"><summary>⏱ 発動中・リクエスト</summary><div class="body">
+      <div class="list" id="slotList"></div>
+      <div class="row"><b>🎹 リクエスト待ち</b><span class="note">弾き終わったら「済」を押す</span><button class="sm danger" id="reqClear" style="margin-left:auto">全部消す</button></div>
+      <div class="list" id="reqList"></div>
+    </div></details>
+
+    <details open data-k="topic"><summary>🖼 配信内容・モード</summary><div class="body">
+      <div class="row"><label>上に出すラベル <input id="topic" style="width:260px" maxlength="40"></label><button class="pri" id="topicGo">反映</button></div>
+      <div class="note">例：「※ ピアノ歌枠です」「※ ゼルダ実況中」。何の配信か一目でわかるようにする（空にすると消える）</div>
+      <div class="row"><b>画面モード</b><button id="mAvatar">🧍 アバター中心</button><button id="mGame">🎮 ゲーム配信（上＝情報／真ん中＝ゲーム／下＝アバター）</button></div>
+      <div class="row"><b>ふんわりエフェクト</b><button id="atmoOn">ON/OFF</button><label style="flex:1">強さ <input type="range" id="atmoV" min="0" max="100"></label></div>
+      <div class="note">OBSでは /back.html（アバターの下）と /front.html（アバターの上）に分かれて出ます。</div>
+    </div></details>
+
+    <details data-k="test"><summary>🎁 テスト送信</summary><div class="body">
+      <div class="row"><label>名前 <input id="tName" value="テストさん" style="width:140px"></label><label>個数 <input id="tCount" type="number" min="1" value="1" style="width:70px"></label></div>
+      <div class="gb" id="testBtns"></div>
+      <div class="row"><input id="tCoins" type="number" min="1" value="250" style="width:110px"><button id="tGo">好きなコイン数で送る</button></div>
+      <div class="row"><button data-ev="like">❤️ いいね+50</button><button data-ev="comment">💬 コメント</button><button data-ev="follow">➕ フォロー</button><button data-ev="share">🔗 シェア</button></div>
+      <div class="note">テストでも、変身・リクエスト・TEAMゲージは実際に動きます（確認が終わったら上の「発動中・リクエスト」で消してください）。DiscordやVRChatには流れません。</div>
+    </div></details>
+
+    <details data-k="look"><summary>🎨 見た目（フォント・色・枠）</summary><div class="body">
+      <div class="row"><b>配色プリセット</b></div>
+      <div class="sw" id="presets"></div>
+      <div class="row" id="colors"></div>
+      <div class="row"><b>見出しフォント</b><select id="titleFont"></select><input id="customTitle" placeholder="PCのフォント名を直接指定（任意）" style="width:240px"></div>
+      <div class="fontPrev" id="titlePrev">みかんさん ありがとう！ 0123</div>
+      <div class="row"><b>本文フォント</b><select id="bodyFont"></select><input id="customBody" placeholder="PCのフォント名を直接指定（任意）" style="width:240px"></div>
+      <div class="fontPrev" id="bodyPrev">語尾「にゃん」3分／リクエスト 2件</div>
+      <div class="row"><b>数字</b><select id="numFont"><option value="orbitron">ゲーム風（Orbitron）</option><option value="title">見出しと同じ</option></select>
+        <b>枠</b><select id="frameStyle"><option value="glow">光る縁</option><option value="line">線</option><option value="double">二重線</option><option value="none">なし</option></select>
+        <b>形</b><select id="shape"><option value="cut">角カット</option><option value="round">角丸</option></select></div>
+      <div class="row"><label style="flex:1">板の濃さ <input type="range" id="plateA" min="30" max="100"></label></div>
+      <div class="row"><button class="pri" id="styleSave">見た目を保存</button><span class="note">変更はプレビューにすぐ出ます。保存でOBSにも反映。</span></div>
+    </div></details>
+
+    <details data-k="bands"><summary>🪙 ギフト表（コイン数 → 起きること）</summary><div class="body">
+      <div class="note">ギフトの「1個あたりのコイン数」で、必ず同じことが起きます（運の要素なし）。種類：変身＝時間つきで画面に残る／リクエスト＝順番待ちリストに入る。大きさ：演出の派手さ（S=小さく表示／M=カード／L=カットイン／XL=画面ジャック）。</div>
+      <table><thead><tr><th>ON</th><th>何コインから</th><th>絵</th><th>起きること</th><th>短い名前</th><th>種類</th><th>分</th><th>大きさ</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
+      <div class="row"><button id="bandAdd">＋ 行を追加</button><button class="pri" id="bandSave">ギフト表を保存</button><button class="danger" id="bandReset" style="margin-left:auto">初期値に戻す</button></div>
+    </div></details>
+
+    <details data-k="team"><summary>🎹 みんなで達成ゲージ</summary><div class="body">
+      <div class="row"><label>達成で <input id="teamLabel" style="width:180px" maxlength="24"></label><label>満タン <input id="teamMax" type="number" min="50" style="width:100px"></label><button class="pri" id="teamGo">反映</button></div>
+      <div class="row"><span id="teamNow" class="pill">0 / 0</span><button id="teamReset" class="danger">0に戻す</button></div>
+      <div class="note">いいね・コメント・フォロー・シェア・ギフトで貯まる。ギフト1回で入る量には上限があるので、ギフトだけで一気には埋まりません。満タンでリクエスト待ちに「TEAM達成」が入ります。</div>
+    </div></details>
+
+    <details data-k="conn"><summary>📡 接続・音・連携</summary><div class="body">
+      <div class="row"><b>TikTok接続</b><button id="cAuto">自動でつなぐ</button><button id="cManual">ボタンでつなぐ（手動）</button><button class="pri" id="cNow">📡 今すぐ接続</button></div>
+      <div class="row"><b>効果音（OBS）</b><button id="sOn">ON/OFF</button><label style="flex:1">音量 <input type="range" id="sVol" min="0" max="100"></label></div>
+      <div class="row"><label>CHAINがつながる秒数 <input id="chainSec" type="number" min="3" max="60" style="width:70px"></label><button id="chainGo">反映</button></div>
+      <div class="row"><b>VRChat</b><span id="vrcSt" class="pill">-</span><button id="vrcTest">テスト送信</button></div>
+    </div></details>
+  </div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let S=null,ws=null,clockOff=0;
+const send=o=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));};
+
+/* 開閉状態を覚える */
+document.querySelectorAll("details[data-k]").forEach(d=>{try{const v=localStorage.getItem("rc_"+d.dataset.k);if(v!=null)d.open=v==="1";}catch(e){}d.addEventListener("toggle",()=>{try{localStorage.setItem("rc_"+d.dataset.k,d.open?"1":"0");}catch(e){}});});
+
+/* プレビュー */
+let pvSafe=false,pvSound=false;
+$("pvSafe").onclick=()=>{pvSafe=!pvSafe;$("pvSafe").classList.toggle("on",pvSafe);$("pv").contentWindow.postMessage({type:"previewSafe",on:pvSafe},"*");};
+$("pvSound").onclick=()=>{pvSound=!pvSound;$("pvSound").classList.toggle("on",pvSound);$("pvSound").textContent=pvSound?"🔊 プレビューの音ON":"🔈 プレビューの音";$("pv").contentWindow.postMessage({type:"previewSound",on:pvSound},"*");};
+$("pvReload").onclick=()=>{$("pv").src="/overlay.html?preview=1";};
+$("pv").onload=()=>{setTimeout(()=>{$("pv").contentWindow.postMessage({type:"previewSafe",on:pvSafe},"*");$("pv").contentWindow.postMessage({type:"previewSound",on:pvSound},"*");},300);};
+
+/* ===== 接続 ===== */
+function connect(){
+  ws=new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}`);
+  ws.onopen=()=>{$("dSrv").classList.add("ok");$("tSrv").textContent="サーバー接続中";send({type:"hello",role:"remote"});};
+  ws.onmessage=m=>{let d;try{d=JSON.parse(m.data);}catch(e){return;}if(d.type==="state"){clockOff=(d.serverNow||Date.now())-Date.now();const first=!S;S=d;render(first);}};
+  ws.onclose=()=>{$("dSrv").classList.remove("ok");$("tSrv").textContent="サーバー未接続（黒画面が起動しているか確認）";setTimeout(connect,1500);};
+}
+connect();
+
+/* ===== 描画 ===== */
+const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
+const SLOTN={voice:"🗣 声（語尾・一人称など）",cam:"🎥 手元カメラ",vfx:"🤖 ボイスエフェクト"};
+function renderLive(){
+  if(!S)return;const now=Date.now()+clockOff;
+  $("slotList").innerHTML=Object.keys(SLOTN).map(k=>{const s=S.slots[k]||{},c=s.cur&&s.cur.end>now?s.cur:null,q=(s.q||[]).length;
+    return `<div class="item"><div class="t"><small>${SLOTN[k]}</small><br><b>${c?esc(c.fx)+"　"+mmss(c.end-now):"—"}</b> ${c?`<small>by ${esc(c.user)}</small>`:""} ${q?`<span class="pill">つぎ ${q}件</span>`:""}</div>
+    <button class="sm" data-end="${k}" ${c?"":"disabled"}>終了→つぎへ</button><button class="sm danger" data-clr="${k}" ${c||q?"":"disabled"}>全部消す</button></div>`;}).join("");
+}
+function render(first){
+  $("dTT").classList.toggle("ok",!!S.conn.live);$("tTT").textContent=S.conn.live?`TikTok 接続中（${S.conn.user}）`:`TikTok 未接続（${S.conn.auto?"自動で再試行中":"手動モード"}）`;
+  renderLive();
+  $("reqList").innerHTML=S.requests.length?S.requests.map((r,i)=>`<div class="item"><div class="t"><b>${i+1}. ${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span> <small>${new Date(r.at).toLocaleTimeString().slice(0,5)}</small></div><button class="sm pri" data-done="${esc(r.id)}">済</button></div>`).join(""):'<div class="note">なし</div>';
+  const st=S.settings;
+  if(first||document.activeElement!==$("topic"))$("topic").value=st.topic;
+  $("mAvatar").classList.toggle("on",st.mode==="avatar");$("mGame").classList.toggle("on",st.mode==="game");
+  $("atmoOn").classList.toggle("on",st.atmo.on);$("atmoOn").textContent=st.atmo.on?"ON":"OFF";
+  if(document.activeElement!==$("atmoV"))$("atmoV").value=Math.round(st.atmo.strength*100);
+  $("sOn").classList.toggle("on",st.sound.on);$("sOn").textContent=st.sound.on?"ON":"OFF";
+  if(document.activeElement!==$("sVol"))$("sVol").value=Math.round(st.sound.volume*100);
+  if(first||document.activeElement!==$("chainSec"))$("chainSec").value=st.chainSec;
+  $("cAuto").classList.toggle("on",S.conn.auto);$("cManual").classList.toggle("on",!S.conn.auto);
+  $("vrcSt").textContent=S.vrc.enabled?"ON":"OFF（vrc_osc.txt）";
+  $("teamNow").textContent=`${S.team.value} / ${S.team.max}`;
+  if(first||document.activeElement!==$("teamLabel"))$("teamLabel").value=S.team.label;
+  if(first||document.activeElement!==$("teamMax"))$("teamMax").value=S.team.max;
+  if(first){loadStyle(S.style);loadBands(S.bands);}
+  renderTestBtns();
+}
+setInterval(renderLive,500);
+
+/* ===== 操作 ===== */
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.end)send({type:"slotEnd",slot:t.dataset.end});
+  if(t.dataset.clr&&confirmBox(t,"本当に消す？"))send({type:"slotClear",slot:t.dataset.clr});
+  if(t.dataset.done)send({type:"reqDone",id:t.dataset.done});
+  if(t.dataset.ev)send({type:"testEvent",kind:t.dataset.ev,user:$("tName").value});
+  if(t.dataset.coins)send({type:"testGift",user:$("tName").value,coins:+t.dataset.coins,giftName:t.dataset.gname,count:+$("tCount").value||1});
+});
+// 誤操作防止：消す系は2回押しで確定
+function confirmBox(btn,msg){if(btn.dataset.armed){delete btn.dataset.armed;btn.textContent=btn.dataset.orig;return true;}btn.dataset.orig=btn.textContent;btn.dataset.armed="1";btn.textContent=msg;setTimeout(()=>{if(btn.dataset.armed){delete btn.dataset.armed;btn.textContent=btn.dataset.orig;}},2500);return false;}
+$("reqClear").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと全部消す"))send({type:"reqClear"});};
+$("teamReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと0に戻す"))send({type:"teamSet",value:0});};
+const setS=p=>send({type:"setSettings",settings:p});
+$("topicGo").onclick=()=>setS({topic:$("topic").value});
+$("topic").onkeydown=e=>{if(e.key==="Enter")setS({topic:$("topic").value});};
+$("mAvatar").onclick=()=>setS({mode:"avatar"});$("mGame").onclick=()=>setS({mode:"game"});
+$("atmoOn").onclick=()=>setS({atmo:{on:!S.settings.atmo.on}});
+$("atmoV").onchange=()=>setS({atmo:{strength:$("atmoV").value/100}});
+$("sOn").onclick=()=>setS({sound:{on:!S.settings.sound.on}});
+$("sVol").onchange=()=>setS({sound:{volume:$("sVol").value/100}});
+$("chainGo").onclick=()=>setS({chainSec:+$("chainSec").value});
+$("teamGo").onclick=()=>setS({teamLabel:$("teamLabel").value,teamMax:+$("teamMax").value});
+$("cAuto").onclick=()=>send({type:"connectMode",auto:true});$("cManual").onclick=()=>send({type:"connectMode",auto:false});
+$("cNow").onclick=()=>send({type:"connectNow"});$("vrcTest").onclick=()=>send({type:"vrcTest"});
+$("tGo").onclick=()=>{const c=Math.max(1,+$("tCoins").value||1);send({type:"testGift",user:$("tName").value,coins:c,giftName:c+"コインのギフト",count:+$("tCount").value||1});};
+
+/* テスト送信ボタン（ギフト表の各段） */
+let tbKey="";
+function renderTestBtns(){const k=JSON.stringify(S.bands);if(k===tbKey)return;tbKey=k;
+  $("testBtns").innerHTML=S.bands.map(b=>`<button data-coins="${b.from}" data-gname="${b.from}コインのギフト">${esc(b.ico)} ${b.from.toLocaleString()}コイン<small>${b.tier} → ${esc(b.fx)}${b.min?" "+b.min+"分":""}</small></button>`).join("");}
+
+/* ===== 見た目 ===== */
+const PRESETS={
+  neon:{name:"ネオン",accent:"#ff1f7a",gold:"#ffcf3a",cyan:"#20e6ff",plate:"#0a0710",frame:"#ff1f7a",ink:"#ffffff"},
+  pastel:{name:"パステル",accent:"#ff7eb6",gold:"#ffd56b",cyan:"#8fd8ff",plate:"#2a2140",frame:"#c9a8ff",ink:"#ffffff"},
+  lavender:{name:"ラベンダー",accent:"#b98cff",gold:"#ffe39a",cyan:"#9fe8ff",plate:"#1d1630",frame:"#e2c9ff",ink:"#ffffff"},
+  sakura:{name:"さくら",accent:"#ff8fab",gold:"#fff0a8",cyan:"#a8e6cf",plate:"#3a1f2b",frame:"#ffc2d1",ink:"#ffffff"},
+  cyber:{name:"サイバー",accent:"#b14bff",gold:"#00ffd5",cyan:"#2e7bff",plate:"#050a14",frame:"#00ffd5",ink:"#e8fbff"},
+  gold:{name:"ゴールド",accent:"#ffb300",gold:"#ffe082",cyan:"#ffd54f",plate:"#120d02",frame:"#ffb300",ink:"#fff8e1"},
+  mono:{name:"モノクロ",accent:"#ffffff",gold:"#d0d0d0",cyan:"#9a9a9a",plate:"#101010",frame:"#ffffff",ink:"#ffffff"},
+};
+const CNAME={accent:"メイン",gold:"金・強調",cyan:"ゲージ",plate:"板",frame:"枠",ink:"文字"};
+const FONTS=[
+  ["Dela Gothic One","デラゴシック（太い・標準）"],["M PLUS 1p","M PLUS 1p（ゴシック）"],["Zen Maru Gothic","Zen丸ゴシック"],["Kosugi Maru","小杉丸ゴシック"],
+  ["RocknRoll One","ロックンロール（ポップ）"],["Mochiy Pop One","もちぃポップ"],["Reggae One","レゲエ（ポップ太字）"],["DotGothic16","ドットゴシック（レトロゲーム）"],["Kaisei Decol","解星デコール（明朝・上品）"],
+  ["Yusei Magic","油性マジック（手書き）"],["Hachi Maru Pop","はちまるポップ（丸文字手書き）"],["Yomogi","よもぎ（手書き・やさしい）"],["Klee One","クレー（教科書体・手書き）"],["Zen Kurenaido","Zen紅道（筆ペン手書き）"],
+];
+let ST=null;
+function fillFonts(sel){sel.innerHTML=FONTS.map(([v,n])=>`<option value="${esc(v)}">${esc(n)}</option>`).join("");}
+fillFonts($("titleFont"));fillFonts($("bodyFont"));
+$("presets").innerHTML=Object.entries(PRESETS).map(([k,p])=>`<button data-pre="${k}" style="display:flex;align-items:center;gap:6px"><span class="chip" style="background:linear-gradient(135deg,${p.accent} 0 33%,${p.gold} 33% 66%,${p.cyan} 66%);width:22px;height:22px"></span>${p.name}</button>`).join("");
+$("colors").innerHTML=Object.keys(CNAME).map(k=>`<label>${CNAME[k]} <input type="color" id="c_${k}"></label>`).join("");
+function loadStyle(st){ST=JSON.parse(JSON.stringify(st));for(const k of Object.keys(CNAME))$("c_"+k).value=ST.colors[k];
+  $("titleFont").value=ST.titleFont;$("bodyFont").value=ST.bodyFont;$("customTitle").value=ST.customTitleFont||"";$("customBody").value=ST.customBodyFont||"";
+  $("numFont").value=ST.numFont;$("frameStyle").value=ST.frameStyle;$("shape").value=ST.shape;$("plateA").value=Math.round(ST.plateAlpha*100);
+  document.querySelectorAll("[data-pre]").forEach(b=>b.classList.toggle("on",b.dataset.pre===ST.preset));fontPrev();}
+function readStyle(){for(const k of Object.keys(CNAME))ST.colors[k]=$("c_"+k).value;
+  Object.assign(ST,{titleFont:$("titleFont").value,bodyFont:$("bodyFont").value,customTitleFont:$("customTitle").value.trim(),customBodyFont:$("customBody").value.trim(),
+    numFont:$("numFont").value,frameStyle:$("frameStyle").value,shape:$("shape").value,plateAlpha:$("plateA").value/100});return ST;}
+function fontPrev(){$("titlePrev").style.fontFamily=`"${$("customTitle").value||$("titleFont").value}"`;$("bodyPrev").style.fontFamily=`"${$("customBody").value||$("bodyFont").value}"`;}
+// プレビュー用に、選んだ見た目を即時サーバーへ送る（保存ボタンで確定の扱いだが、サーバー保存も同時に行う）
+let styleT=null;
+function liveStyle(){fontPrev();clearTimeout(styleT);styleT=setTimeout(()=>send({type:"setStyle",style:readStyle()}),250);}
+document.querySelectorAll("#colors input,#titleFont,#bodyFont,#customTitle,#customBody,#numFont,#frameStyle,#shape,#plateA").forEach(el=>el.addEventListener("input",()=>{ST.preset="custom";document.querySelectorAll("[data-pre]").forEach(b=>b.classList.remove("on"));liveStyle();}));
+document.addEventListener("click",e=>{const b=e.target.closest("[data-pre]");if(!b)return;const p=PRESETS[b.dataset.pre];ST.preset=b.dataset.pre;
+  for(const k of Object.keys(CNAME))$("c_"+k).value=p[k];document.querySelectorAll("[data-pre]").forEach(x=>x.classList.toggle("on",x===b));liveStyle();});
+$("styleSave").onclick=()=>{send({type:"setStyle",style:readStyle()});$("styleSave").textContent="保存しました ✓";setTimeout(()=>$("styleSave").textContent="見た目を保存",1500);};
+
+/* ===== ギフト表の編集 ===== */
+function bandRow(b){
+  const kind=b.slot?b.slot:(b.req?"req":"none");
+  return `<tr><td><input type="checkbox" class="on" ${b.on!==false?"checked":""}></td>
+  <td><input class="n from" type="number" min="1" value="${b.from}"></td>
+  <td><input class="ic ico" value="${esc(b.ico)}"></td>
+  <td><input class="fx" value="${esc(b.fx)}"></td>
+  <td><input class="short" value="${esc(b.short||"")}" placeholder="レール用(任意)"></td>
+  <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option></select></td>
+  <td><input class="m min" type="number" min="0" value="${b.min||""}" placeholder="分"></td>
+  <td><select class="tier">${["S","M","L","XL"].map(t=>`<option ${b.tier===t?"selected":""}>${t}</option>`).join("")}</select></td>
+  <td><button class="sm danger del">✕</button></td></tr>`;
+}
+function loadBands(bands){$("bandRows").innerHTML=bands.map(bandRow).join("");}
+$("bandRows").addEventListener("click",e=>{if(e.target.classList.contains("del"))e.target.closest("tr").remove();});
+$("bandAdd").onclick=()=>{$("bandRows").insertAdjacentHTML("beforeend",bandRow({from:"",tier:"M",ico:"🎁",fx:""}));};
+$("bandSave").onclick=()=>{
+  const rows=[...$("bandRows").querySelectorAll("tr")].map(tr=>{const q=c=>tr.querySelector("."+c);const kind=q("kind").value;
+    return {on:q("on").checked,from:+q("from").value,ico:q("ico").value,fx:q("fx").value,short:q("short").value,tier:q("tier").value,
+      slot:["voice","cam","vfx"].includes(kind)?kind:undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined};}).filter(b=>b.from>0&&b.fx);
+  send({type:"setBands",bands:rows});$("bandSave").textContent="保存しました ✓";setTimeout(()=>{$("bandSave").textContent="ギフト表を保存";if(S)loadBands(S.bands);},800);
+};
+$("bandReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと初期値に戻す")){send({type:"resetBands"});setTimeout(()=>S&&loadBands(S.bands),500);}};
+
+/* 自動更新はしない（入力中の設定を守るため）。更新後は F5 で読み直す */
+})();
+</script>
+</body>
+</html>
