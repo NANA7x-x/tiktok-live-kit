@@ -2,7 +2,7 @@
 ' TikTok LIVE kit - Remove auto-start
 '
 ' Double-click this file ONCE. It deletes the shortcuts that
-' autostart_setup.vbs created:
+' the ON script created:
 '   - Startup:  TikTokLiveServer.lnk
 '   - Desktop:  NANA LIVE.lnk / TikTokRemote.url (old)
 ' Safe to run even when the shortcuts do not exist.

@@ -8,7 +8,7 @@
 '      -> opens the remote page (starts the server if needed)
 '
 ' Safe to run again: existing shortcuts are simply overwritten.
-' To undo, run autostart_remove.vbs.
+' To undo, run the OFF script in the same folder.
 ' ============================================================
 Option Explicit
 
@@ -21,11 +21,11 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 ' --- Kit folder = the folder this script itself is in.
 '     (Resolved from the script path, so it works even if the
 '      folder name contains Japanese characters.)
-kitFolder = fso.GetParentFolderName(WScript.ScriptFullName)
-serverJs  = fso.BuildPath(kitFolder, "server.js")
+kitFolder = fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullName))   ' this script is in the "tools" folder
+serverJs  = fso.BuildPath(fso.BuildPath(kitFolder, "app"), "start.js")
 
 If Not fso.FileExists(serverJs) Then
-  MsgBox "server.js ga mitsukarimasen deshita." & vbCrLf & _
+  MsgBox "app\start.js ga mitsukarimasen deshita." & vbCrLf & _
          "Kono file wo kit no folder ni oite kara, mou ichido jikkou shite kudasai.", _
          vbExclamation, "TikTok LIVE kit - Setup"
   WScript.Quit 1
@@ -44,7 +44,7 @@ End If
 startupFolder = sh.SpecialFolders("Startup")
 Set lnk = sh.CreateShortcut(fso.BuildPath(startupFolder, "TikTokLiveServer.lnk"))
 lnk.TargetPath       = nodePath
-lnk.Arguments        = """" & serverJs & """ @7x_x7x_x7x_x7"
+lnk.Arguments        = """" & serverJs & """ --no-open"
 lnk.WorkingDirectory = kitFolder
 lnk.WindowStyle      = 7   ' 7 = start minimized (stays on the taskbar)
 lnk.Description      = "TikTok LIVE kit server (auto start)"
@@ -54,7 +54,7 @@ lnk.Save
 desktopFolder = sh.SpecialFolders("Desktop")
 Set lnk = sh.CreateShortcut(fso.BuildPath(desktopFolder, "NANA LIVE.lnk"))
 lnk.TargetPath       = nodePath
-lnk.Arguments        = """" & fso.BuildPath(kitFolder, "start.js") & """"
+lnk.Arguments        = """" & serverJs & """"
 lnk.WorkingDirectory = kitFolder
 lnk.WindowStyle      = 7
 lnk.IconLocation     = nodePath & ",0"

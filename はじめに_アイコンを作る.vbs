@@ -16,10 +16,10 @@ Set sh  = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 
 kitFolder = fso.GetParentFolderName(WScript.ScriptFullName)
-startJs   = fso.BuildPath(kitFolder, "start.js")
+startJs   = fso.BuildPath(fso.BuildPath(kitFolder, "app"), "start.js")
 
 If Not fso.FileExists(startJs) Then
-  MsgBox "start.js ga mitsukarimasen deshita." & vbCrLf & _
+  MsgBox "app\start.js ga mitsukarimasen deshita." & vbCrLf & _
          "GitHub Desktop de Pull shite kara, mou ichido jikkou shite kudasai.", _
          vbExclamation, "TikTok LIVE kit - Desktop icon"
   WScript.Quit 1

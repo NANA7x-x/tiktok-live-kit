@@ -1,4 +1,4 @@
-// tiktok-live-kit/server.js  (v4)
+// tiktok-live-kit/app/server.js  (v4)
 // TikTok LIVE のイベントを受けて、オーバーレイ／リモコンへ配るブリッジサーバー。
 //
 // v4 の考え方（規約まわり）
@@ -6,7 +6,7 @@
 //   ・景品なし：お返しは配信の中で なな が演じるもの（語尾・一人称・手元カメラ・ピアノ等）だけ
 //   ・金額・ランキングは画面にもDiscordにもVRChatにも出さない（配信レポートのファイル記録だけは本人用に残す）
 //
-// サーバーが正本として持つもの（kit_state.json に保存。再起動・OBSの再読込で消えない）
+// サーバーが正本として持つもの（設定/kit_state.json に保存。再起動・OBSの再読込で消えない）
 //   settings … 配信内容ラベル・モード（avatar/game）・雰囲気レイヤー・音・CHAIN秒数
 //   bands    … コインのギフト表（何コインから何が起きるか）
 //   style    … フォント・配色・枠
@@ -15,7 +15,8 @@
 //   requests … ピアノのリクエスト待ち
 //
 // 使い方:
-//   node server.js @ユーザー名
+//   ふだんはデスクトップの「NANA LIVE」アイコン（app/start.js）から起動する
+//   手で起動する場合: node app/server.js @ユーザー名
 //   OBS（上から順に）: /overlay.html … 情報と演出
 //                      /front.html   … 雰囲気レイヤー手前（アバターの上）
 //                      （アバター）
@@ -41,7 +42,20 @@ if (!username) {
 // ============================================================
 // 正本（kit_state.json）
 // ============================================================
-const STATE_FILE = path.join(__dirname, 'kit_state.json');
+// フォルダ構成: app/（プログラム）・設定/（自分で書く設定と自動保存）・記録/（ハイライト・レポート）
+const ROOT = path.join(__dirname, '..');
+const CONF_DIR = path.join(ROOT, '設定');
+const LOG_DIR = path.join(ROOT, '記録');
+try { fs.mkdirSync(CONF_DIR, { recursive: true }); fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+// 設定ファイルは「設定」フォルダを優先し、無ければ前の版の置き場所（キットのフォルダ直下）も見る
+function confPath(name) {
+  const p = path.join(CONF_DIR, name);
+  if (fs.existsSync(p)) return p;
+  const old = path.join(ROOT, name);
+  if (fs.existsSync(old)) { console.log(`[bridge] ${name} がキットのフォルダ直下にあります。「設定」フォルダへ移すのがおすすめです`); return old; }
+  return p;
+}
+const STATE_FILE = path.join(CONF_DIR, 'kit_state.json');
 const TIERS = ['S', 'M', 'L', 'XL'];
 const SLOTS = ['voice', 'cam', 'vfx'];
 const DEFAULT_BANDS = [
@@ -157,7 +171,7 @@ let K = {
   likeTotal: 0,
 };
 try {
-  const j = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+  const j = JSON.parse(fs.readFileSync(fs.existsSync(STATE_FILE) ? STATE_FILE : path.join(ROOT, 'kit_state.json'), 'utf8'));
   if (j && typeof j === 'object') {
     K.settings = sanitizeSettings(j.settings);
     K.bands = sanitizeBands(j.bands) || K.bands;
@@ -396,13 +410,13 @@ try {
 let discordAttendUrl = null;
 let discordAnnounceUrl = null;
 try {
-  const rawCfg = fs.readFileSync(path.join(__dirname, 'discord_webhook.txt'), 'utf8');
+  const rawCfg = fs.readFileSync(confPath('discord_webhook.txt'), 'utf8');
   const cfgLines = rawCfg.split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
   if (cfgLines.length >= 1) discordAttendUrl = cfgLines[0];
   if (cfgLines.length >= 2) discordAnnounceUrl = cfgLines[1];
   if (!discordAnnounceUrl) discordAnnounceUrl = discordAttendUrl;
 } catch (e) { /* ファイルが無ければOFF */ }
-console.log(discordAttendUrl ? '[discord] Discord連携: ON' : '[discord] discord_webhook.txt が無いため、Discord連携は OFF です');
+console.log(discordAttendUrl ? '[discord] Discord連携: ON' : '[discord] 設定/discord_webhook.txt が無いため、Discord連携は OFF です');
 
 let discordQueue = Promise.resolve();
 function postDiscord(url, content) {
@@ -458,7 +472,7 @@ function recordHighlight(text) {
   highlightList.push({ elapsed, text });
   try {
     const d = new Date();
-    const file = path.join(__dirname, `highlights_${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}.txt`);
+    const file = path.join(LOG_DIR, `highlights_${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}.txt`);
     fs.appendFile(file, `[${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}] 経過 ${fmtElapsed(elapsed)} ${text}\n`, () => {});
   } catch (e) { /* ignore */ }
   console.log(`[highlight] ${fmtElapsed(elapsed)} ${text}`);
@@ -501,7 +515,7 @@ function postStreamReport() {
     `👀 ピーク視聴者：${fmtNum(st.peakViewers)}人`,
     `❤️ いいね：${fmtNum(st.likesTotal)}`,
   ].join('\n');
-  try { fs.appendFile(path.join(__dirname, 'stream_reports.txt'), fileText + '\n\n', () => {}); } catch (e) { /* ignore */ }
+  try { fs.appendFile(path.join(LOG_DIR, 'stream_reports.txt'), fileText + '\n\n', () => {}); } catch (e) { /* ignore */ }
   console.log('[report] 配信レポートを stream_reports.txt に記録しました');
   if (discordAnnounceUrl) {
     postDiscord(discordAnnounceUrl, [
@@ -522,13 +536,13 @@ let vrcEnabled = false;
 let vrcHost = '127.0.0.1';
 let vrcPort = 9000;
 try {
-  const vrcLines = fs.readFileSync(path.join(__dirname, 'vrc_osc.txt'), 'utf8').split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
+  const vrcLines = fs.readFileSync(confPath('vrc_osc.txt'), 'utf8').split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
   vrcEnabled = ['on', '1', 'true', 'yes', 'enable', 'enabled'].includes(String(vrcLines[0] || '').toLowerCase());
   const pnum = parseInt(vrcLines[1], 10);
   if (Number.isFinite(pnum) && pnum > 0 && pnum < 65536) vrcPort = pnum;
   if (vrcLines[2]) vrcHost = vrcLines[2];
 } catch (e) { /* 無ければOFF */ }
-console.log(vrcEnabled ? `[vrc] VRChat連携: ON（OSC → ${vrcHost}:${vrcPort}）` : '[vrc] VRChat連携は OFF です（vrc_osc.txt）');
+console.log(vrcEnabled ? `[vrc] VRChat連携: ON（OSC → ${vrcHost}:${vrcPort}）` : '[vrc] VRChat連携は OFF です（設定/vrc_osc.txt）');
 let vrcSocket = null;
 function vrcGetSocket() {
   if (!vrcSocket) { vrcSocket = dgram.createSocket('udp4'); vrcSocket.on('error', (err) => console.log('[vrc] UDP送信エラー:', err && err.message)); }
@@ -579,14 +593,14 @@ function vrcOnGift(user, giftName, count, b, ext) {
   vrcQueuePush(line, b && (b.tier === 'L' || b.tier === 'XL') ? VRC_PRIO.big : VRC_PRIO.normal);
 }
 function handleVrcTest() {
-  if (!vrcEnabled) { console.log('[vrc] テスト送信が押されましたが、VRChat連携は OFF です（vrc_osc.txt を確認）'); return; }
+  if (!vrcEnabled) { console.log('[vrc] テスト送信が押されましたが、VRChat連携は OFF です（設定/vrc_osc.txt を確認）'); return; }
   vrcQueuePush('🎹 VRC連携テスト：チャットボックス連携OKです', VRC_PRIO.high, { bypassDedup: true });
 }
 
 // ============================================================
 // TikTok LIVE 接続（自動リトライ＋手動モード）
 // ============================================================
-const CONNECT_MODE_FILE = path.join(__dirname, 'connect_mode.json');
+const CONNECT_MODE_FILE = path.join(CONF_DIR, 'connect_mode.json');
 let ttAuto = true;
 try { const j = JSON.parse(fs.readFileSync(CONNECT_MODE_FILE, 'utf8')); if (j && typeof j.auto === 'boolean') ttAuto = j.auto; } catch (e) { /* 既定は自動 */ }
 function setConnectMode(auto) {

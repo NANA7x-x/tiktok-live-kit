@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-cd /d %~dp0
+cd /d %~dp0..
 title TikTok LIVE bridge server
 where node > nul 2>&1
 if errorlevel 1 (
@@ -14,5 +14,5 @@ if not exist node_modules (
 )
 echo Server wo kidou shimasu. Kono gamen wa tojinaide kudasai.
 echo Remote: http://localhost:21213/remote.html
-node start.js
+node app\start.js
 pause
