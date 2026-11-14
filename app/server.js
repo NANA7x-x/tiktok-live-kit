@@ -57,7 +57,9 @@ function confPath(name) {
 }
 const STATE_FILE = path.join(CONF_DIR, 'kit_state.json');
 const TIERS = ['S', 'M', 'L', 'XL'];
-const SLOTS = ['voice', 'cam', 'vfx', 'scene'];
+const SLOTS = ['voice', 'cam', 'vfx', 'scene', 'deco'];
+// 見た目の変身（画面エフェクト・前エフェクト）は、別の段のギフトが来てもその場で切り替える（順番待ちにしない）
+const SWITCH_SLOTS = ['scene', 'deco'];
 // 種類の多いもの（語尾・しゃべり方・マイクエフェクト・セリフ・早口言葉）は「決まった順番で次へ進む」。
 // 次に何が来るかは画面のギフト表に「つぎ：〇〇」と出るので、運の要素にはならない。
 // fx の {x} に、順番リストの今の項目が入る。use:'line' はセリフ集、use:'challenge' は早口言葉リストを使う。
@@ -68,11 +70,13 @@ const DEFAULT_BANDS = [
   { from: 20, tier: 'M', ico: '✏️', fx: 'お名前であいうえお作文', short: 'あいうえお作文' },
   { from: 30, tier: 'M', ico: '🎭', fx: '{x}でしゃべる', min: 5, slot: 'voice', short: 'しゃべり方', list: ['関西弁', 'お嬢様口調', '執事口調', 'ツンデレ', '一人称「俺」', '実況アナウンサー風', '博多弁'] },
   { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
+  { from: 88, tier: 'M', ico: '✨', fx: '前エフェクト：{x}', min: 2, slot: 'deco', short: '前エフェクト', list: ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ'] },
   { from: 100, tier: 'L', ico: '🫧', fx: 'ゆらめき：{x}', min: 2, slot: 'scene', short: 'ゆらめき', list: ['ピンク', 'ラベンダー', 'ミント', '水色', 'ゴールド', 'ピーチ', 'ブルー', 'ローズ'] },
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
   { from: 5000, tier: 'XL', ico: '🎤', fx: 'ピアノ弾き語り1曲', req: '弾き語り', short: '弾き語り', link: 'vts:rainbow vts:grow' },
@@ -141,7 +145,7 @@ function sanitizeBands(arr) {
     if (b.bg && o.slot === 'scene') o.bg = true; // 「背景」フォルダの動画・画像も順番に入れる
     const req = str(b.req, 12, '');
     if (req && !o.slot) o.req = req;
-    if ((b.use === 'line' || b.use === 'challenge') && !o.slot && !o.req) o.use = b.use;
+    if ((b.use === 'line' || b.use === 'challenge' || b.use === 'happen') && !o.slot && !o.req) o.use = b.use;
     if (Array.isArray(b.list)) { const l = b.list.map((x) => str(x, 30, '').trim()).filter(Boolean).slice(0, 30); if (l.length) o.list = l; }
     out.push(o);
   }
@@ -241,9 +245,10 @@ function sanitizeLayout(o) {
 let K = {
   settings: sanitizeSettings(null),
   bands: sanitizeBands(DEFAULT_BANDS),
+  migr: ['deco1', 'happen1'],
   style: sanitizeStyle(null),
   team: { value: 0 },
-  slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] } },
+  slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] }, deco: { cur: null, q: [] } },
   requests: [],
   lines: DEFAULT_LINES.slice(), teamLines: DEFAULT_TEAM_LINES.slice(), twisters: DEFAULT_TWISTERS.slice(), penalties: DEFAULT_PENALTIES.slice(),
   idx: {},           // 順番リストの進み具合（段ごと）
@@ -270,6 +275,14 @@ try {
         if (!nb.some((b) => b.from === 200)) nb.push(Object.assign({}, DEFAULT_BANDS.find((b) => b.from === 200)));
         K.bands = sanitizeBands(nb) || K.bands;
       }
+    }
+    // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
+    K.migr = Array.isArray(j.migr) ? j.migr : [];
+    for (const [tag, from] of [['deco1', 88], ['happen1', 400]]) {
+      if (K.migr.includes(tag)) continue;
+      K.migr.push(tag);
+      const nb = DEFAULT_BANDS.find((b) => b.from === from);
+      if (!K.bands.some((b) => b.from === from || (nb.slot && b.slot === nb.slot) || (nb.use && b.use === nb.use)) && K.bands.length < 20) K.bands = sanitizeBands(K.bands.concat([Object.assign({}, nb)])) || K.bands;
     }
     K.style = sanitizeStyle(j.style);
     if (j.team && Number.isFinite(j.team.value)) K.team.value = Math.max(0, j.team.value);
@@ -468,13 +481,16 @@ function processGift({ user, giftName, coins, count, test }) {
       // 同じ段・同じ項目が発動中なら延長。同じ段の別の項目なら切り替え＋時間を足す
       const key = b.id + (item ? ':' + item : '');
       const S = K.slots[b.slot];
-      if (b.list && S.cur && S.cur.bandId && S.cur.bandId.startsWith(b.id + ':') && S.cur.bandId !== key && S.cur.end > Date.now()) {
-        // 同じ段の別の項目が発動中 → その場で次の項目に切り替えて、時間を足す（「つぎ：〇〇」の表示どおりに進む）
-        Object.assign(S.cur, { bandId: key, user, fx, end: S.cur.end + b.min * 60000 * count });
+      const live = S.cur && S.cur.bandId && S.cur.bandId !== key && S.cur.end > Date.now();
+      if (live && ((b.list && S.cur.bandId.startsWith(b.id + ':')) || SWITCH_SLOTS.includes(b.slot))) {
+        // 同じ段の別の項目（または画面エフェクト・前エフェクトの別の段）が発動中 → その場で切り替えて、時間を足す
+        if (S.cur.link !== (b.link || '')) { linkOff(S.cur.link); if (b.link) linkOn(b.link, null); }
+        Object.assign(S.cur, { bandId: key, user, fx, ico: b.ico, short: b.short, link: b.link || '', end: S.cur.end + b.min * 60000 * count });
       } else ext = slotAdd(b.slot, { bandId: key, user, fx, ico: b.ico, short: b.short, link: b.link || '', min: b.min, count });
     }
     if (b.req) for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, at: Date.now() });
     if (b.link && !b.slot) linkOn(b.link, 9000);
+    if (b.use === 'happen' && item && HAPPEN_VTS[item] && !b.link) { try { setTimeout(() => vtsAction(HAPPEN_VTS[item], 0, true), 800); } catch (e) { /* VTS が無くても画面の演出は出る */ } }
     if (b.use === 'challenge') { K.challenge.q.push({ id: 'c' + Date.now().toString(36) + (seq++), user, phrase: item || '生麦生米生卵', test: !!test }); if (!K.challenge.cur) chStartNext(); }
   }
   broadcast({
@@ -1120,6 +1136,8 @@ function vtsTint(name) {
   const c = TINTS[name];
   vtsSend('ColorTintRequest', { colorTint: { colorR: c ? c[0] : 255, colorG: c ? c[1] : 255, colorB: c ? c[2] : 255, colorA: 255, jeb_: !!(c && c[3]) }, artMeshMatcher: { tintAll: true } });
 }
+// ハプニングのとき VTube Studio のアバターを動かす（連携ONのときだけ。最後は必ず元の位置に戻す）
+const HAPPEN_VTS = { '川に流される': 'river', '海に出ていく': 'sea', '化け物に連れ去られる': 'abduct', 'UFOにさらわれる': 'ufo' };
 function vtsAction(act, hold, on) {
   if (!VTS.ready) return;
   const later = (ms, f) => setTimeout(f, ms);
@@ -1143,6 +1161,11 @@ function vtsAction(act, hold, on) {
     case 'shake': [12, -24, 24, -24, 24, -12].forEach((r, i) => later(i * 70, () => vtsMove(0.06, { rotation: r }))); break;
     case 'shrink': vtsMove(0.3, { size: -35 }); later(hold || 6000, () => vtsMove(0.4, { size: 35 })); break;
     case 'grow': vtsMove(0.3, { size: 25 }); later(hold || 6000, () => vtsMove(0.4, { size: -25 })); break;
+    // ハプニング用（画面の演出と同じ長さ・約8秒。動いた分と同じだけ戻す）
+    case 'river': [0, 1, 2, 3].forEach((i) => later(1400 + i * 260, () => vtsMove(0.25, { rotation: i % 2 ? -14 : 14, positionY: i % 2 ? 0.05 : -0.05 }))); later(2500, () => vtsMove(1.6, { positionX: 3 })); later(6300, () => vtsMove(0.01, { positionX: -6 })); later(6400, () => vtsMove(1.2, { positionX: 3 })); break;
+    case 'sea': later(1500, () => vtsMove(3, { size: -45, positionY: 0.35 })); later(4600, () => vtsMove(0.4, { positionX: 0.06 })); later(5100, () => vtsMove(0.4, { positionX: -0.06 })); later(6400, () => vtsMove(1.2, { size: 45, positionY: -0.35 })); break;
+    case 'abduct': later(2600, () => vtsMove(0.15, { rotation: 20 })); later(2800, () => vtsMove(0.6, { positionX: -3, positionY: 0.6 })); later(6000, () => vtsMove(0.01, { positionX: 6 })); later(6100, () => vtsMove(1.1, { positionX: -3, positionY: -0.6, rotation: -20 })); break;
+    case 'ufo': later(1900, () => vtsMove(2.4, { positionY: 3, rotation: 30 })); later(6200, () => vtsMove(1.3, { positionY: -3, rotation: -30 })); break;
     case 'fly': vtsMove(0.35, { positionX: 3 }); later(1300, () => vtsMove(0.01, { positionX: -6 })); later(1350, () => vtsMove(0.5, { positionX: 3 })); break;
     default: break;
   }
