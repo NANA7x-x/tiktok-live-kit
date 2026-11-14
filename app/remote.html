@@ -127,7 +127,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
 
     <details data-k="bands"><summary>🪙 ギフト表（コイン数 → 起きること）</summary><div class="body">
       <div class="note">ギフトの「1個あたりのコイン数」で、必ず同じことが起きます（運の要素なし）。種類：変身＝時間つきで画面に残る／リクエスト＝順番待ちリストに入る。大きさ：演出の派手さ（S=小さく表示／M=カード／L=カットイン／XL=画面ジャック）。</div>
-      <table><thead><tr><th>ON</th><th>何コインから</th><th>絵</th><th>起きること</th><th>短い名前</th><th>種類</th><th>順番リスト（／区切り）</th><th>分</th><th>大きさ</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
+      <table><thead><tr><th>ON</th><th>何コインから</th><th>絵</th><th>起きること</th><th>短い名前</th><th>種類</th><th>順番リスト（／区切り）</th><th>連携（VTS・VRChat）</th><th>分</th><th>大きさ</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
       <div class="row"><button id="bandAdd">＋ 行を追加</button><button class="pri" id="bandSave">ギフト表を保存</button><button class="danger" id="bandReset" style="margin-left:auto">初期値に戻す</button></div>
     </div></details>
 
@@ -159,6 +159,22 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><b>効果音（OBS）</b><button id="sOn">ON/OFF</button><label style="flex:1">音量 <input type="range" id="sVol" min="0" max="100"></label></div>
       <div class="row"><label>CHAINがつながる秒数 <input id="chainSec" type="number" min="3" max="60" style="width:70px"></label><button id="chainGo">反映</button></div>
       <div class="row"><b>VRChat</b><span id="vrcSt" class="pill">-</span><button id="vrcTest">テスト送信</button></div>
+    </div></details>
+
+    <details data-k="vts"><summary>🧸 VTube Studio 連携</summary><div class="body">
+      <div class="row"><b>連携</b><button id="vtsOn">ON/OFF</button><span id="vtsSt" class="pill">-</span><button id="vtsRe" class="sm">再接続</button><label>ポート <input id="vtsPort" type="number" style="width:80px"></label></div>
+      <div class="note">VTube Studio の「設定 → VTube Studio API を起動」をONにしておく（ポートは普通 8001）。ここをONにすると、初回だけ VTS の画面に「NANA LIVE kit を許可しますか？」が出るので「許可」を押す。</div>
+      <div class="row"><b>テスト</b>
+        <button data-vts="jump">ぴょん</button><button data-vts="spin">1回転</button><button data-vts="shake">ぶるぶる</button><button data-vts="shrink">ちっちゃく</button><button data-vts="grow">おおきく</button><button data-vts="fly">吹っ飛ぶ</button>
+        <button data-vts="rainbow">虹色</button><button data-vts="red">赤</button><button data-vts="blue">青</button><button data-vts="gold">金</button><button data-vts="pink">ピンク</button></div>
+      <div class="row"><b>このモデルのホットキー</b><span class="note">押すとテスト。ギフト表の連携欄には「vts:hotkey:名前」と書く</span></div>
+      <div class="row" id="vtsHk"></div>
+      <div class="note">ギフト表の「連携」欄の書き方：<br>
+        ・動き（その場だけ）… vts:jump ／ vts:spin ／ vts:shake ／ vts:shrink ／ vts:grow ／ vts:fly<br>
+        ・色 … vts:rainbow ／ vts:red ／ vts:blue ／ vts:gold ／ vts:pink（変身の段なら変身中ずっと、それ以外は9秒）<br>
+        ・ホットキー … vts:hotkey:猫耳（変身の段なら終わるときにもう一度押して戻す。「@20」を付けると20秒後に押し直す）<br>
+        ・VRChat … vrc:パラメーター名=true（変身中ずっと／それ以外は9秒で戻す。数字も可）<br>
+        ・いくつも書くときはスペースで区切る（例：vts:rainbow vts:spin）</div>
     </div></details>
   </div>
 </div>
@@ -219,6 +235,10 @@ function render(first){
   if(document.activeElement!==$("sVol"))$("sVol").value=Math.round(st.sound.volume*100);
   if(first||document.activeElement!==$("chainSec"))$("chainSec").value=st.chainSec;
   $("cAuto").classList.toggle("on",S.conn.auto);$("cManual").classList.toggle("on",!S.conn.auto);
+  const VT={off:"OFF",connecting:"接続中…（VTSが起動していてAPIがONか確認）",waiting:"VTSで「許可」を押してください",ok:"接続OK",denied:"VTSで拒否されました（再接続して許可）"};
+  $("vtsOn").classList.toggle("on",!!(st.vts&&st.vts.on));$("vtsOn").textContent=st.vts&&st.vts.on?"ON":"OFF";$("vtsSt").textContent=VT[(S.vts||{}).status]||"-";
+  if(document.activeElement!==$("vtsPort"))$("vtsPort").value=(st.vts||{}).port||8001;
+  const hk=(S.vts||{}).hotkeys||[];const hkKey=JSON.stringify(hk);if($("vtsHk").dataset.k!==hkKey){$("vtsHk").dataset.k=hkKey;$("vtsHk").innerHTML=hk.length?hk.map(h=>`<button class="sm" data-vts="hotkey:${esc(h.name)}">${esc(h.name)}</button>`).join(""):'<span class="note">（接続するとここに出ます）</span>';}
   $("vrcSt").textContent=S.vrc.enabled?"ON":"OFF（vrc_osc.txt）";
   $("teamNow").textContent=`${S.team.value} / ${S.team.max}`;
   if(first||document.activeElement!==$("teamLabel"))$("teamLabel").value=S.team.label;
@@ -255,6 +275,10 @@ $("rkReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すとリ
 let pvEdit=false;
 $("pvEdit").onclick=()=>{pvEdit=!pvEdit;$("pvEdit").classList.toggle("on",pvEdit);$("editNote").style.display=pvEdit?"":"none";$("pv").contentWindow.postMessage({type:"previewEdit",on:pvEdit},"*");};
 $("pvLayReset").onclick=e=>{if(confirmBox(e.currentTarget,"今のモードの配置を全部戻す？もう一度"))send({type:"resetLayout",mode:S.settings.mode});};
+$("vtsOn").onclick=()=>setS({vts:{on:!(S.settings.vts&&S.settings.vts.on),port:+$("vtsPort").value||8001}});
+$("vtsPort").onchange=()=>setS({vts:{on:!!(S.settings.vts&&S.settings.vts.on),port:+$("vtsPort").value||8001}});
+$("vtsRe").onclick=()=>send({type:"vtsReconnect"});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-vts]");if(b)send({type:"vtsTest",action:b.dataset.vts});});
 $("chOk").onclick=()=>send({type:"chMark",ok:true});$("chNg").onclick=()=>send({type:"chMark",ok:false});$("chSkip").onclick=()=>send({type:"chSkip"});
 $("lsSave").onclick=()=>{const sp=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);send({type:"setLists",lines:sp("lsLines"),twisters:sp("lsTw"),penalties:sp("lsPen")});$("lsSave").textContent="保存しました ✓";setTimeout(()=>$("lsSave").textContent="保存",1500);};
 $("lhOn").onclick=()=>setS({likeHearts:S.settings.likeHearts===false});
@@ -323,6 +347,7 @@ function bandRow(b){
   <td><input class="short" value="${esc(b.short||"")}" placeholder="レール用(任意)"></td>
   <td><select class="kind"><option value="none" ${kind==="none"?"selected":""}>その場で</option><option value="voice" ${kind==="voice"?"selected":""}>変身：声</option><option value="cam" ${kind==="cam"?"selected":""}>変身：カメラ</option><option value="vfx" ${kind==="vfx"?"selected":""}>変身：ボイス</option><option value="req" ${kind==="req"?"selected":""}>リクエスト</option><option value="line" ${kind==="line"?"selected":""}>セリフ集から</option><option value="challenge" ${kind==="challenge"?"selected":""}>早口言葉チャレンジ</option></select></td>
   <td><input class="list" value="${esc((b.list||[]).join("／"))}" placeholder="例：にゃん／ぴょん（起きることに {x}）"></td>
+  <td><input class="link" value="${esc(b.link||"")}" placeholder="例：vts:jump vts:rainbow"></td>
   <td><input class="m min" type="number" min="0" value="${b.min||""}" placeholder="分"></td>
   <td><select class="tier">${["S","M","L","XL"].map(t=>`<option ${b.tier===t?"selected":""}>${t}</option>`).join("")}</select></td>
   <td><button class="sm danger del">✕</button></td></tr>`;
@@ -334,7 +359,7 @@ $("bandSave").onclick=()=>{
   const rows=[...$("bandRows").querySelectorAll("tr")].map(tr=>{const q=c=>tr.querySelector("."+c);const kind=q("kind").value;
     return {on:q("on").checked,from:+q("from").value,ico:q("ico").value,fx:q("fx").value,short:q("short").value,tier:q("tier").value,
       slot:["voice","cam","vfx"].includes(kind)?kind:undefined,min:+q("min").value||0,req:kind==="req"?(q("short").value||q("fx").value).slice(0,12):undefined,
-      use:kind==="line"||kind==="challenge"?kind:undefined,list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
+      use:kind==="line"||kind==="challenge"?kind:undefined,link:q("link").value.trim(),list:q("list").value.split(/[／\/、,]/).map(x=>x.trim()).filter(Boolean)};}).filter(b=>b.from>0&&b.fx);
   send({type:"setBands",bands:rows});$("bandSave").textContent="保存しました ✓";setTimeout(()=>{$("bandSave").textContent="ギフト表を保存";if(S)loadBands(S.bands);},800);
 };
 $("bandReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと初期値に戻す")){send({type:"resetBands"});setTimeout(()=>S&&loadBands(S.bands),500);}};

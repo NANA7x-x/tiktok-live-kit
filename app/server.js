@@ -70,10 +70,10 @@ const DEFAULT_BANDS = [
   { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
   { from: 100, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
-  { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット' },
+  { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
-  { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲' },
-  { from: 5000, tier: 'XL', ico: '🎤', fx: 'ピアノ弾き語り1曲', req: '弾き語り', short: '弾き語り' },
+  { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
+  { from: 5000, tier: 'XL', ico: '🎤', fx: 'ピアノ弾き語り1曲', req: '弾き語り', short: '弾き語り', link: 'vts:rainbow vts:grow' },
 ];
 // セリフ集・早口言葉・罰ゲーム（リモコンで編集できる）
 const DEFAULT_LINES = ['おかえり、待ってたよ', '今日もがんばったね、えらい！', 'べ、別にうれしくなんかないんだからね！', 'いっしょにがんばろ！', 'まかせて！', 'ずっと応援してくれてありがとう', 'ちょっとだけ、こっち見て？', 'ふふ、いい名前だね', '今日来てくれて、ほんとにうれしい', 'おやすみ、いい夢見てね'];
@@ -93,6 +93,7 @@ const DEFAULT_SETTINGS = {
   atmo: { on: true, strength: 0.85 },
   sound: { on: true, volume: 0.5 },
   chainSec: 10,
+  vts: { on: false, port: 8001 },  // VTube Studio 連携
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
@@ -124,6 +125,8 @@ function sanitizeBands(arr) {
       fx: str(b.fx, 40, '') || 'お名前コール',
       on: b.on !== false,
     };
+    const lk = str(b.link, 120, '').trim();
+    if (lk) o.link = lk;
     const sh = str(b.short, 16, '');
     if (sh) o.short = sh;
     const min = clamp(b.min, 0, 120, 0);
@@ -168,6 +171,7 @@ function sanitizeSettings(s, base) {
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
   if (typeof s.likeHearts === 'boolean') o.likeHearts = s.likeHearts;
+  if (s.vts && typeof s.vts === 'object') { if (typeof s.vts.on === 'boolean') o.vts.on = s.vts.on; o.vts.port = Math.round(clamp(s.vts.port, 1, 65535, o.vts.port)); }
   if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
   if (s.atmo && typeof s.atmo === 'object') {
     if (typeof s.atmo.on === 'boolean') o.atmo.on = s.atmo.on;
@@ -255,6 +259,7 @@ function stateMsg() {
     slots: K.slots, requests: K.requests,
     challenge: K.challenge, lists: { lines: K.lines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
+    vts: { status: VTS.status, hotkeys: VTS.hotkeys },
     vrc: { enabled: vrcEnabled },
     layout: K.layout,
     rank: rankView(),
@@ -305,10 +310,12 @@ function chMark(ok) {
     const i = (K.idx.__penalty || 0) % pl.length;
     K.idx.__penalty = i + 1;
     c.state = 'ng'; c.penalty = pl[i]; c.until = Date.now() + 9000;
+    linkOn('vts:shake', 0);
     broadcast({ type: 'ev', kind: 'challenge', phase: 'ng', ch: c });
     if (!c.test) recordHighlight(`👅 早口言葉『${c.phrase}』失敗 → 罰ゲーム「${c.penalty}」（${c.user}さん）`);
   } else if (c.reps.length >= 3) {
     c.state = 'ok'; c.until = Date.now() + 6000;
+    linkOn('vts:spin', 0);
     broadcast({ type: 'ev', kind: 'challenge', phase: 'ok', ch: c });
     if (!c.test) recordHighlight(`👅 早口言葉『${c.phrase}』成功！（${c.user}さん）`);
   } else broadcast({ type: 'ev', kind: 'challenge', phase: 'mark', ch: c });
@@ -326,14 +333,16 @@ function slotAdd(slot, item) {
   if (S.cur && S.cur.bandId === item.bandId && S.cur.end > Date.now()) { S.cur.end += ms; return true; } // 同じ変身中 → 延長（bandId は段＋項目）
   const q = S.q.find((x) => x.bandId === item.bandId);
   if (q) { q.ms += ms; return true; }
-  S.q.push({ bandId: item.bandId, user: item.user, fx: item.fx, ico: item.ico, short: item.short, ms });
+  S.q.push({ bandId: item.bandId, user: item.user, fx: item.fx, ico: item.ico, short: item.short, link: item.link || '', ms });
   if (!S.cur || S.cur.end <= Date.now()) slotNext(slot);
   return false;
 }
 function slotNext(slot) {
   const S = K.slots[slot];
+  if (S.cur && S.cur.link) linkOff(S.cur.link);   // 終わった変身の連携を元に戻す
   const x = S.q.shift();
-  S.cur = x ? { bandId: x.bandId, user: x.user, fx: x.fx, ico: x.ico, short: x.short, end: Date.now() + x.ms } : null;
+  S.cur = x ? { bandId: x.bandId, user: x.user, fx: x.fx, ico: x.ico, short: x.short, link: x.link || '', end: Date.now() + x.ms } : null;
+  if (S.cur && S.cur.link) linkOn(S.cur.link, null); // 始まった変身の連携をON（終わるまで）
 }
 setInterval(() => {
   let changed = false;
@@ -402,9 +411,10 @@ function processGift({ user, giftName, coins, count, test }) {
       if (b.list && S.cur && S.cur.bandId && S.cur.bandId.startsWith(b.id + ':') && S.cur.bandId !== key && S.cur.end > Date.now()) {
         // 同じ段の別の項目が発動中 → その場で次の項目に切り替えて、時間を足す（「つぎ：〇〇」の表示どおりに進む）
         Object.assign(S.cur, { bandId: key, user, fx, end: S.cur.end + b.min * 60000 * count });
-      } else ext = slotAdd(b.slot, { bandId: key, user, fx, ico: b.ico, short: b.short, min: b.min, count });
+      } else ext = slotAdd(b.slot, { bandId: key, user, fx, ico: b.ico, short: b.short, link: b.link || '', min: b.min, count });
     }
     if (b.req) for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, at: Date.now() });
+    if (b.link && !b.slot) linkOn(b.link, 9000);
     if (b.use === 'challenge') { K.challenge.q.push({ id: 'c' + Date.now().toString(36) + (seq++), user, phrase: item || '生麦生米生卵', test: !!test }); if (!K.challenge.cur) chStartNext(); }
   }
   broadcast({
@@ -473,7 +483,7 @@ wss.on('connection', (ws) => {
     if (!m || typeof m.type !== 'string') return;
     switch (m.type) {
       case 'hello': try { ws.send(JSON.stringify(stateMsg())); } catch (e) { /* ignore */ } break;
-      case 'setSettings': K.settings = sanitizeSettings(m.settings, K.settings); pushState(); break;
+      case 'setSettings': { const was = JSON.stringify(K.settings.vts); K.settings = sanitizeSettings(m.settings, K.settings); if (JSON.stringify(K.settings.vts) !== was) { vtsClose(); vtsConnect(); } pushState(); break; }
       case 'setBands': { const b = sanitizeBands(m.bands); if (b) { K.bands = b; pushState(); } break; }
       case 'resetBands': K.bands = sanitizeBands(DEFAULT_BANDS); pushState(); break;
       case 'setStyle': K.style = sanitizeStyle(m.style); pushState(); break;
@@ -486,8 +496,8 @@ wss.on('connection', (ws) => {
         else if (m.kind === 'share') { broadcast({ type: 'ev', kind: 'share', user: u, test: true }); teamAdd(K.settings.teamW.share, true); }
         break;
       }
-      case 'slotEnd': if (SLOTS.includes(m.slot)) { K.slots[m.slot].cur = null; slotNext(m.slot); pushState(); } break;
-      case 'slotClear': if (SLOTS.includes(m.slot)) { K.slots[m.slot] = { cur: null, q: [] }; pushState(); } break;
+      case 'slotEnd': if (SLOTS.includes(m.slot)) { slotNext(m.slot); pushState(); } break;
+      case 'slotClear': if (SLOTS.includes(m.slot)) { K.slots[m.slot].q = []; slotNext(m.slot); pushState(); } break;
       case 'chMark': chMark(!!m.ok); break;
       case 'chSkip': K.challenge.cur = null; chStartNext(); pushState(); break;
       case 'chClear': K.challenge = { cur: null, q: [] }; pushState(); break;
@@ -509,6 +519,8 @@ wss.on('connection', (ws) => {
       case 'connectMode': if (typeof m.auto === 'boolean') { setConnectMode(m.auto); pushState(); } break;
       case 'connectNow': console.log('[bridge] リモコンから「今すぐ接続」を受けました'); try { connectTikTokNow(); } catch (e) { /* ignore */ } break;
       case 'vrcTest': handleVrcTest(); break;
+      case 'vtsTest': if (typeof m.action === 'string') linkOn('vts:' + m.action.slice(0, 60), 6000); break;
+      case 'vtsReconnect': vtsClose(); vtsConnect(); break;
       default: break;
     }
   });
@@ -919,6 +931,147 @@ connection.on(EV('SOCIAL', 'social'), (d) => {
     if (dt.includes('follow')) handleFollow(d); else if (dt.includes('share')) handleShare(d);
   } catch (e) { /* ignore */ }
 });
+
+// ============================================================
+// 連携（ギフト表の「連携」欄）
+//   vts:jump / vts:spin / vts:shake / vts:shrink / vts:grow / vts:fly … アバターを動かす（その場だけ）
+//   vts:rainbow / vts:red / vts:blue / vts:gold / vts:pink … アバターの色（変身中ずっと／その場なら9秒）
+//   vts:hotkey:名前 … VTube Studio のホットキー（表情・Visual Effects など）。変身なら終わるときにもう一度押して戻す
+//   vrc:パラメーター名=値 … VRChat のアバターのパラメーター（true/false/数字）。変身中ずっと／その場なら9秒で戻す
+//   複数書くときはスペースかカンマで区切る。「@秒」を付けると、その秒数で戻す（例 vts:hotkey:猫耳@20）
+// ============================================================
+function parseLink(link) {
+  return String(link || '').split(/[\s,、]+/).map((t) => t.trim()).filter(Boolean).map((t) => {
+    const m = t.match(/^(.*?)(?:@(\d+(?:\.\d+)?))?$/);
+    return { tok: m[1], hold: m[2] ? Number(m[2]) * 1000 : null };
+  });
+}
+// hold: null=変身中ずっと（linkOff で戻す） / 数字=その時間で戻す / 0=戻さない（動きだけ）
+function linkOn(link, hold) {
+  for (const { tok, hold: h } of parseLink(link)) {
+    // ホットキーは「その場」なら1回押すだけ（@秒を付けたときだけ戻す）。変身なら終わるときに押し直す
+    const keep = h != null ? h : (tok.startsWith('vts:hotkey:') && hold ? 0 : hold);
+    try {
+      if (tok.startsWith('vts:')) vtsAction(tok.slice(4), keep, true);
+      else if (tok.startsWith('vrc:')) vrcParam(tok.slice(4), keep, true);
+    } catch (e) { /* 連携の失敗で配信は止めない */ }
+  }
+}
+function linkOff(link) {
+  for (const { tok, hold } of parseLink(link)) {
+    if (hold != null) continue; // 時間指定のものは自分で戻る
+    try {
+      if (tok.startsWith('vts:')) vtsAction(tok.slice(4), null, false);
+      else if (tok.startsWith('vrc:')) vrcParam(tok.slice(4), null, false);
+    } catch (e) { /* ignore */ }
+  }
+}
+
+// --- VTube Studio（公式の外部連携API。初回だけ VTS 側で「許可」を押す） ---
+const VTS_TOKEN_FILE = path.join(CONF_DIR, 'vts_token.txt');
+const VTS = { ws: null, ready: false, status: 'off', hotkeys: [], token: '', n: 0, retry: null };
+try { VTS.token = fs.readFileSync(VTS_TOKEN_FILE, 'utf8').trim(); } catch (e) { /* 初回 */ }
+const WSClient = (() => { try { const W = require('ws').WebSocket; if (W) return W; } catch (e) { /* ignore */ } return globalThis.WebSocket; })();
+function vtsSetStatus(st) { if (VTS.status !== st) { VTS.status = st; pushState(); } }
+function vtsSend(type, data) {
+  if (!VTS.ws || VTS.ws.readyState !== 1) return false;
+  VTS.ws.send(JSON.stringify({ apiName: 'VTubeStudioPublicAPI', apiVersion: '1.0', requestID: 'k' + (VTS.n++), messageType: type, data: data || {} }));
+  return true;
+}
+const VTS_PLUGIN = { pluginName: 'NANA LIVE kit', pluginDeveloper: 'NANA' };
+function vtsClose() {
+  clearTimeout(VTS.retry); VTS.retry = null;
+  if (VTS.ws) { try { VTS.ws.close(); } catch (e) { /* ignore */ } }
+  VTS.ws = null; VTS.ready = false; vtsSetStatus(K.settings.vts.on ? 'connecting' : 'off');
+}
+function vtsConnect() {
+  if (!K.settings.vts.on || !WSClient || VTS.ws) { if (!K.settings.vts.on) vtsSetStatus('off'); return; }
+  vtsSetStatus('connecting');
+  let ws;
+  try { ws = new WSClient(`ws://127.0.0.1:${K.settings.vts.port}`); } catch (e) { vtsRetry(); return; }
+  VTS.ws = ws;
+  ws.addEventListener('open', () => {
+    if (VTS.token) vtsSend('AuthenticationRequest', Object.assign({ authenticationToken: VTS.token }, VTS_PLUGIN));
+    else { vtsSetStatus('waiting'); console.log('[vts] VTube Studio に接続しました。VTS の画面で「許可（Allow）」を押してください'); vtsSend('AuthenticationTokenRequest', VTS_PLUGIN); }
+  });
+  ws.addEventListener('message', (ev) => {
+    let m; try { m = JSON.parse(String(ev.data)); } catch (e) { return; }
+    const d = m.data || {};
+    if (m.messageType === 'AuthenticationTokenResponse' && d.authenticationToken) {
+      VTS.token = d.authenticationToken;
+      try { fs.writeFileSync(VTS_TOKEN_FILE, VTS.token); } catch (e) { /* ignore */ }
+      vtsSend('AuthenticationRequest', Object.assign({ authenticationToken: VTS.token }, VTS_PLUGIN));
+    } else if (m.messageType === 'AuthenticationResponse') {
+      if (d.authenticated) { VTS.ready = true; vtsSetStatus('ok'); console.log('[vts] VTube Studio 連携: OK'); vtsSend('HotkeysInCurrentModelRequest', {}); }
+      else { VTS.token = ''; try { fs.unlinkSync(VTS_TOKEN_FILE); } catch (e) { /* ignore */ } vtsSetStatus('waiting'); vtsSend('AuthenticationTokenRequest', VTS_PLUGIN); }
+    } else if (m.messageType === 'HotkeysInCurrentModelResponse') {
+      VTS.hotkeys = (d.availableHotkeys || []).map((h) => ({ name: String(h.name || ''), type: String(h.type || ''), id: String(h.hotkeyID || '') })).slice(0, 100);
+      pushState();
+    } else if (m.messageType === 'ModelLoadedEvent' || m.messageType === 'ModelLoadedResponse') {
+      vtsSend('HotkeysInCurrentModelRequest', {});
+    } else if (m.messageType === 'APIError') {
+      console.log('[vts] VTSからのエラー: ' + (d.message || d.errorID));
+      if (d.errorID === 50) vtsSetStatus('denied');
+    }
+  });
+  ws.addEventListener('close', () => { VTS.ws = null; VTS.ready = false; if (K.settings.vts.on) { if (VTS.status !== 'denied') vtsSetStatus('connecting'); vtsRetry(); } });
+  ws.addEventListener('error', () => { /* close が続けて来る */ });
+}
+function vtsRetry() { clearTimeout(VTS.retry); VTS.ws = null; VTS.retry = setTimeout(vtsConnect, 10000); }
+// モデルを相対的に動かす（元の位置からのずれ。動いたあと必ず戻す）
+function vtsMove(t, o) { vtsSend('MoveModelRequest', Object.assign({ timeInSeconds: t, valuesAreRelativeToModel: true }, o)); }
+const TINTS = { rainbow: [255, 255, 255, true], red: [255, 90, 90], blue: [110, 150, 255], gold: [255, 215, 110], pink: [255, 140, 200] };
+let tintTimer = null;
+function vtsTint(name) {
+  const c = TINTS[name];
+  vtsSend('ColorTintRequest', { colorTint: { colorR: c ? c[0] : 255, colorG: c ? c[1] : 255, colorB: c ? c[2] : 255, colorA: 255, jeb_: !!(c && c[3]) }, artMeshMatcher: { tintAll: true } });
+}
+function vtsAction(act, hold, on) {
+  if (!VTS.ready) return;
+  const later = (ms, f) => setTimeout(f, ms);
+  if (act.startsWith('hotkey:')) {
+    const name = act.slice(7);
+    const hk = VTS.hotkeys.find((h) => h.name === name);
+    const id = hk ? hk.id : name;
+    vtsSend('HotkeyTriggerRequest', { hotkeyID: id });
+    if (on && hold) later(hold, () => vtsSend('HotkeyTriggerRequest', { hotkeyID: id }));
+    return;
+  }
+  if (TINTS[act]) {
+    clearTimeout(tintTimer);
+    if (on) { vtsTint(act); if (hold) tintTimer = later(hold, () => vtsTint('none')); } else vtsTint('none');
+    return;
+  }
+  if (!on) return; // 動きは戻す操作がいらない
+  switch (act) {
+    case 'jump': [0, 1, 2].forEach((i) => { later(i * 380, () => vtsMove(0.15, { positionY: 0.22 })); later(i * 380 + 170, () => vtsMove(0.18, { positionY: -0.22 })); }); break;
+    case 'spin': vtsMove(0.35, { rotation: 180 }); later(360, () => vtsMove(0.35, { rotation: 180 })); break;
+    case 'shake': [12, -24, 24, -24, 24, -12].forEach((r, i) => later(i * 70, () => vtsMove(0.06, { rotation: r }))); break;
+    case 'shrink': vtsMove(0.3, { size: -35 }); later(hold || 6000, () => vtsMove(0.4, { size: 35 })); break;
+    case 'grow': vtsMove(0.3, { size: 25 }); later(hold || 6000, () => vtsMove(0.4, { size: -25 })); break;
+    case 'fly': vtsMove(0.35, { positionX: 3 }); later(1300, () => vtsMove(0.01, { positionX: -6 })); later(1350, () => vtsMove(0.5, { positionX: 3 })); break;
+    default: break;
+  }
+}
+if (K.settings.vts.on) setTimeout(vtsConnect, 1500);
+
+// --- VRChat のアバターパラメーター（OSC。vrc_osc.txt で連携ONのときだけ） ---
+function oscParamPacket(name, v) {
+  const addr = oscString('/avatar/parameters/' + name);
+  if (typeof v === 'boolean') return Buffer.concat([addr, oscString(v ? ',T' : ',F')]);
+  if (Number.isInteger(v)) { const b = Buffer.alloc(4); b.writeInt32BE(v); return Buffer.concat([addr, oscString(',i'), b]); }
+  const b = Buffer.alloc(4); b.writeFloatBE(v); return Buffer.concat([addr, oscString(',f'), b]);
+}
+function parseVal(s) { if (s === 'true' || s === 'on') return true; if (s === 'false' || s === 'off') return false; const n = Number(s); return Number.isFinite(n) ? n : true; }
+function vrcParam(spec, hold, on) {
+  if (!vrcEnabled) return;
+  const m = String(spec).match(/^([^=]+)(?:=(.+))?$/);
+  if (!m) return;
+  const name = m[1].trim().replace(/[^\w./-]/g, ''), val = m[2] != null ? parseVal(m[2].trim()) : true;
+  const off = typeof val === 'boolean' ? false : 0;
+  const send = (v) => { try { vrcGetSocket().send(oscParamPacket(name, v), vrcPort, vrcHost); } catch (e) { /* ignore */ } };
+  if (on) { send(val); if (hold) setTimeout(() => send(off), hold); } else send(off);
+}
 
 // ============================================================
 // YouTube LIVE 検知（告知用ウェブフックがある時だけ・3分おき）
