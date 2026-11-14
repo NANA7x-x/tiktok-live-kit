@@ -12,10 +12,72 @@
   #fit { position:fixed; left:50%; top:50%; width:1080px; height:1920px; transform:translate(-50%,-50%); }
   #stage {
     position:relative; width:1080px; height:1920px; container-type:inline-size;
-    background:linear-gradient(180deg, rgba(20,16,40,.88), rgba(40,10,50,.82));
     overflow:hidden; color:var(--text-main, #fff); border:4px solid transparent;
   }
+  /* v21: 背景は専用レイヤー #bgLayer に分離する。色変化・流れアニメはこの層だけに閉じ、
+     パネルや文字のコントラストを落とさない（見やすさ改善） */
+  #bgLayer { position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(20,16,40,.88), rgba(40,10,50,.82)); }
   body.transparent #stage { background:transparent; }
+  body.transparent #bgLayer { background:transparent; animation:none; }
+  /* ---------- v22 全画面フィルター（オーロラのツヤ＋キラキラ） ----------
+     層の位置: 背景・（OBS側の）アバターの上、UIパネル（z44）と文字の下 = z39。
+     アニメーションは transform / opacity のみ（負荷配慮）。色味は控えめなアルファで敷き、
+     パネル側はベタ塗り背板で読めるので、読みやすさは落とさない。
+     種類と強さはリモコンから変更でき、テーマと同じくサーバー保存・全クライアント同期。 */
+  #screenFx { position:absolute; inset:0; z-index:39; pointer-events:none; overflow:hidden; display:none; }
+  body[data-screenfx="aurora"] #screenFx, body[data-screenfx="sparkle"] #screenFx, body[data-screenfx="both"] #screenFx { display:block; }
+  body[data-screenfx-level="weak"] #screenFx { opacity:.45; }
+  body[data-screenfx-level="mid"] #screenFx { opacity:.7; }
+  body[data-screenfx-level="strong"] #screenFx { opacity:1; }
+  .fxAurora, .fxSparkle { position:absolute; inset:0; display:none; }
+  body[data-screenfx="aurora"] .fxAurora, body[data-screenfx="both"] .fxAurora { display:block; }
+  body[data-screenfx="sparkle"] .fxSparkle, body[data-screenfx="both"] .fxSparkle { display:block; }
+  .fxAurora i { position:absolute; inset:-22%; display:block; }
+  .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(168,85,247,.34), rgba(168,85,247,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(255,95,158,.26), rgba(255,95,158,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(64,200,255,.22), rgba(64,200,255,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,217,77,.18), rgba(255,217,77,0) 70%);
+    animation:aurDrift 26s ease-in-out infinite alternate; }
+  .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(123,224,255,.24), rgba(123,224,255,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(255,120,220,.20), rgba(255,120,220,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(168,85,247,.24), rgba(168,85,247,0) 70%);
+    animation:aurDrift 34s ease-in-out infinite alternate-reverse, aurFade 17s ease-in-out infinite alternate; }
+  /* テーマ連動の色味（初期の寄せのみ。種類・強さの手動選択が常に優先） */
+  body.theme-baki .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(255,70,60,.32), rgba(255,70,60,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(255,150,50,.28), rgba(255,150,50,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(255,60,180,.22), rgba(255,60,180,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,217,77,.22), rgba(255,217,77,0) 70%); }
+  body.theme-baki .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(255,200,60,.24), rgba(255,200,60,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(255,90,120,.20), rgba(255,90,120,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(255,120,40,.24), rgba(255,120,40,0) 70%); }
+  body.theme-powa .fxAurora .aurA { background:
+      radial-gradient(42% 34% at 22% 16%, rgba(255,170,220,.32), rgba(255,170,220,0) 70%),
+      radial-gradient(38% 30% at 80% 10%, rgba(170,220,255,.26), rgba(170,220,255,0) 70%),
+      radial-gradient(52% 40% at 62% 88%, rgba(200,170,255,.22), rgba(200,170,255,0) 70%),
+      radial-gradient(30% 24% at 10% 80%, rgba(255,240,190,.20), rgba(255,240,190,0) 70%); }
+  body.theme-powa .fxAurora .aurB { background:
+      radial-gradient(36% 30% at 70% 30%, rgba(255,210,235,.24), rgba(255,210,235,0) 70%),
+      radial-gradient(44% 34% at 26% 62%, rgba(170,255,220,.18), rgba(170,255,220,0) 70%),
+      radial-gradient(30% 26% at 88% 78%, rgba(255,180,200,.24), rgba(255,180,200,0) 70%); }
+  .fxSparkle .spkDots { position:absolute; inset:-8%; display:block;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.85) 0 1.6px, rgba(255,255,255,0) 3px),
+      radial-gradient(circle, rgba(255,217,77,.8) 0 1.3px, rgba(255,217,77,0) 2.6px);
+    background-size:110px 110px, 170px 170px; background-position:0 0, 40px 60px;
+    animation:spkDrift 36s ease-in-out infinite alternate, spkFade 5s ease-in-out infinite alternate; }
+  .spkStar { position:absolute; display:block; animation:spkTwinkle 3.4s ease-in-out infinite; }
+  .spkStar svg { display:block; width:100%; height:100%; }
+  body[data-screenfx-level="weak"] .spkStar.fxOpt { display:none; }
+  @keyframes aurDrift { from { transform:translate3d(-2.5%, -1.5%, 0) scale(1); } to { transform:translate3d(2.5%, 2%, 0) scale(1.07); } }
+  @keyframes aurFade { from { opacity:.35; } to { opacity:.9; } }
+  @keyframes spkDrift { from { transform:translate3d(0, 0, 0); } to { transform:translate3d(1.6%, 2.2%, 0); } }
+  @keyframes spkFade { from { opacity:.55; } to { opacity:1; } }
+  @keyframes spkTwinkle { 0%, 100% { transform:scale(.55) rotate(0deg); opacity:.25; } 50% { transform:scale(1.1) rotate(20deg); opacity:1; } }
   body.kakuhen #stage { animation:rainbow 1.2s linear infinite; }
   @keyframes rainbow {
     0%{ border-color:#ff5f9e; box-shadow:0 0 34px #ff5f9e inset, 0 0 22px #ff5f9e; }
@@ -46,14 +108,16 @@
   body.theme-baki #cutin .big { text-shadow:0 0 12px rgba(120,0,60,.85), 3px 3px 0 rgba(60,0,40,.85); }
   body.theme-baki #cutin .sub { text-shadow:1px 1px 0 rgba(60,0,40,.85); }
   body.theme-baki #flash.show { animation:pop 2.6s ease forwards, bakiBorder 2.4s linear infinite; }
-  body.theme-powa #stage { background:linear-gradient(180deg, rgba(80,55,100,.85), rgba(105,70,125,.8)); border-color:#ffc7e3; }
+  body.theme-powa #stage { border-color:#ffc7e3; }
+  body.theme-powa #bgLayer { background:linear-gradient(180deg, rgba(80,55,100,.85), rgba(105,70,125,.8)); }
   body.theme-powa .panel { background:rgba(255,242,248,.94); color:#5a3d55; }
   body.theme-powa #stage .panel { border:2px solid #ffb9dd; border-radius:16px; box-shadow:0 4px 14px rgba(255,150,200,.35); }
   body.theme-powa.kakuhen #stage { animation:rainbow 3.6s linear infinite, hueSpin 7s linear infinite; }
   @keyframes shakeAnim { 0%,100%{ transform:translate(0,0); } 20%{ transform:translate(-6px,3px); } 40%{ transform:translate(6px,-3px); } 60%{ transform:translate(-4px,-2px); } 80%{ transform:translate(4px,2px); } }
   body.shake #stage { animation:shakeAnim .4s linear; }
   body.theme-powa.shake #stage { animation:none; }
-  #cutin { position:absolute; left:-6%; right:-6%; top:37%; z-index:120; display:none; pointer-events:none; text-align:center; transform:rotate(-4deg); }
+  /* v21: 帯はスロット（top:28%〜）の上へ逃がし、図柄・結果表示を覆わないようにする */
+  #cutin { position:absolute; left:-6%; right:-6%; top:14.5%; z-index:120; display:none; pointer-events:none; text-align:center; transform:rotate(-4deg); }
   #cutin.show { display:block; }
   #cutin .band { background:repeating-linear-gradient(45deg,#ff2040 0 26px,#ffd94d 26px 52px); padding:14px 10px; box-shadow:0 0 34px rgba(255,32,64,.85); border-top:4px solid #fff; border-bottom:4px solid #fff; }
   #cutin .big { font-size:clamp(34px,9cqw,86px); font-weight:900; color:#fff; text-shadow:0 0 12px #ff2040, 3px 3px 0 #7a0c1e; letter-spacing:.04em; }
@@ -96,7 +160,7 @@
     background:linear-gradient(90deg,#ff4040,#ff8c1a); color:#fff; font-weight:900; padding:5px 16px;
     border-radius:999px; font-size:clamp(13px,2.6cqw,25px); box-shadow:0 0 18px rgba(255,100,0,.85); white-space:nowrap; }
   body.fever #feverBadge { display:block; animation:blink2 .4s steps(2) infinite; }
-  .panel { background:rgba(0,0,0,.55); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; }
+  .panel { background:rgba(6,3,16,.88); border:2px solid rgba(255,255,255,.25); border-radius:14px; padding:10px 12px; line-height:1.5; }
 
   /* ---------- v17: 改行の整え＆文字の読みやすさ（全テーマ共通の下地） ---------- */
   /* 日本語の禁則処理を厳しめにし、長い語は境目で折る（単語の途中で割らない） */
@@ -126,7 +190,7 @@
   #king { font-size:clamp(11px,2cqw,20px); color:var(--text-accent, #ffd94d); overflow-wrap:anywhere; }
 
   /* ギフトメニュー */
-  #menu { position:absolute; top:27%; left:4%; width:47%; font-size:clamp(10px,1.9cqw,19px); line-height:1.5; }
+  #menu { position:absolute; top:27%; left:4%; width:47%; font-size:clamp(12px,2cqw,20px); line-height:1.6; }
   #menu h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:var(--text-heading, #7be0ff); }
   #menu .row { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); }
   #menu .row:last-child { border-bottom:none; }
@@ -158,7 +222,7 @@
     font-weight:900; font-size:clamp(18px,4cqw,38px); color:#ffb347;
     text-shadow:0 2px 12px rgba(255,150,0,.7);
     /* v16: 背後の演出・文字と混ざらないよう帯の下地を追加 */
-    background:rgba(24,8,0,.62); border-radius:999px; padding:4px 10px;
+    background:rgba(24,8,0,.92); border-radius:999px; padding:4px 10px;
   }
   #comboBanner.show { display:block; }
   #comboBanner.danger { color:#ff4040; animation:blink2 .25s steps(2) infinite; }
@@ -166,7 +230,8 @@
 
   /* フラッシュ */
   #flash {
-    position:absolute; left:6%; right:6%; top:47%; text-align:center; padding:18px 10px; z-index:72;
+    /* v21: 告知は上部ゾーンへ（中央の主役＝スロットとその結果表示に被せない）。下地はほぼベタ塗り */
+    position:absolute; left:6%; right:6%; top:10%; text-align:center; padding:18px 10px; z-index:72;
     /* v16: 下の文字が透けないよう、半透明グラデ→濃いプレート＋枠＋影に変更（重なり読みにくさ対策） */
     background:linear-gradient(180deg, rgba(96,10,56,.95), rgba(48,4,28,.95));
     border:2px solid rgba(255,217,77,.55); box-shadow:0 0 30px rgba(255,95,158,.55), inset 0 0 22px rgba(255,95,158,.25);
@@ -227,13 +292,19 @@
     filter:drop-shadow(0 0 6px rgba(255,180,0,.85)); }
 
   /* ルーレット */
-  #roulette { position:absolute; left:8%; right:8%; bottom:31%; text-align:center; display:none; }
+  /* v21: 消えるときはフェードアウトしてから隠す（結果が次々切り替わっても残像が積み重ならない） */
+  #roulette { position:absolute; left:8%; right:8%; bottom:31%; text-align:center; display:none; transition:opacity .3s ease; }
+  #roulette.bye { opacity:0; }
   #roulette.show { display:block; }
   #roulette .title { font-size:clamp(14px,2.6cqw,26px); font-weight:900; color:#ff8080; margin-bottom:6px; }
-  #reach { font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
+  /* v21: リーチ！は行として積み重ねず、ホイール上のバッジとして重ねる（背板つき） */
+  #reach { position:absolute; top:9cqw; left:50%; transform:translateX(-50%); z-index:3;
+    background:rgba(20,6,0,.95); border:2px solid rgba(255,217,77,.8); border-radius:999px; padding:.2cqw 2.6cqw;
+    font-size:clamp(22px,5cqw,48px); font-weight:900; color:#ffd94d; display:none; animation:blink2 .3s steps(2) infinite; }
   #rouletteItem { font-size:clamp(19px,4.2cqw,40px); font-weight:900; color:var(--text-accent, #ffd94d); min-height:1.4em; word-break:auto-phrase; text-wrap:balance; }
   /* v16: ルーレット結果表示を大型化（当たり/はずれ共通）＋ハズレ時の煽り文 */
   #rouletteItem.result { font-size:clamp(29px,7.6cqw,72px); line-height:1.25;
+    display:inline-block; background:rgba(12,6,24,.95); border:2px solid rgba(255,217,77,.55); border-radius:16px; padding:2px 14px;
     text-shadow:0 0 24px rgba(255,180,0,.9), 0 3px 0 rgba(0,0,0,.45); animation:resultPop .5s cubic-bezier(.2,1.6,.4,1); }
   #rouletteItem.result.miss { color:#9adfff; text-shadow:0 0 22px rgba(80,180,255,.85), 0 3px 0 rgba(0,0,0,.45); }
   @keyframes resultPop { 0%{ transform:scale(.5); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
@@ -264,14 +335,14 @@
      名前は途中で切らず、長い名前は折り返して全文見せる */
   .gifterPanel { width:44%; font-size:clamp(11px,2cqw,20px); }
   .gifterPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; }
-  #vipPanel { position:absolute; left:4%; top:57%; }
+  #vipPanel { position:absolute; left:4%; top:57.5%; }
   #vipPanel h3 { color:var(--text-heading, #ffe98a); }
   .vipName { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-weight:700; white-space:normal; overflow-wrap:anywhere; }
   .vipName:last-child { border-bottom:none; }
   .vipEmpty { opacity:.75; }
 
   /* 特大ボード: その日の特大ギフターを累計コイン順に1人ずつスライドリピート表示（当日限り・王=1位のみ特別表示、VIP=大以上の名前のみ、とは別枠） */
-  #tokudaiBoard { position:absolute; left:4%; top:63.5%; border-color:rgba(255,217,77,.55); }
+  #tokudaiBoard { position:absolute; left:4%; top:68.5%; border-color:rgba(255,217,77,.55); }
   #tokudaiBoard h3 { color:var(--text-heading, #ffd94d); }
   .tokudaiRow { display:flex; align-items:baseline; gap:6px; padding:3px 0; white-space:normal; animation:tokudaiSlide .45s ease; }
   @keyframes tokudaiSlide { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:none; } }
@@ -282,13 +353,13 @@
   /* v14追加(心理パック): 称号ランク・VIP進捗・マイルストーン・本日の最大ギフト（表示と祝福のみ／金額・円額は出さない） */
   .vipRank { color:#ffd94d; font-weight:900; margin-left:6px; }
   #vipNext { margin-top:5px; font-size:.85em; color:#bfe9ff; font-weight:700; white-space:normal; overflow-wrap:break-word; }
-  #mileBar { position:absolute; left:30%; top:66.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
+  #mileBar { position:absolute; left:50%; top:64.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
   #mileNextReward { font-size:.85em; color:#ffe98a; font-weight:700; margin-bottom:3px; }
   #mileText { font-weight:900; color:#bfe9ff; margin-bottom:4px; }
   #mileOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #mileInner { background:linear-gradient(90deg,#7be0ff,#ffd94d); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
   /* いいね連携: いいねゲージ（ブリッジが節目管理し、ここは表示と回転加算だけ） */
-  #likeBar { position:absolute; left:30%; top:72.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
+  #likeBar { position:absolute; left:50%; top:70.5%; width:40%; font-size:clamp(11px,2cqw,20px); text-align:center; }
   #likeText { font-weight:900; color:#ffb3c2; margin-bottom:4px; }
   #likeOuter { background:rgba(255,255,255,.18); border-radius:999px; height:1em; overflow:hidden; }
   #likeInner { background:linear-gradient(90deg,#ff5c8a,#ffb3c2); height:100%; width:0%; border-radius:999px; transition:width .6s ease; }
@@ -298,7 +369,7 @@
   #topGiftBody { font-weight:700; white-space:normal; overflow-wrap:anywhere; }
 
   /* v14改修: 出席簿（配信日ベースの出席記録・localStorageに永続化／名前のみ・金額は出さない） */
-  #attendPanel { position:absolute; left:4%; top:70.5%; width:44%; font-size:clamp(11px,2cqw,20px); }
+  #attendPanel { position:absolute; left:4%; top:75.5%; width:44%; font-size:clamp(11px,2cqw,20px); }
   #attendPanel h3 { font-size:clamp(13px,2.4cqw,24px); margin-bottom:4px; color:var(--text-heading, #a5ffb0); }
   .attRow { display:flex; align-items:baseline; gap:6px; padding:1px 0; border-bottom:1px dashed rgba(255,255,255,.25); font-size:.88em; white-space:nowrap; overflow:hidden; }
   .attRow:last-child { border-bottom:none; }
@@ -321,7 +392,7 @@
 
   /* v15: MVP発表のスポットライト＆小トースト */
   #mvpSpot { position:absolute; left:5%; right:5%; top:33%; z-index:75; display:none; text-align:center; pointer-events:none;
-    background:radial-gradient(ellipse at center, rgba(70,45,0,.94), rgba(30,18,0,.88) 68%, transparent);
+    background:radial-gradient(ellipse at center, rgba(70,45,0,.96), rgba(30,18,0,.95) 75%, transparent);
     border-radius:22px; padding:3.4cqw 2cqw; }
   #mvpSpot.show { display:block; animation:mvpIn 4s ease forwards; }
   #mvpSpot .mvpTitle { font-size:clamp(18px,4.6cqw,44px); font-weight:900; color:#ffd94d; text-shadow:0 0 18px rgba(255,180,0,.85); }
@@ -343,7 +414,7 @@
     box-shadow:0 0 3cqw rgba(230,0,18,.5), inset 0 0 2.6cqw rgba(230,0,18,.35); }
   #attendStamp .stampText { margin-top:2.4cqw; font-size:7cqw; font-weight:900; color:#fff;
     text-shadow:0 0 2cqw rgba(230,0,18,.9), 0 .5cqw 0 rgba(0,0,0,.55); white-space:nowrap;
-    background:rgba(0,0,0,.5); padding:.5cqw 2.6cqw; border-radius:1.8cqw; }
+    background:rgba(0,0,0,.8); padding:.5cqw 2.6cqw; border-radius:1.8cqw; }
   #attendStamp.show .hanko { animation:stampIn 2.5s ease-out forwards; }
   #attendStamp.show .stampText { animation:stampTextIn 2.5s ease-out forwards; }
   @keyframes stampIn {
@@ -397,13 +468,21 @@
   /* v12.1: ド派手コールアウト（確変‼️などを画面中央に巨大表示） */
   #bigCallout { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     z-index:74; pointer-events:none; }
-  #bigCallout span { font-size:17.5cqw; font-weight:900; letter-spacing:.02em; opacity:0; white-space:nowrap;
+  /* v21: 巨大文字の下に濃い背板（.callPlate）を敷き、下のパネルや文字が透けて読めなくなるのを防ぐ。
+     ポップアニメーションは背板側に移し、文字には縁取りを足した */
+  #bigCallout .callPlate { background:rgba(10,4,22,.97); border:3px solid rgba(255,217,77,.7); border-radius:2.6cqw;
+    padding:1.4cqw 4.6cqw 2cqw; box-shadow:0 0 34px rgba(0,0,0,.6), inset 0 0 22px rgba(120,40,180,.35); opacity:0; }
+  #bigCallout.gold .callPlate { border-color:rgba(255,217,77,.95);
+    box-shadow:0 0 38px rgba(255,180,0,.45), inset 0 0 22px rgba(255,180,0,.3); }
+  #bigCallout span { font-size:17.5cqw; font-weight:900; letter-spacing:.02em; white-space:nowrap;
     background:linear-gradient(90deg,#ff4040,#ffb347,#ffd94d,#7be0ff,#a5ffb0,#ff5f9e,#ff4040);
     background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-stroke:.22cqw rgba(24,0,34,.9);
     filter:drop-shadow(0 0 2.6cqw rgba(255,255,255,.45)) drop-shadow(0 .8cqw 0 rgba(0,0,0,.35)); }
   #bigCallout.gold span { background:linear-gradient(90deg,#ffd94d,#fff3b0,#ffb347,#ffd94d); background-size:220% 100%;
     -webkit-background-clip:text; background-clip:text; }
-  #bigCallout.show span { animation:callRainbow .45s linear infinite, callPop 2.4s ease-out forwards; }
+  #bigCallout.show span { animation:callRainbow .45s linear infinite; }
+  #bigCallout.show .callPlate { animation:callPop 2.4s ease-out forwards; }
   @keyframes callRainbow { to { background-position:220% 0; } }
   @keyframes callPop {
     0% { transform:scale(.25) rotate(-7deg); opacity:0; }
@@ -447,8 +526,10 @@
     background:linear-gradient(45deg,#ff5f9e,#ffd94d,#7be0ff,#a5ffb0,#ff5f9e); background-size:300% 300%; }
   #strobe.go { animation:strobeA .9s linear; }
   #strobe.goBig { animation:strobeA 2.4s linear; }
-  @keyframes strobeA { 0%{opacity:0} 10%{opacity:.5} 25%{opacity:.05} 40%{opacity:.6} 55%{opacity:.05} 70%{opacity:.55} 85%{opacity:.05} 100%{opacity:0} }
-  body.kakuhen #stage { animation:rainbow 1.2s linear infinite, hueSpin 3s linear infinite; }
+  @keyframes strobeA { 0%{opacity:0} 10%{opacity:.32} 25%{opacity:.04} 40%{opacity:.38} 55%{opacity:.04} 70%{opacity:.35} 85%{opacity:.04} 100%{opacity:0} }
+  body.kakuhen #stage { animation:rainbow 1.2s linear infinite; }
+  /* v21: 色相回転は背景レイヤーだけに掛ける（文字の色・コントラストを守る） */
+  body.kakuhen #bgLayer { animation:bgPan 9s ease-in-out infinite alternate, hueSpin 3s linear infinite; }
   @keyframes hueSpin { from{ filter:hue-rotate(0deg); } to{ filter:hue-rotate(360deg); } }
   #spinNum { display:inline-block; }
   #spinNum.pop { animation:spinPop .35s ease; }
@@ -466,15 +547,14 @@
   @keyframes reelA { 0%{opacity:0; transform:translateY(12px) scale(.8);} 20%{opacity:1; transform:translateY(0) scale(1.12);} 80%{opacity:1;} 100%{opacity:0; transform:scale(1);} }
 
   /* v6: 常時うるさい画面（流れる背景・漂う粒・画面シェイク・スロット） */
-  #stage { background-size:100% 220%; animation:bgPan 9s ease-in-out infinite alternate; }
-  body.transparent:not(.theme-baki):not(.theme-powa) #stage { animation:none; }
+  #bgLayer { background-size:100% 220%; animation:bgPan 9s ease-in-out infinite alternate; }
   @keyframes bgPan { from{ background-position:50% 0%; } to{ background-position:50% 100%; } }
   #particles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .particle { position:absolute; bottom:-8%; opacity:.45; animation:drift linear infinite; }
   @keyframes drift { 0%{ transform:translateY(0) translateX(0) rotate(0deg); } 50%{ transform:translateY(-98cqw) translateX(3cqw) rotate(160deg); } 100%{ transform:translateY(-199cqw) translateX(-2cqw) rotate(320deg); } }
   #stage.shake { animation:shakeA .35s linear; }
   @keyframes shakeA { 0%{transform:translateX(0)} 25%{transform:translateX(-7px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-4px)} 100%{transform:translateX(0)} }
-  #spinReel { background:rgba(0,0,0,.45); border:2px solid rgba(255,217,77,.0); border-radius:14px; padding:4px 8px; }
+  #spinReel { background:rgba(0,0,0,.75); border:2px solid rgba(255,217,77,.0); border-radius:14px; padding:4px 8px; }
   #spinReel.on { opacity:1; border-color:rgba(255,217,77,.8); }
   #teaser.pop { animation:teaserPop .5s ease; }
   @keyframes teaserPop { 40%{ transform:scale(1.06); } }
@@ -511,11 +591,33 @@
   body[data-frame="metal"] .smFrame { border-color:#e8c766; }
   body[data-frame="neon"] .smFrame { border-color:#b26bff; box-shadow:0 0 54px rgba(168,85,247,.85), 0 0 130px rgba(168,85,247,.4), inset 0 0 0 2px rgba(233,213,255,.5), inset 0 0 26px rgba(168,85,247,.5), inset 0 -18px 34px rgba(0,0,0,.65); }
   body[data-frame="simple"] .smFrame { border-width:3px; box-shadow:0 0 24px rgba(0,0,0,.5), inset 0 -18px 34px rgba(0,0,0,.65); }
+
+  /* ---------- v21: 見やすさ改善（パネルの重なり順・小さい文字の下地） ---------- */
+  /* 常設パネルは一律にこの層へ。背景レイヤー(0)や紙吹雪・ストロボ(40-41)より上、
+     スロット(60)・ルーレット(58)・各種コールアウト(72-)より下に固定し、重なり順を一定にする */
+  .panel { z-index:44; }
+  #roulette { z-index:58; }
+  body.editing #roulette { z-index:66; }
+  /* 小さい文字の行間・サイズの下限を少し引き上げ */
+  .attRow { font-size:.95em; }
+  #vipNext, #mileNextReward, #likeNext { font-size:.92em; }
 </style>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="smXXGrad" cx="35%" cy="30%" r="85%"><stop offset="0%" stop-color="#f3e8ff"/><stop offset="55%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6d28d9"/></radialGradient></defs></svg>
 <div id="fit"><div id="stage">
+  <div id="bgLayer"></div>
+  <div id="screenFx" aria-hidden="true">
+    <div class="fxAurora"><i class="aurA"></i><i class="aurB"></i></div>
+    <div class="fxSparkle"><i class="spkDots"></i>
+      <span class="spkStar" style="left:11%;top:15%;width:22px;height:22px;animation-delay:-.6s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar" style="left:84%;top:11%;width:17px;height:17px;animation-delay:-1.8s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+      <span class="spkStar" style="left:68%;top:64%;width:24px;height:24px;animation-delay:-2.7s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar fxOpt" style="left:26%;top:82%;width:16px;height:16px;animation-delay:-1.2s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+      <span class="spkStar fxOpt" style="left:44%;top:7%;width:15px;height:15px;animation-delay:-3.1s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffffff"/></svg></span>
+      <span class="spkStar fxOpt" style="left:90%;top:86%;width:19px;height:19px;animation-delay:-2.2s"><svg viewBox="0 0 24 24"><path d="M12 0 L15 9 L24 12 L15 15 L12 24 L9 15 L0 12 L9 9 Z" fill="#ffd94d"/></svg></span>
+    </div>
+  </div>
   <div id="particles"></div>
   <div id="goal" class="panel movable">
     <div class="label" id="goalLabel">カード支払いまで あと</div>
@@ -1732,7 +1834,7 @@
     const cfg = roulettePools[tier];
     const box = $("roulette"), item = $("rouletteItem"), reach = $("reach");
     $("rouletteTitle").textContent = cfg.name;
-    box.classList.add("show"); reach.style.display = "none";
+    box.classList.add("show"); box.classList.remove("bye"); reach.style.display = "none";
     item.classList.remove("result", "miss");
     const tauntEl = $("rouletteTaunt"); if(tauntEl){ tauntEl.classList.remove("show"); tauntEl.textContent = ""; }
     $("rWheel").classList.add("spin");
@@ -1747,7 +1849,11 @@
       setTimeout(step, delay);
     }
     function hideRouletteSoon(ms){
-      setTimeout(() => { if(!rouletteBusy) box.classList.remove("show"); }, ms || 2500);
+      setTimeout(() => {
+        if(rouletteBusy) return;
+        box.classList.add("bye");
+        setTimeout(() => { if(!rouletteBusy){ box.classList.remove("show"); box.classList.remove("bye"); } }, 320);
+      }, ms || 2500);
     }
     function finish(){
       reach.style.display = "none";
@@ -2107,13 +2213,13 @@
       teaser: { top:"20%", left:"4%",  right:"4%",  bottom:"auto" },
       roulette:{ top:"auto", left:"8%", right:"8%", bottom:"31%" },
       activeFx:{ top:"56%", left:"auto", right:"4%", bottom:"auto" },
-      vipPanel:{ top:"57%", left:"4%", right:"auto", bottom:"auto" },
-      tokudaiBoard:{ top:"63.5%", left:"4%", right:"auto", bottom:"auto" },
-      mileBar:{ top:"66.5%", left:"30%", right:"auto", bottom:"auto" },
-      likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
+      vipPanel:{ top:"57.5%", left:"4%", right:"auto", bottom:"auto" },
+      tokudaiBoard:{ top:"68.5%", left:"4%", right:"auto", bottom:"auto" },
+      mileBar:{ top:"64.5%", left:"50%", right:"auto", bottom:"auto" },
+      likeBar:{ top:"70.5%", left:"50%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
-      attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
+      attendPanel:{ top:"75.5%", left:"4%", right:"auto", bottom:"auto" },
+      missionBar:{ top:"24.6%", left:"22%", right:"auto", bottom:"auto" }
     },
     standard: {
       goal:   { top:"2%",  left:"4%",  right:"4%",  bottom:"auto" },
@@ -2122,13 +2228,13 @@
       teaser: { top:"auto", left:"4%", right:"4%",  bottom:"8.5%" },
       roulette:{ top:"auto", left:"8%", right:"8%", bottom:"15%" },
       activeFx:{ top:"56%", left:"auto", right:"4%", bottom:"auto" },
-      vipPanel:{ top:"57%", left:"4%", right:"auto", bottom:"auto" },
-      tokudaiBoard:{ top:"63.5%", left:"4%", right:"auto", bottom:"auto" },
-      mileBar:{ top:"66.5%", left:"30%", right:"auto", bottom:"auto" },
-      likeBar:{ top:"72.5%", left:"30%", right:"auto", bottom:"auto" },
+      vipPanel:{ top:"57.5%", left:"4%", right:"auto", bottom:"auto" },
+      tokudaiBoard:{ top:"68.5%", left:"4%", right:"auto", bottom:"auto" },
+      mileBar:{ top:"64.5%", left:"50%", right:"auto", bottom:"auto" },
+      likeBar:{ top:"70.5%", left:"50%", right:"auto", bottom:"auto" },
       topGift:{ top:"49.5%", left:"4%", right:"auto", bottom:"auto" },
-      attendPanel:{ top:"70.5%", left:"4%", right:"auto", bottom:"auto" },
-      missionBar:{ top:"69%", left:"27%", right:"auto", bottom:"auto" }
+      attendPanel:{ top:"75.5%", left:"4%", right:"auto", bottom:"auto" },
+      missionBar:{ top:"24.6%", left:"22%", right:"auto", bottom:"auto" }
     }
   };
   window.applyPreset = function(name){
@@ -2361,6 +2467,22 @@
   }
   applyFrame();
 
+  /* ---------- 全画面フィルター（テーマ/枠と同じくサーバー保存・全クライアント同期。手動選択が優先） ---------- */
+  const SCREENFX_MODES = ["off", "aurora", "sparkle", "both"];
+  const SCREENFX_LEVELS = ["weak", "mid", "strong"];
+  let screenFxState = { mode: "off", level: "mid" };
+  try { const j = JSON.parse(localStorage.getItem("overlayScreenFxV1") || "null");
+    if(j){ if(SCREENFX_MODES.indexOf(j.mode) >= 0) screenFxState.mode = j.mode; if(SCREENFX_LEVELS.indexOf(j.level) >= 0) screenFxState.level = j.level; } } catch(e) {}
+  function applyScreenFx(){ document.body.dataset.screenfx = screenFxState.mode; document.body.dataset.screenfxLevel = screenFxState.level; }
+  function setScreenFx(mode, level){
+    if(SCREENFX_MODES.indexOf(mode) >= 0) screenFxState.mode = mode;
+    if(SCREENFX_LEVELS.indexOf(level) >= 0) screenFxState.level = level;
+    try { localStorage.setItem("overlayScreenFxV1", JSON.stringify(screenFxState)); } catch(e) {}
+    applyScreenFx();
+  }
+  window.__screenFx = { get: function(){ return { mode: screenFxState.mode, level: screenFxState.level }; }, set: setScreenFx };
+  applyScreenFx();
+
   let cutinTimer = null;
   let skipCutinSoundOnce = false; // 特大ギフトでカスタム音を鳴らした時だけ、そのカットイン音を1回飛ばす
   function cutinSound(){
@@ -2493,8 +2615,14 @@
       const layer = document.createElement("div"); layer.id = "fxLayer"; $("stage").appendChild(layer);
       const frame = document.createElement("div"); frame.id = "fxFrame"; $("stage").appendChild(frame);
       const COLORS = ["#ff4040","#ffb347","#ffd94d","#7be0ff","#a5ffb0","#ff5f9e","#c07bff"];
+      /* v21: 紙吹雪・コインは同時表示数に上限を設け、狭い画面（モバイルプレビュー等）では量を落とす。
+         大当たり級の呼び出しでも上限以上は増えず、文字の読みを邪魔しない */
+      function fxNarrow(){ return (window.innerWidth || 1080) < 560; }
       window.spawnConfetti = function(n){ try {
-        for(let i=0;i<n;i++){
+        const cap = fxNarrow() ? 48 : 110;
+        let want = Math.min(n, cap - layer.querySelectorAll(".confetti").length);
+        if(fxNarrow()) want = Math.min(want, Math.ceil(n / 2));
+        for(let i=0;i<want;i++){
           const c = document.createElement("div"); c.className = "confetti";
           c.style.left = (Math.random()*98) + "%";
           c.style.background = COLORS[i % COLORS.length];
@@ -2505,6 +2633,8 @@
         } } catch(e) {} };
       window.spawnCoinsUp = function(n){ try {
         const icons = ["🪙","💰","✨","🪙"];
+        const capC = fxNarrow() ? 16 : 36;
+        n = Math.min(n, Math.max(0, capC - layer.querySelectorAll(".coinUp").length));
         for(let i=0;i<n;i++){
           const c = document.createElement("div"); c.className = "coinUp";
           c.textContent = icons[i % icons.length];
@@ -2541,7 +2671,8 @@
       setInterval(()=>{ try { frame.classList.toggle("on", inKakuhen()); } catch(e) {} }, 1500);
       /* v12.1: 巨大コールアウト */
       const call = document.createElement("div"); call.id = "bigCallout";
-      const callSpan = document.createElement("span"); call.appendChild(callSpan);
+      const callPlate = document.createElement("div"); callPlate.className = "callPlate";
+      const callSpan = document.createElement("span"); callPlate.appendChild(callSpan); call.appendChild(callPlate);
       $("stage").appendChild(call);
       let callTimer = null;
       window.bigCall = function(text, gold){
@@ -2736,6 +2867,9 @@
       else if(msg.type === "frame" && msg.style){
         setFrame(msg.style);
       }
+      else if(msg.type === "screenfx"){
+        setScreenFx(msg.mode, msg.level);
+      }
       else if(msg.type === "simple" && msg.simple){
         setSimple(msg.simple);
       }
@@ -2790,12 +2924,12 @@
     try {
       const style = document.createElement("style");
       style.textContent =
-        "#hypeCut{position:absolute;inset:0;z-index:73;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,0,10,.72);pointer-events:none}" +
+        "#hypeCut{position:absolute;inset:0;z-index:73;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,0,10,.94);pointer-events:none}" +
         "#hypeCut.show{display:flex}" +
         "#hypeCut .hcMain{font-size:15cqw;font-weight:900;color:#ff2d55;text-shadow:0 0 34px rgba(255,45,85,.95),0 4px 0 #40000d;animation:hcShake .12s linear infinite}" +
         "#hypeCut .hcStars{font-size:6.5cqw;color:#ffd94d;text-shadow:0 0 18px rgba(255,180,0,.9);margin-top:1cqw}" +
         "@keyframes hcShake{0%{transform:translate(0,0) rotate(-.6deg)}50%{transform:translate(.6cqw,-.4cqw) rotate(.6deg)}100%{transform:translate(-.5cqw,.5cqw)}}" +
-        "#tenjoWarn{position:absolute;top:11.5%;left:50%;transform:translateX(-50%);z-index:41;display:none;font-weight:900;color:#ff4040;font-size:clamp(16px,4.4cqw,42px);text-shadow:0 0 20px rgba(255,0,0,.8);white-space:nowrap}" +
+        "#tenjoWarn{position:absolute;top:11.5%;left:50%;transform:translateX(-50%);z-index:41;display:none;font-weight:900;color:#ff4040;font-size:clamp(16px,4.4cqw,42px);text-shadow:0 0 20px rgba(255,0,0,.8);white-space:nowrap;background:rgba(16,0,0,.92);border-radius:999px;padding:.4cqw 2.6cqw}" +
         "#tenjoWarn.hot{display:block;animation:blink2 .5s steps(2) infinite}" +
         "#tenjoWarn.mega{font-size:clamp(22px,6.4cqw,60px);animation:hcShake .15s linear infinite}" +
         "#vipEntry{position:absolute;top:42%;right:-70%;z-index:72;background:linear-gradient(90deg,rgba(60,35,0,.94),rgba(20,12,0,.94));border:3px solid #ffd94d;border-right:none;border-radius:16px 0 0 16px;padding:2.2cqw 4cqw;color:#ffe98a;font-weight:900;font-size:clamp(18px,4.8cqw,46px);box-shadow:0 0 34px rgba(255,180,0,.65);transition:right .45s cubic-bezier(.2,1.4,.4,1);pointer-events:none;white-space:nowrap}" +
@@ -2803,7 +2937,7 @@
         "#comboRoll{position:absolute;top:16.2%;left:0;right:0;z-index:42;overflow:hidden;display:none;pointer-events:none}" +
         "#comboRoll .crIn{display:inline-block;white-space:nowrap;font-weight:900;font-size:clamp(14px,3.4cqw,32px);color:#7be0ff;text-shadow:0 0 14px rgba(0,180,255,.8);animation:crScroll 6.5s linear forwards;padding-left:100%}" +
         "@keyframes crScroll{to{transform:translateX(-100%)}}" +
-        "#missionBar{position:absolute;bottom:26%;left:0;right:0;margin:0 auto;width:max-content;max-width:94cqw;z-index:40;background:rgba(10,20,40,.85);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
+        "#missionBar{position:absolute;top:24.6%;bottom:auto;left:0;right:0;margin:0 auto;width:max-content;max-width:56cqw;z-index:40;background:rgba(10,20,40,.93);border:2px solid #7be0ff;border-radius:999px;padding:.9cqw 3cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);line-height:1.45;color:#bfe9ff;white-space:normal;text-align:center;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word;overflow:hidden;box-shadow:0 0 16px rgba(0,180,255,.4)}" +
         "#slotMachine.zen .smStrip{animation:zenSpin .28s linear infinite}" +
         "@keyframes zenSpin{from{transform:translateY(0)}to{transform:translateY(-38%)}}";
       document.head.appendChild(style);
@@ -3368,6 +3502,7 @@
         if(kind === "cutin") return document.getElementById("cutin");
         if(kind === "big") return document.getElementById("bigCallout");
         if(kind === "mvp") return document.getElementById("mvpSpot");
+        if(kind === "punk") return document.getElementById("punkCut");
         return null;
       }
       function spotRun(job){
@@ -3395,6 +3530,8 @@
         if(i < 0) spotQ.push(job); else spotQ.splice(i, 0, job);
       }
       window.__spotState = function(){ return { current: spotCur ? spotCur.kind : null, queued: spotQ.map(j => j.kind) }; };
+      /* v21: パンク表示（v20側）もこのキューに合流させるための公開口。同時表示は常に1つまで */
+      window.__spotPush = spotPush;
 
       if(typeof flash === "function"){
         const _flash16 = flash;
@@ -3512,11 +3649,11 @@
         "#ochiBuru .obPlate{width:34cqw;height:34cqw;margin:0 auto;border-radius:50%;background:radial-gradient(circle at 50% 38%, #3b1166, #170830);border:4px solid #ffd94d;box-shadow:0 0 34px rgba(255,200,40,.75);display:flex;align-items:center;justify-content:center}" +
         "#ochiBuru .obPlate svg{width:72%;height:72%}" +
         "#ochiBuru .obLabel{font-weight:900;color:#ffd94d;font-size:5cqw;text-shadow:0 0 14px rgba(255,180,0,.9);margin-top:.6cqw}" +
-        "#punkCut{position:absolute;left:0;right:0;top:34%;z-index:128;display:none;text-align:center;pointer-events:none}" +
+        "#punkCut{position:absolute;left:0;right:0;top:10%;z-index:128;display:none;text-align:center;pointer-events:none}" +
         "#punkCut.show{display:block}" +
-        "#punkCut .pkMain{font-size:17cqw;font-weight:900;color:#ff3348;text-shadow:0 0 26px rgba(255,0,40,.85),0 5px 0 #30000a}" +
-        "#punkCut .pkSub{font-size:5.4cqw;font-weight:900;color:#cfd2dc;text-shadow:0 2px 8px rgba(0,0,0,.8);margin-top:1cqw}" +
-        "#finalSpin{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:93;display:none;font-weight:900;white-space:nowrap;color:#ffe14d;font-size:clamp(18px,5.2cqw,50px);text-shadow:0 0 20px rgba(255,160,0,.9),0 3px 0 #4a2400;background:rgba(20,8,0,.72);border:3px solid #ffb347;border-radius:999px;padding:1cqw 4cqw;pointer-events:none}" +
+        "#punkCut .pkMain{display:inline-block;background:rgba(14,2,8,.97);border:3px solid rgba(255,51,72,.75);border-radius:2.2cqw;padding:.6cqw 3.6cqw 1.1cqw;font-size:17cqw;font-weight:900;color:#ff3348;text-shadow:0 0 26px rgba(255,0,40,.85),0 5px 0 #30000a}" +
+        "#punkCut .pkSub{display:inline-block;background:rgba(10,4,10,.93);border-radius:999px;padding:.3cqw 2.2cqw;font-size:5.4cqw;font-weight:900;color:#cfd2dc;text-shadow:0 2px 8px rgba(0,0,0,.8);margin-top:1cqw}" +
+        "#finalSpin{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:93;display:none;font-weight:900;white-space:nowrap;color:#ffe14d;font-size:clamp(18px,5.2cqw,50px);text-shadow:0 0 20px rgba(255,160,0,.9),0 3px 0 #4a2400;background:rgba(20,8,0,.88);border:3px solid #ffb347;border-radius:999px;padding:1cqw 4cqw;pointer-events:none}" +
         "#finalSpin.show{display:block}" +
         "#demoScreen{position:absolute;inset:0;z-index:150;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;background:radial-gradient(circle at 50% 30%, rgba(64,20,110,.96), rgba(8,2,20,.98))}" +
         "#demoScreen.show{display:flex}" +
@@ -3524,10 +3661,10 @@
         "#demoScreen .dmHowto{margin-top:3cqw;font-size:3.6cqw;font-weight:700;color:#fff;line-height:1.7;max-width:86cqw}" +
         "#demoScreen .dmNote{margin-top:3cqw;font-size:4.4cqw;font-weight:900;color:#7be0ff;text-shadow:0 0 16px rgba(0,180,255,.8)}" +
         "#demoScreen .dmSpark{margin-top:2cqw;font-size:6cqw}" +
-        "#dataCounter{position:absolute;top:31%;left:2%;z-index:44;min-width:30cqw}" +
+        "#dataCounter{position:absolute;top:45%;right:2%;left:auto;z-index:44;min-width:30cqw}" +
         "#dataCounter .dcTitle{font-weight:900;color:#ffd94d;font-size:clamp(12px,2.6cqw,25px);margin-bottom:.6cqw}" +
         "#dataCounter .dcRow{display:flex;justify-content:space-between;gap:3cqw;align-items:baseline;margin:.3cqw 0}" +
-        "#dataCounter .dcRow span{font-weight:700;color:#cfd8ff;font-size:clamp(11px,2.4cqw,23px)}" +
+        "#dataCounter .dcRow span{font-weight:700;color:#cfd8ff;font-size:clamp(12px,2.5cqw,24px)}" +
         "#dataCounter .dcRow b{font-family:'Courier New',monospace;font-weight:700;letter-spacing:.18em;color:#ff5340;text-shadow:0 0 10px rgba(255,60,40,.85);font-size:clamp(16px,4cqw,38px)}" +
         "#yomiHeat{margin-top:.7cqw;font-weight:900;font-size:clamp(12px,2.7cqw,26px);color:#9fb4ff}" +
         "#yomiHeat[data-heat='2']{color:#63e6a4}#yomiHeat[data-heat='3']{color:#ff9d4d}#yomiHeat[data-heat='4']{color:#ff4dd2}";
@@ -3624,7 +3761,7 @@
         if(Math.random() * 100 >= gaseRate()) return false;
         return fireSakibare(true);
       }
-      function showPunk(main, sub){
+      function showPunkNow(main, sub){
         const m = punkEl.querySelector(".pkMain"), s = punkEl.querySelector(".pkSub");
         if(m) m.textContent = main || "パンク";
         if(s) s.textContent = sub || "";
@@ -3632,6 +3769,13 @@
         punkEl.classList.add("show");
         tone(330, 0, .25, "triangle", .07); tone(262, .22, .25, "triangle", .07); tone(196, .44, .45, "triangle", .07);
         setTimeout(() => punkEl.classList.remove("show"), 2100);
+      }
+      /* v21: パンクも中央コールアウトのキュー（v16スポットライト）に合流させ、大型コールアウトとの同時表示をなくす。
+         パンクは「締め」の演出なので最優先（prio 4）：表示開始から600ms以上経った他のコールアウトは打ち切って差し替える */
+      function showPunk(main, sub){
+        if(typeof window.__spotPush === "function"){
+          window.__spotPush({ kind: "punk", prio: 4, dur: 2150, run: () => showPunkNow(main, sub) });
+        } else showPunkNow(main, sub);
       }
 
       /* ---------- ギフト回転の先バレ（rollSpins の結果を、その場で漏らす） ---------- */
@@ -3817,7 +3961,7 @@
         "#demoScreen .dmTitle{animation:dmGlow 2.2s ease-in-out infinite}" +
         "@keyframes dmFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.6cqw) scale(1.12)}}" +
         "#demoScreen .dmSpark{animation:dmFloat 1.8s ease-in-out infinite}" +
-        "#dataCounter{background:linear-gradient(180deg, rgba(8,8,18,.92), rgba(4,4,10,.92));border:2px solid #39415e;border-radius:14px;box-shadow:0 0 18px rgba(30,40,90,.55), inset 0 0 22px rgba(0,0,0,.65)}" +
+        "#dataCounter{background:linear-gradient(180deg, rgba(8,8,18,.96), rgba(4,4,10,.96));border:2px solid #39415e;border-radius:14px;box-shadow:0 0 18px rgba(30,40,90,.55), inset 0 0 22px rgba(0,0,0,.65)}" +
         "@keyframes heatBlink{0%,100%{opacity:1}50%{opacity:.35}}" +
         "#yomiHeat[data-heat='4']{animation:heatBlink .45s steps(2) infinite}";
       document.head.appendChild(style);

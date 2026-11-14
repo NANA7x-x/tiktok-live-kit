@@ -160,6 +160,13 @@ const THEME_FILE = path.join(__dirname, 'theme.json');
 let savedTheme = null;
 try { const j = JSON.parse(fs.readFileSync(THEME_FILE, 'utf8')); if (j && (j.mode === 'baki' || j.mode === 'powa' || j.mode === 'normal')) savedTheme = j.mode; } catch (e) { /* 無ければ未設定 */ }
 function setCanonicalTheme(m) { savedTheme = m; try { fs.writeFileSync(THEME_FILE, JSON.stringify({ mode: savedTheme })); } catch (e) { /* 保存失敗でも動作は続ける */ } }
+// --- 全画面フィルター（なし/オーロラ/キラキラ/両方＋強さ）の正本もブリッジが持つ（テーマと同じ方式） ---
+const SCREENFX_FILE = path.join(__dirname, 'screenfx.json');
+const SCREENFX_MODES = ['off', 'aurora', 'sparkle', 'both'];
+const SCREENFX_LEVELS = ['weak', 'mid', 'strong'];
+let savedScreenFx = null;
+try { const j = JSON.parse(fs.readFileSync(SCREENFX_FILE, 'utf8')); if (j && SCREENFX_MODES.includes(j.mode)) savedScreenFx = { mode: j.mode, level: SCREENFX_LEVELS.includes(j.level) ? j.level : 'mid' }; } catch (e) { /* 無ければ未設定 */ }
+function setCanonicalScreenFx(v) { savedScreenFx = v; try { fs.writeFileSync(SCREENFX_FILE, JSON.stringify(savedScreenFx)); } catch (e) { /* 保存失敗でも動作は続ける */ } }
 
 // v17: 特典カスタムの正本（perks.json）。リモコンの「🎁 特典カスタム」から変更でき、
 // ルーレット各プールの景品・効果／特大特典の項目と文言／ピアノ特典の名前と渡し方を保持する。
@@ -335,6 +342,7 @@ wss.on('connection', (ws) => {
   try { if (savedHidden) ws.send(JSON.stringify({ type: 'visibility', hidden: savedHidden })); } catch (e) { /* ignore */ }
   try { if (savedSimple) ws.send(JSON.stringify({ type: 'simple', simple: savedSimple })); } catch (e) { /* ignore */ }
   try { if (savedTheme) ws.send(JSON.stringify({ type: 'theme', mode: savedTheme })); } catch (e) { /* ignore */ }
+  try { if (savedScreenFx) ws.send(JSON.stringify({ type: 'screenfx', mode: savedScreenFx.mode, level: savedScreenFx.level })); } catch (e) { /* ignore */ }
   try { if (savedPerks) ws.send(JSON.stringify({ type: 'perks', perks: savedPerks })); } catch (e) { /* ignore */ }
   // サウンドカスタムの正本とファイル一覧を新規接続クライアントへ送る
   try { ws.send(JSON.stringify(soundsMsg())); } catch (e) { /* ignore */ }
@@ -415,6 +423,11 @@ wss.on('connection', (ws) => {
     if (msg.type === 'theme' && (msg.mode === 'baki' || msg.mode === 'powa' || msg.mode === 'normal')) {
       setCanonicalTheme(msg.mode);
     }
+    if (msg.type === 'screenfx' && SCREENFX_MODES.includes(msg.mode)) {
+      const v = { mode: msg.mode, level: SCREENFX_LEVELS.includes(msg.level) ? msg.level : 'mid' };
+      setCanonicalScreenFx(v);
+      msg.mode = v.mode; msg.level = v.level;
+    }
     if (msg.type === 'perks' && msg.perks && typeof msg.perks === 'object' && !Array.isArray(msg.perks)) {
       setCanonicalPerks(msg.perks);
       msg.perks = savedPerks;
@@ -442,7 +455,7 @@ wss.on('connection', (ws) => {
       else skipRelay = true;
     }
     // 操作系メッセージは他クライアントへ中継する
-    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'perks', 'sounds', 'style'].includes(msg.type)) {
+    if (!skipRelay && ['control', 'layout', 'goal', 'state', 'requestState', 'config', 'birthday', 'visibility', 'simple', 'theme', 'screenfx', 'perks', 'sounds', 'style'].includes(msg.type)) {
       broadcast(msg, ws);
     }
   });
