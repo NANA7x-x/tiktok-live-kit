@@ -298,6 +298,28 @@
         </div>
       </details>
 
+      <details class="folder" data-folder="screenfx">
+        <summary>✨ 画面フィルター（オーロラ・キラキラ）</summary>
+        <div class="folderBody">
+          <div class="row">
+            <span>フィルター： <b id="sfxState">-</b></span>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button onclick="setScreenFxMode('off')">なし</button>
+            <button onclick="setScreenFxMode('aurora')">🌈 オーロラ（ツヤ）</button>
+            <button onclick="setScreenFxMode('sparkle')">✨ キラキラ</button>
+            <button onclick="setScreenFxMode('both')">🌈✨ オーロラ＋キラキラ</button>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <span style="font-size:13px;opacity:.85;">強さ：</span>
+            <button onclick="setScreenFxLevel('weak')">弱</button>
+            <button onclick="setScreenFxLevel('mid')">中</button>
+            <button onclick="setScreenFxLevel('strong')">強</button>
+          </div>
+          <div class="note">画面全体にかかる薄いフィルターです。パネルや文字の下の層に出るので、読みやすさは落としません。色味はテーマに少し連動します（選んだ種類・強さが優先）。設定はサーバーに保存され、開いている画面全部に同期されます。</div>
+        </div>
+      </details>
+
       <details class="folder" data-folder="special">
         <summary>🎂 特別演出</summary>
         <div class="folderBody">
@@ -607,6 +629,23 @@
   }
   renderTheme();
 
+  /* 全画面フィルター（テーマと同じくサーバー保存・全クライアント同期） */
+  const SCREENFX_LABELS = { off: "なし", aurora: "オーロラ（ツヤ）", sparkle: "キラキラ", both: "オーロラ＋キラキラ" };
+  const SCREENFX_LEVEL_LABELS = { weak: "弱", mid: "中", strong: "強" };
+  let screenFxMode = "off", screenFxLevel = "mid";
+  function renderScreenFx(){
+    const el = document.getElementById("sfxState");
+    if(el) el.textContent = (SCREENFX_LABELS[screenFxMode] || screenFxMode) + " ／ 強さ: " + (SCREENFX_LEVEL_LABELS[screenFxLevel] || screenFxLevel);
+  }
+  function setScreenFxMode(m){ screenFxMode = m; renderScreenFx(); send({ type: "screenfx", mode: screenFxMode, level: screenFxLevel }); }
+  function setScreenFxLevel(l){ screenFxLevel = l; renderScreenFx(); send({ type: "screenfx", mode: screenFxMode, level: screenFxLevel }); }
+  function adoptScreenFx(m, l){
+    if(["off", "aurora", "sparkle", "both"].indexOf(m) >= 0) screenFxMode = m;
+    if(["weak", "mid", "strong"].indexOf(l) >= 0) screenFxLevel = l;
+    renderScreenFx();
+  }
+  renderScreenFx();
+
   let mutedState = null; // null = 状態未取得（オーバーレイからの state が届くまで実状態を表示しない）
   function renderMuted(){
     const st = document.getElementById("stMuted");
@@ -754,6 +793,7 @@
         if(joined !== currentHidden.slice().sort().join(",")){ currentHidden = msg.hidden.slice(); renderVisList(); }
       }
       if(msg && msg.type === "theme" && msg.mode) adoptTheme(msg.mode);
+      if(msg && msg.type === "screenfx") adoptScreenFx(msg.mode, msg.level);
       if(msg && msg.type === "simple" && msg.simple) adoptSimple(msg.simple);
       if(msg && msg.type === "connectMode"){
         const el = document.getElementById("ttMode");
