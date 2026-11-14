@@ -42,7 +42,36 @@ function pickUser() {
   return '@7x_x7x_x7x_x7';
 }
 
+// デスクトップに「NANA LIVE」アイコンが無ければ作る（Windowsだけ。.vbs が止められる環境向け）
+// OneDrive でデスクトップの場所が変わっていても、Windowsに本当の場所を聞いて作る
+function ensureDesktopIcon() {
+  if (process.platform !== 'win32' || process.argv.includes('--no-icon')) return;
+  const q = (v) => String(v).replace(/'/g, "''");
+  const ps = [
+    "$d=[Environment]::GetFolderPath('Desktop')",
+    "$p=Join-Path $d 'NANA LIVE.lnk'",
+    "if(Test-Path $p){exit 0}",
+    "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($p)",
+    `$s.TargetPath='${q(process.execPath)}'`,
+    `$s.Arguments='"${q(path.join(__dirname, 'start.js'))}"'`,
+    `$s.WorkingDirectory='${q(path.join(__dirname, '..'))}'`,
+    '$s.WindowStyle=7',
+    `$s.IconLocation='${q(process.execPath)},0'`,
+    "$s.Description='TikTok LIVE kit: start server + open remote'",
+    '$s.Save()',
+    "Write-Output 'CREATED'",
+  ].join(';');
+  try {
+    // 日本語のフォルダ名や引用符が崩れないよう、-EncodedCommand（UTF-16LE の base64）で渡す
+    const enc = Buffer.from(ps, 'utf16le').toString('base64');
+    const r = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', enc], { encoding: 'utf8', windowsHide: true, timeout: 20000 });
+    if (String(r.stdout || '').includes('CREATED')) console.log('デスクトップに「NANA LIVE」アイコンを作りました。次からはそれをダブルクリックするだけで起動できます。');
+    else if (r.status !== 0) console.log('デスクトップのアイコンを作れませんでした（README の「アイコンがセキュリティに止められた場合」を見てください）');
+  } catch (e) { /* アイコンが作れなくても起動は続ける */ }
+}
+
 (async () => {
+  ensureDesktopIcon();
   if (await serverIsUp()) {
     console.log('サーバーはもう動いています。リモコンだけ開きます。');
     if (!NO_OPEN) openRemote();
