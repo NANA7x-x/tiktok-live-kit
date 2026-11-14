@@ -83,6 +83,8 @@ const DEFAULT_SETTINGS = {
   atmo: { on: true, strength: 0.85 },
   sound: { on: true, volume: 0.5 },
   chainSec: 10,
+  fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
+  look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   teamMax: 1000, teamLabel: '🎹 ピアノ1曲',
   // みんなで達成ゲージの入り方（ギフト1回はgiftCapまで。ギフトだけで一気に埋まらないように）
   teamW: { like: 0.6, comment: 6, follow: 25, share: 20, giftCap: 350 },
@@ -143,6 +145,8 @@ function sanitizeSettings(s, base) {
   if (!s || typeof s !== 'object') return o;
   if (typeof s.topic === 'string') o.topic = s.topic.slice(0, 40);
   if (s.mode === 'avatar' || s.mode === 'game') o.mode = s.mode;
+  if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
+  if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
   if (s.atmo && typeof s.atmo === 'object') {
     if (typeof s.atmo.on === 'boolean') o.atmo.on = s.atmo.on;
     o.atmo.strength = clamp(s.atmo.strength, 0, 1, o.atmo.strength);
