@@ -70,7 +70,11 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <button id="pvSafe">🚫 安全地帯を表示</button>
       <button id="pvSound">🔈 プレビューの音</button>
       <button id="pvReload">↻ 読み直し</button>
+      <button id="pvEdit">✋ レイアウト編集</button>
+      <a href="/overlay.html?preview=1&edit=1" target="_blank"><button>↗ 大きい画面で編集</button></a>
+      <button id="pvLayReset" class="danger">↺ 配置を元に戻す</button>
     </div>
+    <div class="note" id="editNote" style="display:none;margin-top:6px;color:#ffe000">ドラッグで移動／右下の●を左右に引いて大きさ／ダブルクリックでそのパーツだけ元の位置。アバター中心とゲーム配信モードで別々に保存されます。</div>
     <div class="note" style="margin-top:6px">プレビューは仮の背景とアバターつき。OBSにはこの背景は出ません。</div>
   </div>
 
@@ -120,6 +124,13 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><button id="bandAdd">＋ 行を追加</button><button class="pri" id="bandSave">ギフト表を保存</button><button class="danger" id="bandReset" style="margin-left:auto">初期値に戻す</button></div>
     </div></details>
 
+    <details data-k="rank"><summary>🏆 ランキング（今日の配信）</summary><div class="body">
+      <div class="row"><b>画面に出す</b><button id="rkOn">ON/OFF</button><button id="rkMvp">👑 MVP（最大ギフト）</button><button id="rkLikes">❤️ いいねランキング</button><button id="rkCoins">コイン数も出す</button></div>
+      <div class="note">ギフトランキングは「その日の配信でくれたコインの合計」の順。初期はコイン数を出さず、順位と名前だけ（金額を画面に出さないほうが、ギフトの催促と取られにくいため）。ランキングを出している間、ギフト表は左のレールにまとまります。新しい配信が始まると自動でリセット。</div>
+      <div class="row"><button class="danger" id="rkReset">今のランキングをリセット</button></div>
+      <div class="list" id="rkList"></div>
+    </div></details>
+
     <details data-k="team"><summary>🎹 みんなで達成ゲージ</summary><div class="body">
       <div class="row"><label>達成で <input id="teamLabel" style="width:180px" maxlength="24"></label><label>満タン <input id="teamMax" type="number" min="50" style="width:100px"></label><button class="pri" id="teamGo">反映</button></div>
       <div class="row"><span id="teamNow" class="pill">0 / 0</span><button id="teamReset" class="danger">0に戻す</button></div>
@@ -151,7 +162,7 @@ let pvSafe=false,pvSound=false;
 $("pvSafe").onclick=()=>{pvSafe=!pvSafe;$("pvSafe").classList.toggle("on",pvSafe);$("pv").contentWindow.postMessage({type:"previewSafe",on:pvSafe},"*");};
 $("pvSound").onclick=()=>{pvSound=!pvSound;$("pvSound").classList.toggle("on",pvSound);$("pvSound").textContent=pvSound?"🔊 プレビューの音ON":"🔈 プレビューの音";$("pv").contentWindow.postMessage({type:"previewSound",on:pvSound},"*");};
 $("pvReload").onclick=()=>{$("pv").src="/overlay.html?preview=1";};
-$("pv").onload=()=>{setTimeout(()=>{$("pv").contentWindow.postMessage({type:"previewSafe",on:pvSafe},"*");$("pv").contentWindow.postMessage({type:"previewSound",on:pvSound},"*");},300);};
+$("pv").onload=()=>{setTimeout(()=>{$("pv").contentWindow.postMessage({type:"previewEdit",on:pvEdit},"*");$("pv").contentWindow.postMessage({type:"previewSafe",on:pvSafe},"*");$("pv").contentWindow.postMessage({type:"previewSound",on:pvSound},"*");},300);};
 
 /* ===== 接続 ===== */
 function connect(){
@@ -178,6 +189,10 @@ function render(first){
   const st=S.settings;
   if(first||document.activeElement!==$("topic"))$("topic").value=st.topic;
   $("mAvatar").classList.toggle("on",st.mode==="avatar");$("mGame").classList.toggle("on",st.mode==="game");
+  const rk=st.rank||{};$("rkOn").classList.toggle("on",!!rk.on);$("rkOn").textContent=rk.on?"ON":"OFF";$("rkMvp").classList.toggle("on",rk.mvp!==false);$("rkLikes").classList.toggle("on",rk.likes!==false);$("rkCoins").classList.toggle("on",!!rk.showCoins);
+  const R=S.rank||{};$("rkList").innerHTML=(R.mvp?`<div class="item"><div class="t">👑 MVP <b>${esc(R.mvp.user)}</b> <small>${esc(R.mvp.ico||"")} ${esc(R.mvp.giftName||"")}・${Number(R.mvp.coins).toLocaleString()}コイン</small></div></div>`:"")+
+    `<div class="item"><div class="t">🎁 ${(R.gifts||[]).slice(0,5).map((g,i)=>`${i+1}. ${esc(g.user)} <small>${Number(g.coins).toLocaleString()}</small>`).join("　")||"まだなし"}</div></div>`+
+    `<div class="item"><div class="t">❤️ ${(R.likes||[]).slice(0,5).map((g,i)=>`${i+1}. ${esc(g.user)} <small>${Number(g.count).toLocaleString()}</small>`).join("　")||"まだなし"}</div></div>`;
   $("lkPanel").classList.toggle("on",st.look!=="airy");$("lkAiry").classList.toggle("on",st.look==="airy");
   $("fxN").classList.toggle("on",st.fxLevel!=="dopa");$("fxD").classList.toggle("on",st.fxLevel==="dopa");
   $("atmoOn").classList.toggle("on",st.atmo.on);$("atmoOn").textContent=st.atmo.on?"ON":"OFF";
@@ -210,6 +225,13 @@ $("teamReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと0
 const setS=p=>send({type:"setSettings",settings:p});
 $("topicGo").onclick=()=>setS({topic:$("topic").value});
 $("topic").onkeydown=e=>{if(e.key==="Enter")setS({topic:$("topic").value});};
+const rkSet=p=>setS({rank:Object.assign({},S.settings.rank,p)});
+$("rkOn").onclick=()=>rkSet({on:!S.settings.rank.on});$("rkMvp").onclick=()=>rkSet({mvp:S.settings.rank.mvp===false});
+$("rkLikes").onclick=()=>rkSet({likes:S.settings.rank.likes===false});$("rkCoins").onclick=()=>rkSet({showCoins:!S.settings.rank.showCoins});
+$("rkReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すとリセット"))send({type:"rankReset"});};
+let pvEdit=false;
+$("pvEdit").onclick=()=>{pvEdit=!pvEdit;$("pvEdit").classList.toggle("on",pvEdit);$("editNote").style.display=pvEdit?"":"none";$("pv").contentWindow.postMessage({type:"previewEdit",on:pvEdit},"*");};
+$("pvLayReset").onclick=e=>{if(confirmBox(e.currentTarget,"今のモードの配置を全部戻す？もう一度"))send({type:"resetLayout",mode:S.settings.mode});};
 $("lkPanel").onclick=()=>setS({look:"panel"});$("lkAiry").onclick=()=>setS({look:"airy"});
 $("fxN").onclick=()=>setS({fxLevel:"normal"});$("fxD").onclick=()=>setS({fxLevel:"dopa"});
 $("mAvatar").onclick=()=>setS({mode:"avatar"});$("mGame").onclick=()=>setS({mode:"game"});

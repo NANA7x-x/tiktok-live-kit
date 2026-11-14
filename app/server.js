@@ -85,6 +85,8 @@ const DEFAULT_SETTINGS = {
   chainSec: 10,
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
+  // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
+  rank: { on: true, showCoins: false, likes: true, mvp: true },
   teamMax: 1000, teamLabel: '🎹 ピアノ1曲',
   // みんなで達成ゲージの入り方（ギフト1回はgiftCapまで。ギフトだけで一気に埋まらないように）
   teamW: { like: 0.6, comment: 6, follow: 25, share: 20, giftCap: 350 },
@@ -147,6 +149,7 @@ function sanitizeSettings(s, base) {
   if (s.mode === 'avatar' || s.mode === 'game') o.mode = s.mode;
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
+  if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
   if (s.atmo && typeof s.atmo === 'object') {
     if (typeof s.atmo.on === 'boolean') o.atmo.on = s.atmo.on;
     o.atmo.strength = clamp(s.atmo.strength, 0, 1, o.atmo.strength);
@@ -164,6 +167,18 @@ function sanitizeSettings(s, base) {
   return o;
 }
 
+const LAYOUT_IDS = ['topic', 'hud', 'legL', 'legR', 'rank', 'team', 'chain', 'toasts'];
+function sanitizeLayoutItem(v) {
+  if (!v || typeof v !== 'object') return null;
+  return { dx: Math.round(clamp(v.dx, -1500, 1500, 0)), dy: Math.round(clamp(v.dy, -2000, 2000, 0)), s: Math.round(clamp(v.s, 0.3, 3, 1) * 100) / 100 };
+}
+function sanitizeLayout(o) {
+  const out = {};
+  if (!o || typeof o !== 'object') return out;
+  for (const id of LAYOUT_IDS) { const v = sanitizeLayoutItem(o[id]); if (v) out[id] = v; }
+  return out;
+}
+
 let K = {
   settings: sanitizeSettings(null),
   bands: sanitizeBands(DEFAULT_BANDS),
@@ -173,6 +188,10 @@ let K = {
   requests: [],
   roomId: null,
   likeTotal: 0,
+  // その日の配信のランキング元データ（新しい配信で自動リセット）
+  rank: { gift: {}, like: {} },
+  // レイアウト編集（プレビューでドラッグ・拡大縮小した分）。モードごと
+  layout: { avatar: {}, game: {} },
 };
 try {
   const j = JSON.parse(fs.readFileSync(fs.existsSync(STATE_FILE) ? STATE_FILE : path.join(ROOT, 'kit_state.json'), 'utf8'));
@@ -190,6 +209,8 @@ try {
     if (Array.isArray(j.requests)) K.requests = j.requests.slice(0, 100);
     if (j.roomId) K.roomId = String(j.roomId);
     if (Number.isFinite(j.likeTotal)) K.likeTotal = j.likeTotal;
+    if (j.rank && typeof j.rank === 'object') K.rank = { gift: j.rank.gift || {}, like: j.rank.like || {} };
+    if (j.layout && typeof j.layout === 'object') for (const m of ['avatar', 'game']) if (j.layout[m]) K.layout[m] = sanitizeLayout(j.layout[m]);
   }
 } catch (e) { /* 無ければ初期値から */ }
 
@@ -209,6 +230,8 @@ function stateMsg() {
     slots: K.slots, requests: K.requests,
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vrc: { enabled: vrcEnabled },
+    layout: K.layout,
+    rank: rankView(),
   };
 }
 let stateTimer = null;
@@ -267,6 +290,30 @@ function teamAdd(v, test) {
   pushState();
 }
 
+// ランキング（その日の配信ぶん）
+function rankAddGift(user, coins, count, giftName, ico) {
+  const g = K.rank.gift;
+  if (!g[user] && Object.keys(g).length >= 1000) return;
+  const r = g[user] || (g[user] = { coins: 0, max: null });
+  r.coins += coins * count;
+  if (!r.max || coins > r.max.coins) r.max = { coins, giftName, ico, at: Date.now() };
+}
+function rankAddLike(user, n) {
+  if (!user || !(n > 0)) return;
+  const l = K.rank.like;
+  if (l[user] == null && Object.keys(l).length >= 3000) return;
+  l[user] = (l[user] || 0) + n;
+}
+function rankView() {
+  const g = Object.entries(K.rank.gift);
+  let mvp = null;
+  for (const [user, r] of g) if (r.max && (!mvp || r.max.coins > mvp.coins || (r.max.coins === mvp.coins && r.max.at < mvp.at))) mvp = { user, coins: r.max.coins, giftName: r.max.giftName, ico: r.max.ico };
+  const gifts = g.filter(([, r]) => r.coins > 0).sort((a, b) => b[1].coins - a[1].coins).slice(0, 10).map(([user, r]) => ({ user, coins: r.coins }));
+  const likes = Object.entries(K.rank.like).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([user, count]) => ({ user, count }));
+  return { mvp, gifts, likes };
+}
+function rankReset() { K.rank = { gift: {}, like: {} }; }
+
 // TikTok（またはリモコンのテスト）からのギフトを処理する。count = 連投の個数
 function processGift({ user, giftName, coins, count, test }) {
   user = String(user || 'だれか').slice(0, 30);
@@ -274,6 +321,7 @@ function processGift({ user, giftName, coins, count, test }) {
   count = Math.max(1, Math.min(999, Math.floor(Number(count) || 1)));
   coins = Math.max(0, Number(coins) || 0);
   const b = bandOf(coins || 1);
+  rankAddGift(user, coins, count, giftName, giftIcon(giftName, b));
   let ext = false;
   if (b) {
     if (b.slot) ext = slotAdd(b.slot, { bandId: b.id, user, fx: b.fx, ico: b.ico, short: b.short, min: b.min, count });
@@ -352,7 +400,7 @@ wss.on('connection', (ws) => {
       case 'testGift': processGift({ user: testName(m.user), giftName: str(m.giftName, 30, '') || 'テストギフト', coins: m.coins, count: m.count, test: true }); break;
       case 'testEvent': {
         const u = testName(m.user);
-        if (m.kind === 'like') { broadcast({ type: 'ev', kind: 'like', count: 50, test: true }); teamAdd(50 * K.settings.teamW.like, true); }
+        if (m.kind === 'like') { broadcast({ type: 'ev', kind: 'like', count: 50, test: true }); rankAddLike(u, 50); teamAdd(50 * K.settings.teamW.like, true); }
         else if (m.kind === 'comment') { broadcast({ type: 'ev', kind: 'comment', user: u, test: true }); teamAdd(K.settings.teamW.comment, true); }
         else if (m.kind === 'follow') { broadcast({ type: 'ev', kind: 'follow', user: u, test: true }); teamAdd(K.settings.teamW.follow, true); }
         else if (m.kind === 'share') { broadcast({ type: 'ev', kind: 'share', user: u, test: true }); teamAdd(K.settings.teamW.share, true); }
@@ -362,6 +410,13 @@ wss.on('connection', (ws) => {
       case 'slotClear': if (SLOTS.includes(m.slot)) { K.slots[m.slot] = { cur: null, q: [] }; pushState(); } break;
       case 'reqDone': K.requests = K.requests.filter((r) => r.id !== m.id); pushState(); break;
       case 'reqClear': K.requests = []; pushState(); break;
+      case 'setLayout': {
+        const mode = m.mode === 'game' ? 'game' : 'avatar';
+        if (LAYOUT_IDS.includes(m.id)) { const v = sanitizeLayoutItem(m); if (v) { K.layout[mode][m.id] = v; pushState(); } }
+        break;
+      }
+      case 'resetLayout': { const mode = m.mode === 'game' ? 'game' : 'avatar'; if (LAYOUT_IDS.includes(m.id)) delete K.layout[mode][m.id]; else K.layout[mode] = {}; pushState(); break; }
+      case 'rankReset': rankReset(); pushState(); break;
       case 'teamSet': K.team.value = clamp(m.value, 0, K.settings.teamMax - 1, K.team.value); pushState(); break;
       case 'connectMode': if (typeof m.auto === 'boolean') { setConnectMode(m.auto); pushState(); } break;
       case 'connectNow': console.log('[bridge] リモコンから「今すぐ接続」を受けました'); try { connectTikTokNow(); } catch (e) { /* ignore */ } break;
@@ -648,6 +703,7 @@ function newStream() {
   highlightList = []; highlightPosted = false; highlightConnectAt = Date.now();
   reportStats = newReportStats(Date.now()); reportPosted = false;
   thanksList = new Set(); thanksPosted = false;
+  rankReset();
 }
 function connectTikTok() {
   if (connecting) return;
@@ -730,6 +786,9 @@ connection.on(EV('LIKE', 'like'), (data) => {
   if (total > 0) { if (total > K.likeTotal) { delta = total - K.likeTotal; K.likeTotal = total; } }
   else if (inc > 0) { delta = inc; K.likeTotal += inc; }
   if (reportStats && K.likeTotal > reportStats.likesTotal) reportStats.likesTotal = K.likeTotal;
+  // いいねランキング：そのイベントでその人が押した数（likeCount）を足す
+  const liker = String(nameOf(data) || '');
+  if (liker && inc > 0) { rankAddLike(liker, Math.min(inc, 500)); pushState(); }
   if (delta <= 0) return;
   teamAdd(delta * K.settings.teamW.like);
   likeEvBuf += delta;

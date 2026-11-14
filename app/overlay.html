@@ -249,6 +249,44 @@ body:not(.L-main) #main{display:none}
 .cm .n{font:900 150px var(--fNum),"Orbitron";line-height:1;color:#fff;-webkit-text-stroke:16px #000;paint-order:stroke fill;text-shadow:0 0 50px var(--gold)}
 .cm .s{font:900 40px var(--fBody);-webkit-text-stroke:8px #000;paint-order:stroke fill;color:var(--gold)}
 @keyframes cmA{0%{opacity:0;transform:scale(2.6) rotate(-6deg)}14%{opacity:1;transform:scale(1) rotate(-3deg)}22%{transform:scale(1.08) rotate(-3deg)}80%{opacity:1;transform:scale(1) rotate(-3deg)}100%{opacity:0;transform:translateY(-60px) scale(.9) rotate(-3deg)}}
+/* ===== ランキング（右レール。ゲーム配信モードでは上の段の右半分） ===== */
+#rank{position:absolute;top:528px;right:12px;width:196px;height:572px;padding:10px 8px;--edge:var(--gold);display:none;flex-direction:column}
+.rankOn #rank{display:flex}.rankOn #legR{display:none}
+#rank .lh{font:900 18px var(--fNum),"Orbitron";color:var(--onGold);background:var(--gold);text-align:center;letter-spacing:.2em;margin-bottom:6px}
+.rkBody{flex:1;overflow:hidden;position:relative}
+.rkPage{position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;animation:rkIn .5s cubic-bezier(.2,1.2,.4,1) both}
+.rkPage.out{animation:rkOut .35s ease forwards}
+@keyframes rkIn{from{opacity:0;transform:translateY(40px)}}@keyframes rkOut{to{opacity:0;transform:translateY(-40px)}}
+.rkT{font:900 24px var(--fBody);color:var(--gold);text-align:center;white-space:nowrap}
+.rkRow{display:flex;align-items:center;gap:6px;font:900 25px var(--fBody);line-height:1.15}
+.rkRow .no{font:900 26px var(--fNum),"Orbitron";width:30px;text-align:center;color:var(--gold);flex:none}
+.rkRow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rkRow .v{font:900 17px var(--fNum),"Orbitron";opacity:.8;flex:none}
+.rkRow.r1 .no{font-size:32px}
+.mvpI{font-size:100px;text-align:center;line-height:1.1}
+.mvpN{font:400 34px var(--fTitle),"Dela Gothic One";text-align:center;word-break:break-all;line-height:1.15}
+.mvpG{font:700 22px var(--fBody);text-align:center;color:color-mix(in srgb,var(--accent) 45%,#fff)}
+.rkNone{font:700 22px var(--fBody);text-align:center;opacity:.8;margin-top:30px;line-height:1.5}
+.airy:not(.game) #rank{background:transparent;border:none;clip-path:none}
+.airy:not(.game) #rank .rkRow,.airy:not(.game) #rank .rkT,.airy:not(.game) #rank .mvpN,.airy:not(.game) #rank .mvpG{-webkit-text-stroke:6px #000;paint-order:stroke fill}
+.airy:not(.game) #rank{top:500px;height:600px}
+.game #rank{top:452px;width:524px;height:96px;padding:6px 12px}
+.game #rank .lh{display:none}
+.game .rkPage{flex-direction:row;align-items:center;gap:14px;flex-wrap:nowrap}
+.game .rkT{font-size:20px}.game .rkRow{font-size:20px}.game .rkRow .no{font-size:20px;width:22px}.game .rkRow .v{display:none}
+.game .rkRow:nth-of-type(n+5){display:none}
+.game .mvpI{font-size:52px}.game .mvpN{font-size:26px}.game .mvpG{font-size:16px}
+.game .rkNone{margin:0;font-size:18px}
+
+/* ===== レイアウト編集（プレビューで ✋ を押したとき） ===== */
+#editLayer{position:absolute;inset:0;z-index:30;display:none}
+.edit #editLayer{display:block}
+.edit #chain{opacity:1;transform:none}
+.ebox{position:absolute;border:3px dashed #00e5ff;background:rgba(0,229,255,.08);cursor:move;pointer-events:auto;touch-action:none}
+.ebox:hover,.ebox.drag{border-color:#ffe000;background:rgba(255,224,0,.12)}
+.ebox .en{position:absolute;left:-3px;top:-34px;font:900 20px "M PLUS 1p";background:#00e5ff;color:#000;padding:2px 10px;white-space:nowrap}
+.ebox:hover .en,.ebox.drag .en{background:#ffe000}
+.ebox .rz{position:absolute;right:-18px;bottom:-18px;width:36px;height:36px;border-radius:50%;background:#00e5ff;border:4px solid #000;cursor:nwse-resize}
 #connWarn{position:absolute;left:20px;top:20px;font:900 22px "M PLUS 1p";background:#c00;color:#fff;padding:4px 12px;display:none;z-index:9}
 .preview.disconnected #connWarn{display:block}
 </style>
@@ -289,6 +327,7 @@ body:not(.L-main) #main{display:none}
     </div>
     <div class="plate leg" id="legL"><div class="lh">COIN</div><div class="items" id="legItemsL"></div></div>
     <div class="plate leg" id="legR"><div class="lh">COIN</div><div class="items" id="legItemsR"></div></div>
+    <div class="plate" id="rank"><div class="lh">RANKING</div><div class="rkBody" id="rkBody"></div></div>
     <div class="plate" id="team"><div class="k">TEAM</div><div class="segs" id="segs"></div><div class="p" id="tP">0%</div><div class="g" id="tG">→ 🎹1曲</div></div>
     <div id="chain">
       <svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="132" fill="var(--plate)" stroke="rgba(255,255,255,.12)" stroke-width="16"/>
@@ -300,6 +339,7 @@ body:not(.L-main) #main{display:none}
     <div id="frame"></div>
     <canvas id="fx" width="1080" height="1920"></canvas>
     <div id="connWarn">サーバー未接続</div>
+    <div id="editLayer"></div>
   </div>
 </div></div></div>
 
@@ -360,10 +400,11 @@ function buildAtmo(cols){
 const SHORT={"なながお名前を呼ぶ":"お名前コール","ピアノ サビだけ1曲":"サビだけ","ピアノ フルで1曲":"フルで1曲","ピアノ弾き語り1曲":"弾き語り"};
 const shortFx=b=>b.short||SHORT[b.fx]||b.fx;
 let legKey="";
-function renderLegend(bands){
-  const list=bands.filter(b=>b.on!==false),key=JSON.stringify(list);if(key===legKey)return;legKey=key;
+function renderLegend(bands,rankOn){
+  const list=bands.filter(b=>b.on!==false),key=JSON.stringify(list)+rankOn;if(key===legKey)return;legKey=key;
   const html=a=>a.map(g=>`<div class="li" data-b="${esc(g.id)}"><div class="ic">${esc(g.ico)}</div><div><div class="co">${Number(g.from).toLocaleString()}〜</div><div class="tx">${esc(shortFx(g))}${g.min?`<small>${g.min}分</small>`:""}</div></div></div>`).join("");
-  const half=Math.ceil(list.length/2),L=list.slice(0,half),R=list.slice(half);
+  // ランキングを出すときは、ギフト表は左レールに全部
+  const half=rankOn?list.length:Math.ceil(list.length/2),L=list.slice(0,half),R=list.slice(half);
   const fill=(id,arr)=>{const still=arr.length<=3;$(id).innerHTML=`<div class="track${still?" still":""}" style="--n:${arr.length}">${html(arr)}${still?"":html(arr)}</div>`;};
   fill("legItemsL",L);fill("legItemsR",R);
 }
@@ -377,7 +418,8 @@ function render(){
   b.toggle("game",st.mode==="game");b.toggle("airy",st.look==="airy");b.toggle("atmoOff",!st.atmo.on);
   document.documentElement.style.setProperty("--atmo",String(st.atmo.strength));
   if(!feverOn)$("topic").textContent=st.topic||"";
-  applyStyle(S.style);renderLegend(S.bands);
+  const rk=st.rank||{};b.toggle("rankOn",!!rk.on);
+  applyStyle(S.style);renderLegend(S.bands,!!rk.on);applyLayout();if(rk.on&&!rkTimer)rankTick();else if(rk.on&&rkEmpty&&rankPages().length&&!rankPages()[0].none)rankTick(true);
   const t=S.team,p=Math.max(0,Math.min(100,Math.floor(t.value/t.max*100)));
   $("tP").textContent=p+"%";$("tG").textContent="→ "+(t.label||"");
   [...$("segs").children].forEach((e,i)=>e.classList.toggle("on",i<Math.floor(p/5)));$("segs").classList.toggle("hot",p>=85);lastTeamP=p;
@@ -530,6 +572,61 @@ function onEv(e){
   else if(e.kind==="team"){enq({k:"team",label:e.label});}
 }
 
+/* ===== ランキング（ページを自動でめくる） ===== */
+let rkTimer=null,rkIdx=0,rkEmpty=true;
+function rankPages(){
+  if(!S||!S.rank)return[];const st=S.settings.rank||{},r=S.rank,pg=[];
+  const row=(i,u,v)=>`<div class="rkRow r${i+1}"><span class="no">${i+1}</span><span class="nm">${esc(u)}</span>${v!=null?`<span class="v">${v}</span>`:""}</div>`;
+  if(st.mvp!==false&&r.mvp)pg.push({html:`<div class="rkT">👑 今日のMVP</div><div class="mvpI">${esc(r.mvp.ico||"🎁")}</div><div class="mvpN">${esc(r.mvp.user)}</div><div class="mvpG">${esc(r.mvp.giftName||"")}${st.showCoins?`（${Number(r.mvp.coins).toLocaleString()}コイン）`:""}</div>`});
+  if(r.gifts&&r.gifts.length)pg.push({html:`<div class="rkT">🎁 ギフト TOP</div>`+r.gifts.slice(0,5).map((g,i)=>row(i,g.user,st.showCoins?Number(g.coins).toLocaleString():null)).join("")});
+  if(st.likes!==false&&r.likes&&r.likes.length)pg.push({html:`<div class="rkT">❤️ いいね TOP</div>`+r.likes.slice(0,5).map((g,i)=>row(i,g.user,Number(g.count).toLocaleString())).join("")});
+  if(!pg.length)pg.push({none:true,html:`<div class="rkT">🏆 RANKING</div><div class="rkNone">ギフト・いいねで<br>ランクイン！</div>`});
+  return pg;
+}
+function rankTick(now){
+  clearTimeout(rkTimer);const pgs=rankPages();rkEmpty=!!(pgs[0]&&pgs[0].none);
+  rkIdx=now?0:(rkIdx+1)%pgs.length;const body=$("rkBody"),old=body.firstElementChild;
+  if(old){old.classList.add("out");setTimeout(()=>old.remove(),350);}
+  const d=document.createElement("div");d.className="rkPage";d.innerHTML=pgs[rkIdx%pgs.length].html;body.appendChild(d);
+  rkTimer=setTimeout(()=>rankTick(),6000);
+}
+
+/* ===== レイアウト（ドラッグ・拡大縮小した分をサーバーに保存） ===== */
+const MV={topic:"配信内容ラベル",hud:"NOW・小プレート",legL:"ギフト表（左）",legR:"ギフト表（右）",rank:"ランキング",team:"TEAMゲージ",chain:"CHAIN",toasts:"小ギフトの通知"};
+const modeKey=()=>S&&S.settings.mode==="game"?"game":"avatar";
+const layItem=id=>(S&&S.layout&&S.layout[modeKey()]&&S.layout[modeKey()][id])||{dx:0,dy:0,s:1};
+let dragging=null;
+function applyLayout(){
+  if(!S)return;for(const id of Object.keys(MV)){if(dragging&&dragging.id===id)continue;const v=layItem(id),el=$(id);
+    el.style.translate=(v.dx||v.dy)?`${v.dx}px ${v.dy}px`:"";el.style.scale=v.s&&v.s!==1?String(v.s):"";}
+  if(document.body.classList.contains("edit"))drawEdit();
+}
+function stageK(){return $("stage").getBoundingClientRect().width/1080;}
+function drawEdit(){
+  const L=$("editLayer"),sr=$("stage").getBoundingClientRect(),k=sr.width/1080;
+  for(const id of Object.keys(MV)){const el=$(id);let bx=L.querySelector(`[data-id="${id}"]`);const r=el.getBoundingClientRect();
+    if(!r.width||!r.height||getComputedStyle(el).display==="none"){if(bx)bx.remove();continue;}
+    if(!bx){bx=document.createElement("div");bx.className="ebox";bx.dataset.id=id;bx.innerHTML=`<span class="en">${MV[id]}</span><span class="rz"></span>`;L.appendChild(bx);bindBox(bx);}
+    Object.assign(bx.style,{left:(r.left-sr.left)/k+"px",top:(r.top-sr.top)/k+"px",width:r.width/k+"px",height:r.height/k+"px"});}
+}
+function bindBox(bx){
+  const id=bx.dataset.id;
+  bx.addEventListener("pointerdown",e=>{e.preventDefault();bx.setPointerCapture(e.pointerId);const v=Object.assign({},layItem(id)),k=stageK(),rz=e.target.classList.contains("rz");
+    dragging={id,v,k,rz,x0:e.clientX,y0:e.clientY,s0:v.s||1,dx0:v.dx,dy0:v.dy,w0:$(id).getBoundingClientRect().width};bx.classList.add("drag");});
+  bx.addEventListener("pointermove",e=>{if(!dragging||dragging.id!==id)return;const d=dragging,el=$(id);
+    if(d.rz){d.v.s=Math.max(.3,Math.min(3,d.s0*(1+(e.clientX-d.x0)/Math.max(40,d.w0))));el.style.scale=String(Math.round(d.v.s*100)/100);}
+    else{d.v.dx=Math.round(d.dx0+(e.clientX-d.x0)/d.k);d.v.dy=Math.round(d.dy0+(e.clientY-d.y0)/d.k);el.style.translate=`${d.v.dx}px ${d.v.dy}px`;}
+    drawEdit();});
+  const end=()=>{if(!dragging||dragging.id!==id)return;const v=dragging.v;dragging=null;bx.classList.remove("drag");
+    if(S&&S.layout){S.layout[modeKey()]=S.layout[modeKey()]||{};S.layout[modeKey()][id]={dx:v.dx,dy:v.dy,s:Math.round((v.s||1)*100)/100};}
+    send({type:"setLayout",mode:modeKey(),id,dx:v.dx,dy:v.dy,s:v.s||1});};
+  bx.addEventListener("pointerup",end);bx.addEventListener("pointercancel",end);
+  bx.addEventListener("dblclick",()=>{send({type:"resetLayout",mode:modeKey(),id});});
+}
+function setEdit(on){document.body.classList.toggle("edit",!!on);if(on){drawEdit();if(!window.__editT)window.__editT=setInterval(()=>{if(!dragging)drawEdit();},400);}else{clearInterval(window.__editT);window.__editT=null;$("editLayer").innerHTML="";}}
+if(PREVIEW&&Q.get("edit")==="1")setTimeout(()=>setEdit(true),500);
+const send=o=>{try{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));}catch(e){}};
+
 /* ===== 接続 ===== */
 let ws=null,retry=0;
 function connect(){
@@ -544,6 +641,7 @@ function connect(){
 connect();
 // リモコンのプレビューから「音を確認」用に呼べるようにしておく
 window.addEventListener("message",m=>{if(m.data&&m.data.type==="previewSound"){window.__previewSound=!!m.data.on;if(m.data.on)window.__unlockAudio();}
+  if(m.data&&m.data.type==="previewEdit"&&PREVIEW)setEdit(m.data.on);
   if(m.data&&m.data.type==="previewSafe")document.body.classList.toggle("showSafe",!!m.data.on);});
 
 /* ===== 自動更新：ファイルが更新されたら読み直す（OBSのキャッシュ更新が不要） ===== */
