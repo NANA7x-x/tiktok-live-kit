@@ -4,7 +4,7 @@
 ' Double-click this file ONCE. It deletes the shortcuts that
 ' autostart_setup.vbs created:
 '   - Startup:  TikTokLiveServer.lnk
-'   - Desktop:  TikTokRemote.url
+'   - Desktop:  NANA LIVE.lnk / TikTokRemote.url (old)
 ' Safe to run even when the shortcuts do not exist.
 ' ============================================================
 Option Explicit
@@ -19,6 +19,12 @@ targetPath = fso.BuildPath(sh.SpecialFolders("Startup"), "TikTokLiveServer.lnk")
 If fso.FileExists(targetPath) Then
   fso.DeleteFile targetPath, True
   removedList = removedList & " - Startup: TikTokLiveServer" & vbCrLf
+End If
+
+targetPath = fso.BuildPath(sh.SpecialFolders("Desktop"), "NANA LIVE.lnk")
+If fso.FileExists(targetPath) Then
+  fso.DeleteFile targetPath, True
+  removedList = removedList & " - Desktop: NANA LIVE" & vbCrLf
 End If
 
 targetPath = fso.BuildPath(sh.SpecialFolders("Desktop"), "TikTokRemote.url")

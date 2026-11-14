@@ -14,5 +14,5 @@ if not exist node_modules (
 )
 echo Server wo kidou shimasu. Kono gamen wa tojinaide kudasai.
 echo Remote: http://localhost:21213/remote.html
-node server.js @7x_x7x_x7x_x7
+node start.js
 pause
