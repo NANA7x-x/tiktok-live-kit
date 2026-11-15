@@ -106,7 +106,7 @@ const DEFAULT_SETTINGS = {
   sound: { on: true, volume: 0.5, theme: 'arcade', map: {} },
   chainSec: 10,
   vts: { on: false, port: 8001 },  // VTube Studio 連携
-  obs: { on: false, port: 4455 },  // OBS 連携（ハプニングで配信画面ごと動かす）。パスワードは 設定/obs_password.txt
+  obs: { on: false, port: 4455, avatar: '' },  // OBS 連携（ハプニングで配信画面ごと動かす）。パスワードは 設定/obs_password.txt
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
@@ -207,7 +207,7 @@ function sanitizeSettings(s, base) {
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
   if (typeof s.likeHearts === 'boolean') o.likeHearts = s.likeHearts;
-  if (s.obs && typeof s.obs === 'object') { if (typeof s.obs.on === 'boolean') o.obs.on = s.obs.on; o.obs.port = Math.round(clamp(s.obs.port, 1, 65535, o.obs.port)); }
+  if (s.obs && typeof s.obs === 'object') { if (typeof s.obs.on === 'boolean') o.obs.on = s.obs.on; o.obs.port = Math.round(clamp(s.obs.port, 1, 65535, o.obs.port)); if (typeof s.obs.avatar === 'string') o.obs.avatar = s.obs.avatar.slice(0, 120); }
   if (s.vts && typeof s.vts === 'object') { if (typeof s.vts.on === 'boolean') o.vts.on = s.vts.on; o.vts.port = Math.round(clamp(s.vts.port, 1, 65535, o.vts.port)); }
   if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
   if (s.atmo && typeof s.atmo === 'object') {
@@ -336,7 +336,7 @@ function stateMsg() {
     challenge: K.challenge, lists: { lines: K.lines, teamLines: K.teamLines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
-    obs: { status: OBS.status, ready: OBS.ready, hasPass: !!OBS.pass, scene: OBS.wrapScene, msg: OBS.msg },
+    obs: { status: OBS.status, ready: OBS.ready, hasPass: !!OBS.pass, scene: OBS.wrapScene, msg: OBS.msg, sources: OBS.sources || [], avatar: OBS.av ? OBS.avRect : null },
     happen: HQ.cur ? { name: HQ.cur.name, at: HQ.cur.at } : null,
     sfxFiles,
     bgFiles,
@@ -655,6 +655,8 @@ wss.on('connection', (ws) => {
       case 'vtsReconnect': vtsClose(); vtsConnect(); break;
       case 'obsPass': OBS.pass = str(m.pass, 200, ''); try { fs.writeFileSync(OBS_PASS_FILE, OBS.pass); } catch (e) { /* ignore */ } obsClose(); obsConnect(); pushState(); break;
       case 'obsReconnect': obsClose(); obsConnect(); break;
+      case 'obsAvatar': K.settings.obs.avatar = typeof m.name === 'string' ? m.name.slice(0, 120) : ''; obsFindAvatar(); pushState(); break;
+      case 'obsSources': obsListSources(); break;
       case 'obsSetup': obsSetup(); break;
       case 'happenTest': if (typeof m.name === 'string' && HAPPEN.H[m.name]) happenQueue(m.name, false); break;
       case 'happenStop': HQ.q = []; happenEnd(); break;
@@ -1216,8 +1218,8 @@ function happenNext(delay) {
     if (!HQ.cur || HQ.cur.name !== x.name) return;
     // OBS で動かせないときは、VTube Studio のアバターを動かす（踊りは OBS があっても動かす）
     const v = HAPPEN_VTS[x.name];
-    if (v && !x.hasLink && (!OBS.ready || v === 'dance')) { try { vtsAction(v, 0, true); } catch (e) { /* ignore */ } }
-    if (OBS.ready) obsAnimStart(x.name, HQ.cur.at);
+    if (v && !x.hasLink && !(OBS.ready && OBS.av)) { try { vtsAction(v, 0, true); } catch (e) { /* ignore */ } }
+    if (OBS.ready && K.settings.obs.avatar) obsAnimStart(x.name, HQ.cur.at);
   }, Math.max(0, HQ.cur.at - Date.now() - 600));
   clearTimeout(HQ.timer);
   HQ.timer = setTimeout(happenEnd, HQ.cur.at - Date.now() + len);
@@ -1277,14 +1279,43 @@ async function obsFindWrap() {
   const v = await obsReq('GetVideoSettings');
   if (v.ok) { OBS.W = v.data.baseWidth || 1080; OBS.H = v.data.baseHeight || 1920; }
   const l = await obsReq('GetSceneItemList', { sceneName: OBS_WRAP });
-  if (!l.ok) { OBS.wrapScene = ''; obsSetStatus('ok', 'リモコンの「ハプニング用シーンを作る」を押してください'); return false; }
+  if (!l.ok) { OBS.wrapScene = ''; obsSetStatus('ok', 'リモコンで、アバターのソースを選んで「OBS を準備する」を押してください'); return false; }
   const it = (l.data.sceneItems || []).find((x) => x.sourceType === 'OBS_SOURCE_TYPE_SCENE' && x.sourceName !== OBS_BLOOM && x.sourceName !== OBS_MOSAIC);
-  if (!it) { obsSetStatus('ok', '「NANA ハプニング」に配信画面のシーンが入っていません（もう一度「作る」を押してください）'); return false; }
+  if (!it) { obsSetStatus('ok', '「NANA ハプニング」に配信画面のシーンが入っていません（もう一度「OBS を準備する」を押してください）'); return false; }
   OBS.wrapScene = OBS_WRAP; OBS.itemId = it.sceneItemId; OBS.inner = it.sourceName; OBS.ready = true;
   OBS.fxIds = {}; OBS.fxOn = null;
   for (const [k, n] of [['ふんわり', OBS_BLOOM], ['モザイク', OBS_MOSAIC]]) { const x = (l.data.sceneItems || []).find((y) => y.sourceName === n); if (x) OBS.fxIds[k] = x.sceneItemId; }
-  obsSetStatus('ok', `準備OK（「${OBS_WRAP}」の中の「${it.sourceName}」を動かします）`);
-  obsSetT({ x: 0, y: 0, s: 1, r: 0, moving: true });
+  // ふんわり・モザイクは、小さくした画面を画面いっぱいに引きのばして重ねる
+  for (const id of Object.values(OBS.fxIds)) obsReq('SetSceneItemTransform', { sceneName: OBS_WRAP, sceneItemId: id, sceneItemTransform: { alignment: 5, positionX: 0, positionY: 0, rotation: 0, boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: OBS.W, boundsHeight: OBS.H } });
+  await obsListSources();
+  await obsFindAvatar();
+  return true;
+}
+// 配信シーンの中のソース一覧（リモコンでアバターを選ぶ用）
+async function obsListSources() {
+  const r = await obsReq('GetSceneItemList', { sceneName: OBS.inner });
+  OBS.sources = r.ok ? (r.data.sceneItems || []).map((x) => x.sourceName).filter((n) => n !== 'ハプニング奥' && n !== 'ハプニング手前').reverse() : [];
+  pushState();
+}
+// アバターのソースの、ふだんの位置と大きさを覚える（ハプニングのあとは必ずこの状態に戻す）
+async function obsFindAvatar() {
+  OBS.av = null;
+  const name = K.settings.obs.avatar;
+  if (!OBS.ready || !name) { obsSetStatus('ok', OBS.ready ? 'リモコンで、アバターのソースを選んでください' : OBS.msg); return false; }
+  const l = await obsReq('GetSceneItemList', { sceneName: OBS.inner });
+  const it = (l.data.sceneItems || []).find((x) => x.sourceName === name);
+  if (!it) { obsSetStatus('ok', `「${OBS.inner}」の中に「${name}」が見つかりません`); return false; }
+  const tr = await obsReq('GetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: it.sceneItemId });
+  if (!tr.ok) return false;
+  const b = tr.data.sceneItemTransform || {};
+  const bounds = b.boundsType && b.boundsType !== 'OBS_BOUNDS_NONE';
+  const w = bounds ? b.boundsWidth : b.width, h = bounds ? b.boundsHeight : b.height, al = b.alignment || 0;
+  const cx = b.positionX + (al & 1 ? w / 2 : al & 2 ? -w / 2 : 0), cy = b.positionY + (al & 4 ? h / 2 : al & 8 ? -h / 2 : 0);
+  OBS.av = { id: it.sceneItemId, base: b, bounds, cx, cy, w, h };
+  const kx = 1080 / OBS.W, ky = 1920 / OBS.H;
+  OBS.avRect = { cx: cx * kx, cy: cy * ky, w: w * kx, h: h * ky };
+  const hasFx = ((l.data.sceneItems || []).some((x) => x.sourceName === 'ハプニング奥'));
+  obsSetStatus('ok', hasFx ? `準備OK（「${name}」を動かします）` : `「${name}」を動かせます。「OBS を準備する」を押すと、まわりの絵も出せます`);
   return true;
 }
 async function obsSetup() {
@@ -1294,13 +1325,13 @@ async function obsSetup() {
   const cur = await obsReq('GetCurrentProgramScene');
   let inner = cur.data && (cur.data.sceneName || cur.data.currentProgramSceneName);
   if (!inner) { obsSetStatus('ok', '今のシーンがわかりませんでした'); return; }
-  if (inner === OBS_WRAP) { if (await obsFindWrap()) return; obsSetStatus('ok', 'いったんふだんの配信シーンに切り替えてから「作る」を押してください'); return; }
+  if (inner === OBS_WRAP) inner = OBS.inner;
+  if (!inner) { obsSetStatus('ok', 'いったんふだんの配信シーンに切り替えてから押してください'); return; }
   await obsReq('CreateScene', { sceneName: OBS_WRAP }); // もうあれば何もしない
-  const items = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
-  const url = (p) => `http://localhost:${PORT}${p}`;
-  if (!items.some((x) => x.sourceName === 'ハプニング奥')) await obsReq('CreateInput', { sceneName: OBS_WRAP, inputName: 'ハプニング奥', inputKind: 'browser_source', inputSettings: { url: url('/happen-back.html'), width: W, height: H, fps: 30 } });
+  let items = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
+  // 前のバージョンで「NANA ハプニング」に入れた 奥・手前 は、配信シーンのほうへ移す
+  for (const x of items) if (x.sourceName === 'ハプニング奥' || x.sourceName === 'ハプニング手前') await obsReq('RemoveSceneItem', { sceneName: OBS_WRAP, sceneItemId: x.sceneItemId });
   if (!items.some((x) => x.sourceName === inner)) await obsReq('CreateSceneItem', { sceneName: OBS_WRAP, sourceName: inner });
-  if (!items.some((x) => x.sourceName === 'ハプニング手前')) await obsReq('CreateInput', { sceneName: OBS_WRAP, inputName: 'ハプニング手前', inputKind: 'browser_source', inputSettings: { url: url('/happen-front.html'), width: W, height: H, fps: 30 } });
   // ふんわり（ブルーム）とモザイク：配信画面を入れた別シーンに OBS の標準フィルターをかけて、上に重ねる（ふだんは非表示）
   for (const [sc, filters] of [[OBS_BLOOM, [['ぼかし', 'scale_filter', { resolution: '135x240', sampling: 'bilinear' }], ['光', 'color_filter_v2', { brightness: 0.06, contrast: 0.35, gamma: -0.25, opacity: 0.55 }]]],
     [OBS_MOSAIC, [['モザイク', 'scale_filter', { resolution: '45x80', sampling: 'point' }]]]]) {
@@ -1310,22 +1341,49 @@ async function obsSetup() {
     for (const [fn, kind, set] of filters) { const r = await obsReq('CreateSourceFilter', { sourceName: sc, filterName: fn, filterKind: kind, filterSettings: set }); if (!r.ok) await obsReq('SetSourceFilterSettings', { sourceName: sc, filterName: fn, filterSettings: set }); }
     if (!items.some((x) => x.sourceName === sc)) await obsReq('CreateSceneItem', { sceneName: OBS_WRAP, sourceName: sc, sceneItemEnabled: false });
   }
-  // 重なり順：奥（下）→ 配信画面 → ふんわり・モザイク → 手前（上）
-  const now = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
-  const id = (n) => (now.find((x) => x.sourceName === n) || {}).sceneItemId;
-  for (const [n, i] of [['ハプニング奥', 0], [inner, 1], [OBS_BLOOM, 2], [OBS_MOSAIC, 3], ['ハプニング手前', 4]]) if (id(n)) await obsReq('SetSceneItemIndex', { sceneName: OBS_WRAP, sceneItemId: id(n), sceneItemIndex: i });
+  items = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
+  const id = (n) => (items.find((x) => x.sourceName === n) || {}).sceneItemId;
+  for (const [n, i] of [[inner, 0], [OBS_BLOOM, 1], [OBS_MOSAIC, 2]]) if (id(n)) await obsReq('SetSceneItemIndex', { sceneName: OBS_WRAP, sceneItemId: id(n), sceneItemIndex: i });
   if (id(OBS_BLOOM)) await obsReq('SetSceneItemBlendMode', { sceneName: OBS_WRAP, sceneItemId: id(OBS_BLOOM), sceneItemBlendMode: 'OBS_BLEND_SCREEN' });
+  // ハプニングの絵：配信シーンの中で、アバターのすぐ下（奥）とすぐ上（手前）に置く
+  const av = K.settings.obs.avatar;
+  let inn = ((await obsReq('GetSceneItemList', { sceneName: inner })).data.sceneItems || []);
+  const avIt = av && inn.find((x) => x.sourceName === av);
+  if (avIt) {
+    const url = (p) => `http://localhost:${PORT}${p}`;
+    for (const [n, path2] of [['ハプニング奥', '/happen-back.html'], ['ハプニング手前', '/happen-front.html']]) {
+      if (inn.some((x) => x.sourceName === n)) continue;
+      const r = await obsReq('CreateInput', { sceneName: inner, inputName: n, inputKind: 'browser_source', inputSettings: { url: url(path2), width: W, height: H, fps: 30 } });
+      if (!r.ok) await obsReq('CreateSceneItem', { sceneName: inner, sourceName: n }); // 入力がもうある（前のバージョン）
+    }
+    inn = ((await obsReq('GetSceneItemList', { sceneName: inner })).data.sceneItems || []);
+    const idx = (n) => { const x = inn.find((y) => y.sourceName === n); return x ? x.sceneItemIndex : -1; };
+    const iid = (n) => (inn.find((y) => y.sourceName === n) || {}).sceneItemId;
+    await obsReq('SetSceneItemIndex', { sceneName: inner, sceneItemId: iid('ハプニング奥'), sceneItemIndex: Math.max(0, idx(av)) });
+    inn = ((await obsReq('GetSceneItemList', { sceneName: inner })).data.sceneItems || []);
+    await obsReq('SetSceneItemIndex', { sceneName: inner, sceneItemId: iid('ハプニング手前'), sceneItemIndex: idx(av) + 1 });
+  }
   if (await obsFindWrap()) {
     await obsReq('SetCurrentProgramScene', { sceneName: OBS_WRAP });
-    obsSetStatus('ok', `準備OK：「${OBS_WRAP}」を作って、今の配信画面（${inner}）を入れました。配信はこのシーンのまま使ってください`);
+    if (!avIt) obsSetStatus('ok', '「NANA ハプニング」を作りました。つぎに、リモコンでアバターのソースを選んで、もう一度「OBS を準備する」を押してください');
   }
 }
+// ハプニング中：アバターのソースだけを動かす（画面全体は動かさない）
 function obsSetT(k) {
-  if (!OBS.ready) return;
-  const W = OBS.W, H = OBS.H, pos = { alignment: 0, positionX: W / 2 + k.x * W, positionY: H / 2 + k.y * H, rotation: ((k.r % 360) + 360) % 360 };
-  obsReq('SetSceneItemTransform', { sceneName: OBS.wrapScene, sceneItemId: OBS.itemId, sceneItemTransform: Object.assign({ boundsType: 'OBS_BOUNDS_NONE', scaleX: k.s, scaleY: k.s }, pos) });
-  // ふんわり・モザイクは小さくした画面を引きのばして重ねるので、枠の大きさで合わせる
-  for (const id of Object.values(OBS.fxIds || {})) if (k.moving || OBS.fxOn) obsReq('SetSceneItemTransform', { sceneName: OBS.wrapScene, sceneItemId: id, sceneItemTransform: Object.assign({ boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: Math.max(1, W * k.s), boundsHeight: Math.max(1, H * k.s) }, pos) });
+  const a = OBS.av;
+  if (!OBS.ready || !a) return;
+  const b = a.base, sx = k.s * (k.fx || 1), sy = k.s * (k.fy || 1);
+  const t = { alignment: 0, positionX: a.cx + k.x * OBS.W, positionY: a.cy + k.y * OBS.H, rotation: ((((b.rotation || 0) + k.r) % 360) + 360) % 360 };
+  if (a.bounds) Object.assign(t, { boundsWidth: Math.max(1, a.w * sx), boundsHeight: Math.max(1, a.h * sy) });
+  else Object.assign(t, { scaleX: (b.scaleX || 1) * sx, scaleY: (b.scaleY || 1) * sy });
+  obsReq('SetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: a.id, sceneItemTransform: t });
+}
+function obsRestore() {
+  const a = OBS.av;
+  if (!OBS.ready || !a) return;
+  const b = a.base, t = { alignment: b.alignment, positionX: b.positionX, positionY: b.positionY, rotation: b.rotation || 0, scaleX: b.scaleX, scaleY: b.scaleY };
+  if (a.bounds) Object.assign(t, { boundsWidth: b.boundsWidth, boundsHeight: b.boundsHeight });
+  obsReq('SetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: a.id, sceneItemTransform: t });
 }
 // 前エフェクトの「ふんわり」「モザイク」を OBS 側でON/OFF
 function obsFxSync() {
@@ -1334,15 +1392,16 @@ function obsFxSync() {
   const want = OBS.fxIds[name] ? name : null;
   if (want === OBS.fxOn) return;
   OBS.fxOn = want;
-  if (want) obsSetT(Object.assign({ x: 0, y: 0, s: 1, r: 0 }, HQ.lastK || {}));
   for (const [k, id] of Object.entries(OBS.fxIds)) obsReq('SetSceneItemEnabled', { sceneName: OBS.wrapScene, sceneItemId: id, sceneItemEnabled: k === want });
 }
 setInterval(obsFxSync, 500);
-function obsAnimStart(name, at) {
-  obsAnimStop();
-  HQ.anim = setInterval(() => { const t = (Date.now() - at) / 1000; if (t > HAPPEN.H[name].len) { obsAnimStop(); return; } HQ.lastK = HAPPEN.kf(name, t); obsSetT(HQ.lastK); }, 33);
+async function obsAnimStart(name, at) {
+  obsAnimStop(true);
+  await obsFindAvatar(); // 配信前にアバターの位置を変えていても、そのときの位置から動かす
+  if (!OBS.av) return;
+  HQ.anim = setInterval(() => { const t = (Date.now() - at) / 1000; if (t > HAPPEN.H[name].len) { obsAnimStop(); return; } obsSetT(HAPPEN.kf(name, t)); }, 33);
 }
-function obsAnimStop() { if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; } HQ.lastK = null; obsSetT({ x: 0, y: 0, s: 1, r: 0, moving: true }); }
+function obsAnimStop(quiet) { if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; if (!quiet) obsRestore(); } }
 if (K.settings.obs.on) setTimeout(obsConnect, 1500);
 
 // --- VRChat のアバターパラメーター（OSC。vrc_osc.txt で連携ONのときだけ） ---

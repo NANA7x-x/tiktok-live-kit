@@ -179,13 +179,15 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
     </div></details>
 
     <details data-k="obs"><summary>🎬 OBS 連携（ハプニングで配信画面ごと動かす）</summary><div class="body">
-      <div class="note">ハプニング（400コイン）で、配信画面ぜんぶが流されたり、瓶につめられたり、食べられたりします。<br>
+      <div class="note">ハプニング（400コイン）で、アバターが流されたり、瓶につめられたり、食べられたりします。<br>
       ① OBS の「ツール → WebSocketサーバー設定」で「WebSocketサーバーを有効にする」をON（パスワードを使うなら下に入れる）<br>
-      ② ここを ON にして「接続OK」になったら、ふだんの配信シーンを表示した状態で「ハプニング用シーンを作る」を押す<br>
-      → OBS に「NANA ハプニング」シーンができて、今のシーンがまるごと中に入ります。仮想カメラはそのまま（このシーンが映ります）。</div>
+      ② ここを ON にして「接続OK」になったら、ふだんの配信シーンを表示した状態で「OBS を準備する」を押す<br>
+      ③ 「アバターのソース」で VTube Studio などアバターを映しているソースを選んで、もう一度「OBS を準備する」を押す<br>
+      → ハプニングでは<b>アバターだけ</b>が動きます（画面全体は動かないので酔いにくい）。まわりの絵はアバターのすぐ奥と手前に出ます。仮想カメラはそのままでOK。</div>
       <div class="row"><b>連携</b><button id="obsOn">ON/OFF</button><span id="obsSt" class="pill">-</span><button id="obsRe" class="sm">再接続</button><label>ポート <input id="obsPort" type="number" style="width:80px"></label></div>
       <div class="row"><label>パスワード <input id="obsPass" type="password" style="width:200px" placeholder="なしなら空のまま"></label><button id="obsPassSave">保存して接続</button><span class="note" id="obsHasPass"></span></div>
-      <div class="row"><button class="pri" id="obsSetup">ハプニング用シーンを作る</button></div>
+      <div class="row"><b>アバターのソース</b><select id="obsAv" style="min-width:200px"></select><button class="sm" id="obsAvRe">↻ 一覧</button></div>
+      <div class="row"><button class="pri" id="obsSetup">OBS を準備する</button></div>
       <div class="note" id="obsMsg"></div>
       <div class="row" id="hapBtns"></div>
       <div class="row"><button class="sm danger" id="hapStop">ハプニングを止める</button></div>
@@ -321,13 +323,15 @@ const HAPN=["川に流される","海に出ていく","化け物に連れ去ら�
 $("hapBtns").innerHTML="<b>ためす</b>"+HAPN.map(n=>`<button class="sm" data-hap="${n}">${n}</button>`).join("");
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hap]");if(b)send({type:"happenTest",name:b.dataset.hap});});
 $("hapStop").onclick=()=>send({type:"happenStop"});
-function renderObs(){const o=S.obs||{},st=S.settings.obs||{};$("obsOn").classList.toggle("on",!!st.on);$("obsOn").textContent=st.on?"ON":"OFF";
+function renderObs(){const av=$("obsAv"),src=(S.obs&&S.obs.sources)||[],cur=(S.settings.obs&&S.settings.obs.avatar)||"",key=src.join("|")+"#"+cur;
+  if(av.dataset.k!==key&&document.activeElement!==av){av.dataset.k=key;av.innerHTML=`<option value="">（選んでください）</option>`+src.concat(cur&&!src.includes(cur)?[cur]:[]).map(n=>`<option ${n===cur?"selected":""}>${esc(n)}</option>`).join("");}
+const o=S.obs||{},st=S.settings.obs||{};$("obsOn").classList.toggle("on",!!st.on);$("obsOn").textContent=st.on?"ON":"OFF";
   $("obsSt").textContent=(OBSN[o.status]||"-")+(o.ready?"・準備OK":"");$("obsMsg").textContent=o.msg||"";$("obsHasPass").textContent=o.hasPass?"（パスワード保存ずみ）":"";
   if(document.activeElement!==$("obsPort"))$("obsPort").value=st.port||4455;}
 $("obsOn").onclick=()=>setS({obs:{on:!(S.settings.obs&&S.settings.obs.on),port:+$("obsPort").value||4455}});
 $("obsPort").onchange=()=>setS({obs:{on:!!(S.settings.obs&&S.settings.obs.on),port:+$("obsPort").value||4455}});
 $("obsPassSave").onclick=()=>{send({type:"obsPass",pass:$("obsPass").value});$("obsPass").value="";};
-$("obsRe").onclick=()=>send({type:"obsReconnect"});$("obsSetup").onclick=()=>send({type:"obsSetup"});
+$("obsRe").onclick=()=>send({type:"obsReconnect"});$("obsAv").onchange=()=>send({type:"obsAvatar",name:$("obsAv").value});$("obsAvRe").onclick=()=>send({type:"obsSources"});$("obsSetup").onclick=()=>send({type:"obsSetup"});
 $("bgScan").onclick=()=>send({type:"bgRescan"});
 let bgKey="";function renderBg(){const f=S.bgFiles||[],k=f.join("|");if(k===bgKey)return;bgKey=k;$("bgCount").textContent=`背景フォルダのファイル：${f.length}件`;$("bgList").textContent=f.length?f.join("　/　"):"（まだありません）";}
 $("sfxSave").onclick=()=>{const map={};document.querySelectorAll("[data-sfx]").forEach(sel=>{if(sel.value)map[sel.dataset.sfx]=sel.value;});setS({sound:{map}});$("sfxSave").textContent="保存しました ✓";setTimeout(()=>$("sfxSave").textContent="効果音を保存",1500);};
