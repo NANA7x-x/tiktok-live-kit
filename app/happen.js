@@ -50,6 +50,69 @@
         return { x: sx * m, y: 0.04 + (sy - 0.04) * m - Math.abs(Math.sin(b * Math.PI)) * 0.015, s: Math.max(0.001, L(0.3, sc, out) * (1 - back * 0.9)), r: Math.sin(b * Math.PI) * 10, fx: i % 2 ? -1 : 1, fy: 1, z: 0 };
       });
     } },
+    '巨大化': { len: 9, out: 6.4, kf(t) {
+      // ぐんっ・ぐんっ・ぐぐーんと3段階で大きくなって、画面からはみ出す → ゴゴゴ → しゅるしゅる縮む
+      if (t < 4.2) { let s = 1; for (const [a, to] of [[0.6, 1.35], [1.6, 1.8], [2.7, 2.6]]) { const k = (t - a) / 0.5; if (k > 0) s = to - (to - s) * (1 - Bnc(Math.min(1, k))) * 1 + 0 * k; }
+        return { x: 0, y: -0.06 * (s - 1), s, r: 0, fy: 1 + Math.sin(t * 30) * 0.004 * (s - 1) }; }
+      if (t < 6.4) return { x: Math.sin(t * 45) * 0.006, y: -0.096, s: 2.6, r: Math.sin(t * 33) * 0.8 };
+      if (t < 8.2) { const k = Eout((t - 6.4) / 1.8); return { x: 0, y: L(-0.096, 0, k), s: L(2.6, 1, k) - Math.sin(k * Math.PI * 3) * 0.08 * (1 - k), r: Math.sin(k * Math.PI * 4) * 8 * (1 - k) }; }
+      return ID; } },
+    'ちっちゃくなる': { len: 10, out: 8, kf(t) {
+      if (t < 1.2) { const k = E((t - 0.4) / 0.5); return { x: 0, y: 0, s: L(1, 0.2, k), r: 0 }; }
+      if (t < 2.2) { const k = E((t - 1.2) / 1); return { x: L(0, 0.32, k), y: L(0, 0.3, k) - Math.abs(Math.sin(k * Math.PI * 3)) * 0.04, s: 0.2, r: Math.sin(k * Math.PI * 6) * 10 }; }
+      if (t < 8) { const b = Math.abs(Math.sin((t - 2.2) * Math.PI * 1.6)); return { x: 0.32 + Math.sin(t * 0.9) * 0.04, y: 0.3 - b * 0.035, s: 0.2, r: Math.sin(t * 5) * 8, fy: 1 - (1 - b) * 0.15 }; }
+      if (t < 9.4) { const k = Eout((t - 8) / 1.4); return { x: L(0.32, 0, k), y: L(0.3, 0, k) - Math.sin(k * Math.PI) * 0.1, s: L(0.2, 1, k), r: 0 }; }
+      return ID; } },
+    'ガチャガチャのカプセル': { len: 10, out: 6.3, kf(t) {
+      if (t < 1.2) { const k = E((t - 0.3) / 0.6); return { x: 0, y: L(0, 0.12, k), s: L(1, 0.42, k), r: 0 }; }
+      if (t < 6.2) { const k = (t - 1.2) / 5, x = Math.sin(k * Math.PI * 2.5) * 0.3 * (1 - k * 0.8); return { x, y: 0.12, s: 0.42, r: (x / 0.13) * 180 / Math.PI, z: 0 }; }
+      if (t < 6.6) return { x: 0, y: 0.12 + Math.sin((t - 6.2) * 50) * 0.003, s: 0.42, r: 0 };
+      if (t < 8.2) { const k = (t - 6.6) / 1.6; return { x: 0, y: L(0.12, 0, Bnc(k)) - Math.sin(Math.min(1, k * 2) * Math.PI) * 0.12, s: L(0.42, 1, Eout(Math.min(1, k * 1.6))), r: 0, z: Math.sin(Math.min(1, k * 2) * Math.PI) }; }
+      return ID; } },
+    '風船で飛ばされる': { len: 11, out: 6.6, kf(t) {
+      if (t < 1.6) return { x: 0, y: -Math.max(0, t - 1) * 0.02, s: 1, r: Math.sin(t * 6) * 2 * E(t - 0.6) };
+      if (t < 6) { const k = Ein((t - 1.6) / 4.4); return { x: Math.sin(t * 1.4) * 0.08, y: L(-0.012, -1.15, k), s: L(1, 0.75, E((t - 1.6) / 1)), r: Math.sin(t * 2) * 7, z: k }; }
+      if (t < 6.8) return { x: 0, y: -1.15, s: 0.75, r: 0 };
+      if (t < 8.8) { const k = (t - 6.8) / 2; return { x: 0, y: L(-1.15, 0, Bnc(k)), s: L(0.75, 1, E(k)), r: Math.sin(k * 25) * 8 * (1 - k), fy: 1 - Math.abs(Math.sin(k * Math.PI * 5)) * 0.08 * (1 - k), z: 1 - Bnc(k) }; }
+      return ID; } },
+    '石化': { len: 9, out: 6.8, tint: { name: 'stone', on: 0.4, off: 7.05 }, kf(t) {
+      if (t < 5.6) return { x: 0, y: 0, s: 1, r: 0 };
+      if (t < 7) { const k = (t - 5.6) / 1.4; return { x: Math.sin(t * 60) * 0.003 * k, y: 0, s: 1, r: Math.sin(t * 47) * 0.6 * k }; }
+      if (t < 8) { const k = (t - 7) / 1; return { x: 0, y: -Math.sin(k * Math.PI) * 0.03, s: 1 + Math.sin(k * Math.PI) * 0.04, r: 0 }; }
+      return ID; } },
+    '氷づけ': { len: 9, out: 6.8, tint: { name: 'ice', on: 0.4, off: 7.05 }, kf(t) {
+      if (t < 5.6) return { x: Math.sin(t * 70) * 0.0015 * E((t - 1) / 1), y: 0, s: 1, r: 0 };
+      if (t < 7) { const k = (t - 5.6) / 1.4; return { x: Math.sin(t * 60) * 0.003 * k, y: 0, s: 1, r: Math.sin(t * 47) * 0.6 * k }; }
+      if (t < 8) { const k = (t - 7) / 1; return { x: 0, y: -Math.sin(k * Math.PI) * 0.03, s: 1 + Math.sin(k * Math.PI) * 0.04, r: 0 }; }
+      return ID; } },
+    'ブラックホール': { len: 9, out: 5.2, kf(t) {
+      // 渦は (-0.12, -0.08) に開く。ぐるぐる吸いこまれて、反対側 (0.22, 0.2) からポンと出てくる
+      if (t < 1) return { x: Math.sin(t * 40) * 0.004 * t, y: 0, s: 1, r: 0 };
+      if (t < 3.6) { const k = Ein((t - 1) / 2.6), a = k * Math.PI * 5, rad = (1 - k) * 0.12; return { x: L(0, -0.12, k) + Math.cos(a) * rad, y: L(0, -0.08, k) + Math.sin(a) * rad * 0.6, s: L(1, 0.01, k), r: k * 900, fx: 1 - 0.5 * k }; }
+      if (t < 5.4) return { x: -0.12, y: -0.08, s: 0.001, r: 0 };
+      if (t < 6) { const k = Eout((t - 5.4) / 0.6); return { x: 0.22, y: 0.2, s: L(0.01, 0.7, k), r: L(-540, 0, k) }; }
+      if (t < 7.4) { const k = Eout((t - 6) / 1.4); return { x: L(0.22, 0, k), y: L(0.2, 0, k) - Math.sin(k * Math.PI) * 0.08, s: L(0.7, 1, k), r: 0, z: Math.sin(k * Math.PI) * 0.6 }; }
+      return ID; } },
+    'ロケットで発射': { len: 12.5, out: 7, kf(t) {
+      if (t < 1) { const k = E((t - 0.2) / 0.7); return { x: 0, y: L(0, 0.08, k), s: L(1, 0.55, k), r: 0 }; }
+      if (t < 3.6) { const sh = t > 2.8 ? (t - 2.8) / 0.8 : 0; return { x: Math.sin(t * 70) * 0.004 * sh, y: 0.08 + Math.sin(t * 55) * 0.002 * sh, s: 0.55, r: 0 }; }
+      if (t < 5.6) { const k = Ein((t - 3.6) / 2); return { x: Math.sin(t * 40) * 0.003, y: L(0.08, -1.3, k), s: 0.55, r: 0, z: k }; }
+      if (t < 7) return { x: 0, y: -1.3, s: 0.55, r: 0 };
+      if (t < 10.4) { const k = Eout((t - 7) / 3.4); return { x: Math.sin(t * 1.6) * 0.06 * (1 - k), y: L(-1.1, 0.04, k), s: 0.55, r: Math.sin(t * 1.6 + 1) * 10 * (1 - k), z: 1 - k }; }
+      if (t < 11.6) { const k = Eout((t - 10.4) / 1.2); return { x: 0, y: L(0.04, 0, k), s: L(0.55, 1, k), r: 0, fy: 1 - Math.sin(k * Math.PI) * 0.06 }; }
+      return ID; } },
+    '紙ふぶきで胴上げ': { len: 9, out: 7, kf(t) {
+      // わっしょい ×3（だんだん高く）
+      for (const [a, hgt] of [[0.8, 0.14], [2.6, 0.2], [4.5, 0.27]]) if (t >= a && t < a + 1.5) { const p = (t - a) / 1.5; return { x: 0, y: -Math.sin(p * Math.PI) * hgt, s: 1, r: Math.sin(p * Math.PI * 2) * 6, fy: p < 0.08 || p > 0.92 ? 0.92 : 1, z: Math.sin(p * Math.PI) }; }
+      if (t > 6.2 && t < 7.4) { const k = (t - 6.2) / 1.2; return { x: 0, y: -Math.abs(Math.sin(k * Math.PI * 2)) * 0.02 * (1 - k), s: 1, r: 0 }; }
+      return ID; } },
+    'ペラペラになる': { len: 10, out: 7.4, kf(t) {
+      if (t < 1.3) { const k = E((t - 0.4) / 0.8); return { x: 0, y: 0, s: 1, r: 0, fy: L(1, 0.05, k) }; } // ぺしゃんこ
+      if (t < 2) { const k = E((t - 1.3) / 0.7); return { x: 0, y: -0.05 * k, s: 1, r: 0, fy: L(0.05, 1, k), fx: L(1, 0.12, k) }; } // 紙みたいに立ち上がる
+      if (t < 5.4) { const k = Ein((t - 2) / 3.4); return { x: k * 1.4, y: -0.05 + Math.sin(t * 3) * 0.06, s: 1, r: Math.sin(t * 2.6) * 25, fx: Math.max(0.05, Math.abs(Math.cos(t * 4)) * 0.6), z: 0.5 }; }
+      if (t < 7.4) { const k = Eout((t - 5.4) / 2); return { x: L(-1.4, 0, k), y: -0.05 * (1 - k) + Math.sin(t * 3) * 0.06 * (1 - k), s: 1, r: Math.sin(t * 2.6) * 25 * (1 - k), fx: L(Math.max(0.05, Math.abs(Math.cos(t * 4)) * 0.6), 0.12, k), z: 0.5 * (1 - k) }; }
+      if (t < 8.4) { const k = Eout((t - 7.4) / 1); return { x: 0, y: 0, s: 1, r: 0, fx: L(0.12, 1, k) + Math.sin(k * Math.PI) * 0.08 }; }
+      return ID; } },
     '瓶づめ': { len: 30, out: 28.2, kf(t) {
       const k = Eout(t / 1.4) * (1 - E((t - 28.4) / 1.2));
       const pop = t > 28.2 && t < 29.6 ? Math.sin(((t - 28.2) / 1.4) * Math.PI) * 0.12 : 0;
@@ -81,6 +144,6 @@
       if (t < 43.4) { const k = Eout((t - 42) / 1.4); return { x: 0, y: L(-0.03, 0, k) - Math.sin(k * Math.PI) * 0.2, s: L(1.15, 1, k), r: 0, fx: Math.max(0.06, Math.abs(Math.cos(k * Math.PI * 2))), z: Math.sin(k * Math.PI) }; }
       return ID; } },
   };
-  const api = { H, clones(name, t) { const h = H[name]; return h && h.clones && t >= 0 && t < h.len ? h.clones(t) : null; }, kf(name, t) { const h = H[name]; if (!h || t < 0 || t >= h.len) return ID; const v = h.kf(t); return { x: v.x || 0, y: v.y || 0, s: v.s == null ? 1 : Math.max(0.001, v.s), r: (v.r || 0) % 360, fx: v.fx == null ? 1 : Math.max(0.03, v.fx), fy: v.fy == null ? 1 : Math.max(0.03, v.fy), z: Math.max(0, Math.min(1, v.z || 0)) }; }, names: Object.keys(H) };
+  const api = { H, tint(name, t) { const h = H[name]; return h && h.tint && t >= h.tint.on && t < h.tint.off ? h.tint.name : null; }, clones(name, t) { const h = H[name]; return h && h.clones && t >= 0 && t < h.len ? h.clones(t) : null; }, kf(name, t) { const h = H[name]; if (!h || t < 0 || t >= h.len) return ID; const v = h.kf(t); return { x: v.x || 0, y: v.y || 0, s: v.s == null ? 1 : Math.max(0.001, v.s), r: (v.r || 0) % 360, fx: v.fx == null ? 1 : Math.max(0.03, v.fx), fy: v.fy == null ? 1 : Math.max(0.03, v.fy), z: Math.max(0, Math.min(1, v.z || 0)) }; }, names: Object.keys(H) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.HAPPEN = api;
 })(this);
