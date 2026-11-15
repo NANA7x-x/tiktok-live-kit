@@ -535,10 +535,13 @@ const PAGES = {
   '/happen-back.html': 'overlay.html', '/happen-front.html': 'overlay.html', // OBS の「NANA ハプニング」シーン用
   '/happen.js': 'happen.js',
 };
+PAGES['/piano.html'] = 'piano.html'; // ピアノ動画の演出（app/piano.js）
+const PIANO = require('./piano.js');
 function kitFileStamp(rel) { try { return Math.floor(fs.statSync(path.join(__dirname, rel)).mtimeMs); } catch (e) { return 0; } }
 function kitVersion(file) { return kitFileStamp(file) + '.' + kitFileStamp('server.js'); }
 const httpServer = http.createServer((req, res) => {
   const p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p.startsWith('/piano/')) { PIANO.handle(req, res, p, new URL(req.url, 'http://x').searchParams); return; }
   if (p.startsWith('/sfx/')) {
     const name = p.slice(5);
     if (!safeSfxName(name)) { res.writeHead(404); res.end(); return; }

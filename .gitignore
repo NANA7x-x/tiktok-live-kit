@@ -20,3 +20,6 @@ stream_reports.txt
 背景/*
 !背景/ここに動画や画像を入れる.txt
 設定/obs_password.txt
+ピアノ動画/*
+!ピアノ動画/ここに録画をドラッグ.bat
+app/piano/.venv/
