@@ -18,10 +18,19 @@
       if (t < 5) { const k = Ein((t - 1.8) / 3.2); return { x: k * 1.35, y: Math.sin(t * 4) * 0.03, s: L(1, 0.9, E((t - 1.8) / 0.6)), r: Math.sin(t * 5) * 9, fx: 1 - 0.22 * Math.abs(Math.sin(t * 2.6)), z: 0.3 }; }
       if (t < 8) { const k = Eout((t - 5) / 3); return { x: -1.35 * (1 - k), y: Math.sin(t * 4) * 0.03 * (1 - k), s: L(0.9, 1, k), r: Math.sin(t * 5) * 9 * (1 - k), fx: 1 - 0.22 * Math.abs(Math.sin(t * 2.6)) * (1 - k), z: 0.3 * (1 - k) }; }
       return ID; } },
-    '海に出ていく': { len: 10, out: 7.2, kf(t) {
-      const out = E((t - 1) / 2.4), back = E((t - 7.2) / 1.8), k = out * (1 - back);
-      return { x: Math.sin(t * 0.8) * 0.06 * k, y: L(0, -0.11, k) + Math.sin(t * 2.2) * 0.008 * k, s: L(1, 0.3, k), r: Math.sin(t * 1.9) * 4 * k, fy: 1 - 0.18 * k * (0.6 + 0.4 * Math.sin(t * 2.2)), z: 0.15 * k }; } },
-    '化け物に連れ去られる': { len: 10.5, out: 5.8, kf(t) {
+    '人面魚になって海へ': { len: 15, out: 12, kf(t, c) {
+      // 小さくなって海へもぐる → 人面魚になって8の字に泳ぐ → シャチにつつかれる（5.6）・しっぽではね上げられる（8.4）→ もどってくる
+      const ox = 0.5 - c.ax, oy = 0.42 - c.ay;
+      if (t < 1.4) { const k = E((t - 0.2) / 1.2); return { x: 0, y: 0.08 * Math.sin(k * Math.PI), s: L(1, 0.5, k), r: 20 * Math.sin(k * Math.PI) }; }
+      const sw = (tt) => ({ x: ox + Math.sin(tt * 0.85) * 0.26, y: oy + Math.sin(tt * 1.7) * 0.1 });
+      const blend = E((t - 1.4) / 1.2) * (1 - E((t - 12) / 1.6));
+      const p = sw(t), q = sw(t + 0.05), dir = Math.atan2((q.y - p.y) * 1920, (q.x - p.x) * 1080) * 180 / Math.PI;
+      let x = p.x * blend, y = p.y * blend, r = Math.max(-25, Math.min(25, (Math.abs(dir) > 90 ? 180 - Math.abs(dir) : dir) * 0.5)) * blend, fy = 1, z = 0;
+      for (const [a, h] of [[5.6, 0.12], [8.4, 0.26]]) if (t >= a && t < a + 1.1) { const k = (t - a) / 1.1; y -= Math.sin(k * Math.PI) * h; r += k * 360; fy = 1 - Math.sin(k * Math.PI) * 0.15; z = Math.sin(k * Math.PI); }
+      const s = t < 12 ? 0.5 : L(0.5, 1, E((t - 12) / 1.6));
+      return { x, y, s, r, fy, z, fx: 1 - 0.06 * Math.abs(Math.sin(t * 6)) * blend };
+    } },
+    '化け物に連れ去られる': { len: 10.5, out: 5.8, skin: [[5.9, 9.8, 'wet']], kf(t) {
       // 0-2.3 気配 / 2.3 つかまれる / 2.6-3.4 口の中へ / 3.4-5.8 もぐもぐ / 5.8 ぺっ（よだれまみれで飛んでくる）/ 6.8- ぷるぷる
       if (t < 2.3) return { x: Math.sin(t * 50) * 0.004 * E(t / 2), y: 0, s: 1, r: Math.sin(t * 31) * 1.5 * E(t / 2) };
       if (t < 2.6) { const k = (t - 2.3) / 0.3; return { x: -0.03 * k, y: -0.01 * Math.sin(k * Math.PI), s: L(1, 0.9, k), r: L(0, 8, k), fx: L(1, 0.8, k) }; }
@@ -39,7 +48,7 @@
       if (t < 7.6) { const k = (t - 6.2) / 1.4; return { x: 0, y: L(-1.1, 0, Bnc(k)), s: L(0.7, 1, E(k)), r: Math.sin(k * 30) * 10 * (1 - k), z: 1 - Bnc(k) }; }
       if (t < 8.8) { const k = (t - 7.6) / 1.2; return { x: Math.sin(t * 6) * 0.01 * (1 - k), y: 0, s: 1, r: Math.sin(t * 6) * 8 * (1 - k) }; }
       return ID; } },
-    '化け物にかわいがられる': { len: 9.5, out: 6.6, kf(t) {
+    '化け物にかわいがられる': { len: 9.5, out: 6.6, skin: [[4.7, 8.6, 'wet']], kf(t) {
       if (t < 1.2) return ID;
       if (t < 2) { const k = E((t - 1.2) / 0.8); return { x: 0, y: -0.05 * k, s: L(1, 0.85, k), r: 0, z: 0.4 * k }; }
       if (t < 6.6) { const c = Math.sin((t - 2) * Math.PI * 1.6); return { x: c * 0.035, y: -0.05 + Math.abs(c) * 0.005, s: 0.85, r: c * 7, fx: 1 - Math.abs(c) * 0.18, fy: 1 + Math.abs(c) * 0.04, z: 0.4 }; }
@@ -94,12 +103,12 @@
       if (t < 6.8) return { x: 0, y: -1.15, s: 0.75, r: 0 };
       if (t < 8.8) { const k = (t - 6.8) / 2; return { x: 0, y: L(-1.15, 0, Bnc(k)), s: L(0.75, 1, E(k)), r: Math.sin(k * 25) * 8 * (1 - k), fy: 1 - Math.abs(Math.sin(k * Math.PI * 5)) * 0.08 * (1 - k), z: 1 - Bnc(k) }; }
       return ID; } },
-    '石化': { len: 9, out: 6.8, tint: { name: 'stone', on: 0.4, off: 7.05 }, kf(t) {
+    '石化': { len: 9, out: 6.8, tint: { name: 'stone', on: 0.4, off: 7.05 }, skin: [[0.4, 4.6, 'stone'], [4.6, 7.05, 'stone_crack']], kf(t) {
       if (t < 5.6) return { x: 0, y: 0, s: 1, r: 0 };
       if (t < 7) { const k = (t - 5.6) / 1.4; return { x: Math.sin(t * 60) * 0.003 * k, y: 0, s: 1, r: Math.sin(t * 47) * 0.6 * k }; }
       if (t < 8) { const k = (t - 7) / 1; return { x: 0, y: -Math.sin(k * Math.PI) * 0.03, s: 1 + Math.sin(k * Math.PI) * 0.04, r: 0 }; }
       return ID; } },
-    '氷づけ': { len: 9, out: 6.8, tint: { name: 'ice', on: 0.4, off: 7.05 }, kf(t) {
+    '氷づけ': { len: 9, out: 6.8, tint: { name: 'ice', on: 0.4, off: 7.05 }, skin: [[0.4, 4.6, 'ice'], [4.6, 7.05, 'ice_crack']], kf(t) {
       if (t < 5.6) return { x: Math.sin(t * 70) * 0.0015 * E((t - 1) / 1), y: 0, s: 1, r: 0 };
       if (t < 7) { const k = (t - 5.6) / 1.4; return { x: Math.sin(t * 60) * 0.003 * k, y: 0, s: 1, r: Math.sin(t * 47) * 0.6 * k }; }
       if (t < 8) { const k = (t - 7) / 1; return { x: 0, y: -Math.sin(k * Math.PI) * 0.03, s: 1 + Math.sin(k * Math.PI) * 0.04, r: 0 }; }
@@ -164,6 +173,6 @@
       if (t < 43.4) { const k = Eout((t - 42) / 1.4); return { x: 0, y: L(-0.03, 0, k) - Math.sin(k * Math.PI) * 0.2, s: L(1.15, 1, k), r: 0, fx: Math.max(0.06, Math.abs(Math.cos(k * Math.PI * 2))), z: Math.sin(k * Math.PI) }; }
       return ID; } },
   };
-  const api = { H, tint(name, t) { const h = H[name]; return h && h.tint && t >= h.tint.on && t < h.tint.off ? h.tint.name : null; }, clones(name, t, c) { const h = H[name]; return h && h.clones && t >= 0 && t < h.len ? h.clones(t, c || CTX) : null; }, kf(name, t, c) { const h = H[name]; if (!h || t < 0 || t >= h.len) return ID; const v = h.kf(t, c || CTX); return { x: v.x || 0, y: v.y || 0, s: v.s == null ? 1 : Math.max(0.001, v.s), r: (v.r || 0) % 360, fx: v.fx == null ? 1 : Math.max(0.03, v.fx), fy: v.fy == null ? 1 : Math.max(0.03, v.fy), z: Math.max(0, Math.min(1, v.z || 0)) }; }, names: Object.keys(H) };
+  const api = { H, skin(name, t) { const h = H[name]; if (!h || !h.skin) return null; for (const [a, b, n] of h.skin) if (t >= a && t < b) return n; return null; }, tint(name, t) { const h = H[name]; return h && h.tint && t >= h.tint.on && t < h.tint.off ? h.tint.name : null; }, clones(name, t, c) { const h = H[name]; return h && h.clones && t >= 0 && t < h.len ? h.clones(t, c || CTX) : null; }, kf(name, t, c) { const h = H[name]; if (!h || t < 0 || t >= h.len) return ID; const v = h.kf(t, c || CTX); return { x: v.x || 0, y: v.y || 0, s: v.s == null ? 1 : Math.max(0.001, v.s), r: (v.r || 0) % 360, fx: v.fx == null ? 1 : Math.max(0.03, v.fx), fy: v.fy == null ? 1 : Math.max(0.03, v.fy), z: Math.max(0, Math.min(1, v.z || 0)) }; }, names: Object.keys(H) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.HAPPEN = api;
 })(this);
