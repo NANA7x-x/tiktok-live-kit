@@ -985,6 +985,7 @@ const cl01=x=>x<0?0:x>1?1:x,EZ=x=>{x=cl01(x);return x*x*(3-2*x);};
 const fade=(t,a,b,len,d)=>EZ((t-a)/(d||.6))*(1-EZ((t-(len-b))/(d||.6)));
 // アバターのふだんの位置（OBS で選んだアバターのソース。なければプレビューの目安の位置）
 function avRect(){const b=S&&S.settings.avBox;if(b&&b.on){const h=b.h*1920;return{cx:b.cx*1080,cy:b.cy*1920,w:h*.62,h};}const o=S&&S.obs&&S.obs.avatar;if(o)return o;return S&&S.settings.mode==="game"?{cx:885,cy:1360,w:330,h:500}:{cx:540,cy:995,w:700,h:1050};}
+const hctx=()=>{const A=avRect();return{ax:A.cx/1080,ay:A.cy/1920};},hkf=(n,t)=>HAPPEN.kf(n,t,hctx()),hcl=(n,t)=>HAPPEN.clones(n,t,hctx());
 function rectOf(k){const A=avRect();return{cx:A.cx+k.x*1080,cy:A.cy+k.y*1920,w:A.w*k.s*(k.fx||1),h:A.h*k.s*(k.fy||1),r:k.r*Math.PI/180};}
 const mouthOpen=t=>t<2.6?1:t<3.4?1:t<5.8?1-Math.abs(Math.sin((t-3.4)*Math.PI*1.7)):t<6.2?1:1;
 function inRect(g,R,f){g.save();g.translate(R.cx,R.cy);g.rotate(R.r);f(R.w,R.h);g.restore();}
@@ -1067,7 +1068,7 @@ const HPD={
   back(g,t,k){const a=fade(t,2.2,1,10.5,.8);if(!a)return;g.globalAlpha=a;const v=g.createRadialGradient(540,900,100,540,900,1300);v.addColorStop(0,"#2a0c33");v.addColorStop(1,"#05000a");g.fillStyle=v;g.fillRect(0,0,1080,1920);
     for(let i=0;i<9;i++){const x=(i*397)%1000+40,y=(i*613)%1700+100,b=(t*1.3+i)%3.2<.15?.1:1;g.save();g.translate(x,y);g.scale(1,b);g.fillStyle="#ff3355";g.shadowColor="#ff3355";g.shadowBlur=20;for(const d of [-18,18]){g.beginPath();g.ellipse(d,0,12,7,0,0,7);g.fill();}g.restore();}
     // 化け物の頭と、口の中（アバターのうしろ）
-    const hd=EZ((t-2.4)/.6)*(1-EZ((t-6.2)/.8));if(hd>0){const R=rectOf(HAPPEN.kf("化け物に連れ去られる",4)),mx=R.cx,my=R.cy;g.globalAlpha=a*hd;
+    const hd=EZ((t-2.4)/.6)*(1-EZ((t-6.2)/.8));if(hd>0){const R=rectOf(hkf("化け物に連れ去られる",4)),mx=R.cx,my=R.cy;g.globalAlpha=a*hd;
       monHead(g,mx,my,t,mouthOpen(t));}
     g.globalAlpha=1;},
   front(g,t,k){const a=fade(t,0,.9,10.5,.8);if(!a)return;const R=rectOf(k);g.globalAlpha=a;
@@ -1079,7 +1080,7 @@ const HPD={
       g.strokeStyle="rgba(12,0,20,.98)";g.lineCap="round";const sx0=-220;for(let i=0;i<3;i++){g.lineWidth=110-i*34;g.beginPath();g.moveTo(sx0,1150);g.bezierCurveTo(sx0+300,1450+Math.sin(t*4)*80,hx-300,hy-300,hx,hy);g.stroke();}
       g.lineWidth=26;for(let f=-2;f<=2;f++){g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+80,hy+f*44,hx+60+Math.abs(f)*12,hy+f*80);g.stroke();}}
     // 口（アバターの手前）：上下の歯でもぐもぐ
-    const hd=EZ((t-2.4)/.6)*(1-EZ((t-6.2)/.8));if(hd>0){const M=rectOf(HAPPEN.kf("化け物に連れ去られる",4)),mx=M.cx,my=M.cy,op=mouthOpen(t),gap=40+op*300;g.globalAlpha=a*hd;
+    const hd=EZ((t-2.4)/.6)*(1-EZ((t-6.2)/.8));if(hd>0){const M=rectOf(hkf("化け物に連れ去られる",4)),mx=M.cx,my=M.cy,op=mouthOpen(t),gap=40+op*300;g.globalAlpha=a*hd;
       monJaws(g,mx,my,gap,t);
       if(op<.5&&Math.random()<.4)HP.F.push({k:"goo",x:mx+rr(-200,200),y:my+gap,vy:rr(.5,2),s:rr(5,10),l:120,L:120});}
     // よだれまみれ（吐き出されてから）
@@ -1121,8 +1122,8 @@ const HPD={
       for(let i=0;i<8;i++){const on=Math.floor(t*8+i)%3===0;g.fillStyle=on?"#ffe86b":"#5ff0ff";g.shadowColor=g.fillStyle;g.shadowBlur=on?28:10;g.beginPath();g.arc(-182+i*52,14,11,0,7);g.fill();}g.restore();}}},
  "増殖":{
   back(g,t,k){const a=fade(t,.3,1,10,.8);if(!a)return;g.globalAlpha=a*.55;const A=avRect();const gr=g.createRadialGradient(A.cx,A.cy,50,A.cx,A.cy,900);gr.addColorStop(0,"rgba(255,190,240,.5)");gr.addColorStop(1,"rgba(255,190,240,0)");g.fillStyle=gr;g.fillRect(0,0,1080,1920);g.globalAlpha=1;},
-  front(g,t,k){const cl=HAPPEN.clones("増殖",t)||[];HP.pops=HP.pops||{};
-    cl.forEach((c,i)=>{const t0=.6+i*.32,t1=6.6+i*.04+.85;for(const [key,tt] of [["a"+i,t0],["b"+i,t1]])if(t>=tt&&!HP.pops[key]){HP.pops[key]=1;const R=rectOf(key[0]==="a"?HAPPEN.clones("増殖",tt+.45)[i]:{x:0,y:.04,s:.3,r:0,fx:1,fy:1});
+  front(g,t,k){const cl=hcl("増殖",t)||[];HP.pops=HP.pops||{};
+    cl.forEach((c,i)=>{const t0=.6+i*.32,t1=6.6+i*.04+.85;for(const [key,tt] of [["a"+i,t0],["b"+i,t1]])if(t>=tt&&!HP.pops[key]){HP.pops[key]=1;const R=rectOf(key[0]==="a"?hcl("増殖",tt+.45)[i]:{x:0,y:.04,s:.3,r:0,fx:1,fy:1});
       for(let j=0;j<18;j++){const a=j/18*Math.PI*2,v=rr(4,9);HP.F.push({k:"tw",x:R.cx,y:R.cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,s:rr(5,11),l:30,L:30,c:rnd(["#fff","#ffd1f0","#bdf3ff","#fff1b0"])});}
       HP.F.push({k:"ring",x:R.cx,y:R.cy,s:Math.abs(R.w)*.35,l:22,L:22});}});}},
  "巨大化":{
@@ -1219,7 +1220,7 @@ const HPD={
     g.save();g.beginPath();g.arc(540,y,80,0,7);g.clip();g.fillStyle="#8a8f99";g.fillRect(460,y-80,160,160);for(let i=0;i<10;i++)for(let j=0;j<10;j++){const v=Math.sin(i*1.3+j*2.1+t*6);g.fillStyle=`rgba(255,255,255,${.25+.7*Math.max(0,v)})`;g.fillRect(460+i*16+((t*40)%16),y-80+j*16,14,14);}g.restore();
     for(let i=0;i<34;i++){const ang=i*.37+t*.9,d=300+(i*97)%1300,x=540+Math.cos(ang)*d*.7,yy=y+Math.abs(Math.sin(ang))*d;g.fillStyle=`hsla(${(i*40+t*80)%360},100%,80%,.75)`;g.beginPath();g.arc(x,yy,6+(i%3)*3,0,7);g.fill();}g.globalAlpha=1;}},
  "巨人の料理にされる":{
-  back(g,t,k){const P=rectOf(HAPPEN.kf("巨人の料理にされる",7)),bot=P.cy+P.h/2;
+  back(g,t,k){const P=rectOf(hkf("巨人の料理にされる",7)),bot=P.cy+P.h/2;
     // キッチン（フライパンで焼かれる）
     const ka=fade(t,0,0,99,.8)*(1-EZ((t-7.9)/.5));if(ka>0){g.globalAlpha=ka;const w=g.createLinearGradient(0,0,0,1920);w.addColorStop(0,"#f3e6cf");w.addColorStop(1,"#d9c3a0");g.fillStyle=w;g.fillRect(0,0,1080,1920);
       g.strokeStyle="rgba(140,110,80,.25)";g.lineWidth=3;for(let y=0;y<1300;y+=90){g.beginPath();g.moveTo(0,y);g.lineTo(1080,y);g.stroke();}for(let x=0;x<1080;x+=90)for(let y=0;y<1300;y+=90){g.beginPath();g.moveTo(x+(y/90%2)*45,y);g.lineTo(x+(y/90%2)*45,y+90);g.stroke();}
@@ -1244,7 +1245,7 @@ const HPD={
       g.strokeStyle="rgba(120,10,40,.45)";g.lineWidth=26;for(let i=0;i<7;i++){g.beginPath();for(let x=-50;x<=1130;x+=20){const y=150+i*260+Math.sin(x/120+t*1.2+i)*40*s;x>-50?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
       sea(g,t,1700,18,"rgba(170,220,60,.75)",1.4,90);sea(g,t+3,1760,12,"rgba(220,255,120,.55)",2,70);
       if(Math.random()<.25)HP.B.push({k:"bub",x:rr(40,1040),y:1760,vy:rr(-1.6,-.6),s:rr(6,18),ph:rr(0,6),l:500,L:500,top:900});g.globalAlpha=1;}},
-  front(g,t,k){const R=rectOf(k),P=rectOf(HAPPEN.kf("巨人の料理にされる",7)),bot=P.cy+P.h/2;
+  front(g,t,k){const R=rectOf(k),P=rectOf(hkf("巨人の料理にされる",7)),bot=P.cy+P.h/2;
     // フライパンの手前のふちと持ち手
     const ka=fade(t,0,0,99,.8)*(1-EZ((t-7.9)/.5));if(ka>0){g.globalAlpha=ka;g.fillStyle="#1d1d22";g.beginPath();g.ellipse(P.cx,bot,P.w*1.15,P.w*.32,0,0,Math.PI);g.fill();
       g.strokeStyle="#4a4a52";g.lineWidth=12;g.beginPath();g.ellipse(P.cx,bot,P.w*1.15,P.w*.32,0,0,Math.PI*2);g.stroke();
@@ -1341,12 +1342,12 @@ const HP_SOLO=()=>IS_MAIN&&!PREVIEW&&!(S&&S.obs&&S.obs.ready&&S.obs.avatar);
 let hpLast2=performance.now();
 (function hpLoop(now){now=now||performance.now();const dt=Math.min(3,Math.max(.25,(now-hpLast2)/16.667));hpLast2=now;
   const solo=HP_SOLO(),showB=HB,showF=HF||solo;
-  if(HP.name&&HPD[HP.name]){const t=(nowS()-HP.at)/1000,h=HAPPEN.H[HP.name],k=HAPPEN.kf(HP.name,t);
+  if(HP.name&&HPD[HP.name]){const t=(nowS()-HP.at)/1000,h=HAPPEN.H[HP.name],k=hkf(HP.name,t);
     if(t>h.len+.5){HP.name=null;}
     if(showB){hbx.clearRect(0,0,1080,1920);if(t>=0&&HPD[HP.name]){HPD[HP.name].back(hbx,t,k);drawParts(hbx,HP.B,dt);shadow3d(hbx,k);}}
     if(showF){hfx.clearRect(0,0,1080,1920);if(t>=0&&HPD[HP.name]){HPD[HP.name].front(hfx,t,k);drawParts(hfx,HP.F,dt);}}
     if(PREVIEW){$("avatarPh").style.transform=t>=0&&t<=h.len?`translate(${k.x*1080}px,${k.y*1920}px) rotate(${k.r}deg) scale(${k.s*k.fx},${k.s*k.fy})`:"";
-      const cl=t>=0?HAPPEN.clones(HP.name,t):null;pvClones(cl);const tn=t>=0?HAPPEN.tint(HP.name,t):null;$("avatarPh").style.filter=tn==="stone"?"grayscale(1) brightness(.85) contrast(1.2)":tn==="ice"?"saturate(.4) hue-rotate(160deg) brightness(1.15)":"";}
+      const cl=t>=0?hcl(HP.name,t):null;pvClones(cl);const tn=t>=0?HAPPEN.tint(HP.name,t):null;$("avatarPh").style.filter=tn==="stone"?"grayscale(1) brightness(.85) contrast(1.2)":tn==="ice"?"saturate(.4) hue-rotate(160deg) brightness(1.15)":"";}
   }else if(HP.wasOn!==false){hbx.clearRect(0,0,1080,1920);hfx.clearRect(0,0,1080,1920);$("avatarPh").style.transform="";$("avatarPh").style.filter="";pvClones(null);}
   HP.wasOn=!!HP.name;$("hFront").classList.toggle("on",showF);
   requestAnimationFrame(hpLoop);})();
