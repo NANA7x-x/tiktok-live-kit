@@ -461,8 +461,7 @@ function teamAdd(v, test) {
   K.team.value += v;
   if (K.team.value >= K.settings.teamMax) {
     K.team.value = 0;
-    const tl = K.teamLines.length ? K.teamLines[(K.idx.__team || 0) % K.teamLines.length] : '';
-    K.idx.__team = (K.idx.__team || 0) + 1;
+    const tl = ''; // みんなで達成の文章は出さない（シンプルに「みんなで達成！」だけ）
     K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: 'みんな', kind: 'TEAM達成', line: tl, at: Date.now() });
     broadcast({ type: 'ev', kind: 'team', label: K.settings.teamLabel, line: tl, test: !!test });
     if (!test) recordHighlight(`🎉 みんなで達成（${K.settings.teamLabel}）`);
