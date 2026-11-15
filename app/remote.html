@@ -87,8 +87,10 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
         <div class="note">3回続けて言えたら成功。途中で噛んだら、その場で罰ゲーム（順番）が出ます。</div>
       </div>
       <div class="list" id="slotList"></div>
-      <div class="row"><b>🎹 リクエスト待ち</b><span class="note">弾き終わったら「済」を押す</span><button class="sm danger" id="reqClear" style="margin-left:auto">全部消す</button></div>
+      <div class="row"><b>🎹 リクエスト待ち</b><span class="note">曲名をメモして、弾き終わったら「弾いた」</span><button class="sm danger" id="reqClear" style="margin-left:auto">全部消す</button></div>
       <div class="list" id="reqList"></div>
+      <div class="row" style="margin-top:6px"><b>＋ 手で追加</b><input id="raUser" placeholder="だれ（コメントの名前）" style="width:150px"><select id="raKind"><option>サビ</option><option>フル</option><option>弾き語り</option></select><input id="raSong" placeholder="曲名" style="width:180px"><button class="sm pri" id="raAdd">追加</button></div>
+      <details style="margin-top:6px"><summary class="note">📒 今日の記録（<span id="rlCount">0</span>件）… 記録/リクエスト_日付.md にも自動で保存</summary><div class="list" id="reqLogList" style="margin-top:6px"></div></details>
     </div></details>
 
     <details open data-k="topic"><summary>🖼 配信内容・モード</summary><div class="body">
@@ -164,7 +166,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="note"><b>背景ムービー（200コイン）</b>：キットの<b>「背景」フォルダ</b>に 動画（mp4 / webm / mov）か 画像（jpg / png / gif / webp）を入れるだけで、順番に追加されます（15秒くらいで自動で反映）。ファイル名がそのまま名前になります（例：<code>夜の海.mp4</code> →「背景ムービー：夜の海」）。動画は音なし・くり返し再生、画像はゆっくりズームします。</div>
       <div class="row"><button id="bgScan">↻ いますぐ更新</button><span class="note" id="bgCount"></span></div>
       <div class="note" id="bgList"></div>
-      <div class="note"><b>前エフェクト（88コイン）</b>：アバターの前に重なる飾り。桜ふる／ふんわり／バラの花びら／雪ふる／モザイク／葉っぱ／水の中／炭酸のコップ。<b>ハプニング（400コイン）</b>：川に流される／海に出ていく／化け物に連れ去られる／UFOにさらわれる／増殖／瓶づめ／投獄／いきなり踊らされる／巨人の料理にされる。「🎬 OBS 連携」でアバターのソースを選ぶと、アバターだけが動きます（つないでいないときは VTube Studio 連携で動きます）。ゆらめき・背景ムービー・前エフェクトは、別の段のギフトが来てもその場で切り替わって時間が足されます。</div>
+      <div class="note"><b>前エフェクト（88コイン）</b>：アバターの前に重なる飾り。桜ふる／ふんわり／バラの花びら／雪ふる／モザイク／葉っぱ／水の中／炭酸のコップ。<b>ハプニング（400コイン）</b>：川に流される／海に出ていく／化け物に連れ去られる／UFOにさらわれる／増殖／巨大化／ちっちゃくなる／ガチャガチャのカプセル／風船で飛ばされる／石化／氷づけ／ブラックホール／ロケットで発射／紙ふぶきで胴上げ／ペラペラになる／瓶づめ／投獄／いきなり踊らされる／巨人の料理にされる。「🎬 OBS 連携」でアバターのソースを選ぶと、アバターだけが動きます（つないでいないときは VTube Studio 連携で動きます）。ゆらめき・背景ムービー・前エフェクトは、別の段のギフトが来てもその場で切り替わって時間が足されます。</div>
       <div class="note"><b>ゆらめき（100コイン）</b>：下の「ギフト表」の 100 の段の「順番リスト」に色を足せます。使える色の名前：ピンク／ラベンダー／ミント／水色／ゴールド／ピーチ／ブルー／ローズ／ホワイト／レッド／グリーン／オレンジ／パープル／シアン。好きな色にしたいときは <code>さくら色#ffb7d5</code> のように名前のうしろに色コードをつけます（画面には「さくら色」とだけ出ます）。</div>
     </div></details>
 
@@ -250,7 +252,7 @@ function renderLive(){
 function render(first){
   $("dTT").classList.toggle("ok",!!S.conn.live);$("tTT").textContent=S.conn.live?`TikTok 接続中（${S.conn.user}）`:`TikTok 未接続（${S.conn.auto?"自動で再試行中":"手動モード"}）`;
   renderLive();
-  $("reqList").innerHTML=S.requests.length?S.requests.map((r,i)=>`<div class="item"><div class="t"><b>${i+1}. ${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span> <small>${new Date(r.at).toLocaleTimeString().slice(0,5)}</small>${r.line?`<br><small style="color:#fff">「${esc(r.line)}」</small>`:""}</div><button class="sm pri" data-done="${esc(r.id)}">済</button></div>`).join(""):'<div class="note">なし</div>';
+  renderReqs();
   const st=S.settings;
   if(first||document.activeElement!==$("topic"))$("topic").value=st.topic;
   $("mAvatar").classList.toggle("on",st.mode==="avatar");$("mGame").classList.toggle("on",st.mode==="game");
@@ -295,6 +297,23 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
 });
 // 誤操作防止：消す系は2回押しで確定
 function confirmBox(btn,msg){if(btn.dataset.armed){delete btn.dataset.armed;btn.textContent=btn.dataset.orig;return true;}btn.dataset.orig=btn.textContent;btn.dataset.armed="1";btn.textContent=msg;setTimeout(()=>{if(btn.dataset.armed){delete btn.dataset.armed;btn.textContent=btn.dataset.orig;}},2500);return false;}
+// ===== 曲のリクエスト：だれの・サビ/フル/弾き語り・曲名をその場でメモ =====
+let reqKey="";const hhmm=ms=>{const d=new Date(ms);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");};
+function renderReqs(){const L=S.requests,ae=document.activeElement;
+  const key=JSON.stringify(L.map(r=>[r.id,r.kind,r.song||"",r.line||""]));
+  if(key!==reqKey&&!(ae&&ae.classList&&ae.classList.contains("rqSong"))){reqKey=key;
+    $("reqList").innerHTML=L.length?L.map((r,i)=>r.kind==="TEAM達成"?`<div class="item"><div class="t"><b>${i+1}. ${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span>${r.line?`<br><small style="color:#fff">「${esc(r.line)}」</small>`:""}</div><button class="sm pri" data-done="${esc(r.id)}">済</button></div>`
+      :`<div class="item" style="flex-wrap:wrap"><div class="t" style="min-width:140px"><b>${i+1}. ${esc(r.user)}</b> <small>${hhmm(r.at)}</small></div>
+        <select class="rqKind" data-id="${esc(r.id)}">${["サビ","フル","弾き語り"].map(k=>`<option ${k===r.kind?"selected":""}>${k}</option>`).join("")}</select>
+        <input class="rqSong" data-id="${esc(r.id)}" value="${esc(r.song||"")}" placeholder="曲名をメモ" style="flex:1;min-width:140px">
+        <button class="sm" data-mv="-1" data-id="${esc(r.id)}">↑</button><button class="sm" data-mv="1" data-id="${esc(r.id)}">↓</button>
+        <button class="sm pri" data-done="${esc(r.id)}">弾いた</button><button class="sm danger" data-cancel="${esc(r.id)}">取消</button></div>`).join(""):'<div class="note">なし</div>';}
+  const lg=(S.reqLog&&S.reqLog.items)||[];$("rlCount").textContent=lg.length;
+  $("reqLogList").innerHTML=lg.length?lg.slice().reverse().map(r=>`<div class="item"><div class="t"><b>${esc(r.user)}</b> <span class="pill">${esc(r.kind)}</span> ${esc(r.song||"（曲名なし）")} <small>${hhmm(r.at)}・${esc(r.st)}</small></div></div>`).join(""):'<div class="note">まだありません</div>';}
+document.addEventListener("change",e=>{const t=e.target;if(t.classList.contains("rqSong")||t.classList.contains("rqKind")){const id=t.dataset.id,row=t.closest(".item");send({type:"reqSong",id,song:row.querySelector(".rqSong").value,kind:row.querySelector(".rqKind").value});}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("rqSong"))e.target.blur();});
+document.addEventListener("click",e=>{const c=e.target.closest("[data-cancel]");if(c)send({type:"reqCancel",id:c.dataset.cancel});const m=e.target.closest("[data-mv]");if(m)send({type:"reqMove",id:m.dataset.id,dir:+m.dataset.mv});});
+$("raAdd").onclick=()=>{send({type:"reqAdd",user:$("raUser").value,kind:$("raKind").value,song:$("raSong").value});$("raUser").value="";$("raSong").value="";};
 $("reqClear").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと全部消す"))send({type:"reqClear"});};
 $("teamReset").onclick=e=>{if(confirmBox(e.currentTarget,"もう一度押すと0に戻す"))send({type:"teamSet",value:0});};
 const setS=p=>send({type:"setSettings",settings:p});
@@ -319,7 +338,7 @@ function renderSfx(){const files=S.sfxFiles||[],map=S.settings.sound.map||{},k=J
 document.addEventListener("click",e=>{const t=e.target.closest("[data-th]");if(t)setS({sound:{theme:t.dataset.th}});const p=e.target.closest("[data-play]");if(p){const f=document.querySelector(`[data-sfx="${p.dataset.play}"]`).value;if(f){const a=new Audio("/sfx/"+encodeURIComponent(f));a.volume=.6;a.play().catch(()=>{});}}});
 $("sfxScan").onclick=()=>send({type:"sfxRescan"});
 const OBSN={off:"OFF",connecting:"接続中…",ok:"接続OK",needpass:"パスワードが必要",badpass:"パスワードがちがう"};
-const HAPN=["川に流される","海に出ていく","化け物に連れ去られる","UFOにさらわれる","増殖","瓶づめ","投獄","いきなり踊らされる","巨人の料理にされる"];
+const HAPN=["川に流される","巨大化","海に出ていく","ちっちゃくなる","化け物に連れ去られる","ガチャガチャのカプセル","UFOにさらわれる","風船で飛ばされる","増殖","石化","瓶づめ","ブラックホール","投獄","ロケットで発射","いきなり踊らされる","氷づけ","紙ふぶきで胴上げ","ペラペラになる","巨人の料理にされる"];
 $("hapBtns").innerHTML="<b>ためす</b>"+HAPN.map(n=>`<button class="sm" data-hap="${n}">${n}</button>`).join("");
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hap]");if(b)send({type:"happenTest",name:b.dataset.hap});});
 $("hapStop").onclick=()=>send({type:"happenStop"});

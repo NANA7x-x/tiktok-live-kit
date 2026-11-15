@@ -48,6 +48,19 @@ const ROOT = path.join(__dirname, '..');
 const CONF_DIR = path.join(ROOT, '設定');
 const LOG_DIR = path.join(ROOT, '記録');
 try { fs.mkdirSync(CONF_DIR, { recursive: true }); fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+// ---- 曲のリクエストの記録（その日の分を 記録/リクエスト_日付.md に書く。だれの・サビ/フル/弾き語り・曲名・弾いたか） ----
+const p2 = (n) => String(n).padStart(2, '0');
+const dayKey = (d) => { d = d || new Date(); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
+const hm = (ms) => { const d = new Date(ms); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+function reqLogToday() { if (!K.reqLog || K.reqLog.day !== dayKey()) K.reqLog = { day: dayKey(), items: [] }; return K.reqLog; }
+function reqLogAdd(r, quiet) { const L = reqLogToday(); L.items.push({ user: r.user, kind: r.kind, song: r.song || '', at: r.at, st: r.st, doneAt: r.doneAt }); if (L.items.length > 300) L.items.shift(); if (!quiet) reqLogWrite(); }
+function reqLogWrite() {
+  const L = reqLogToday();
+  const row = (r, st) => `| ${hm(r.at)} | ${String(r.user).replace(/\|/g, '／')} | ${r.kind} | ${String(r.song || '（曲名なし）').replace(/\|/g, '／')} | ${st}${r.doneAt ? '（' + hm(r.doneAt) + '）' : ''} |`;
+  const lines = [`# 曲のリクエスト ${L.day}`, '', '| 受付 | だれ | 種類 | 曲名 | 状態 |', '|---|---|---|---|---|',
+    ...L.items.map((r) => row(r, r.st)), ...K.requests.filter((r) => r.kind !== 'TEAM達成').map((r) => row(r, '待ち'))];
+  try { fs.writeFile(path.join(LOG_DIR, `リクエスト_${L.day}.md`), lines.join('\n') + '\n', () => {}); } catch (e) { /* ignore */ }
+}
 // 設定ファイルは「設定」フォルダを優先し、無ければ前の版の置き場所（キットのフォルダ直下）も見る
 function confPath(name) {
   const p = path.join(CONF_DIR, name);
@@ -76,7 +89,7 @@ const DEFAULT_BANDS = [
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
-  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる'] },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '巨大化', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
   { from: 2000, tier: 'XL', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
@@ -282,7 +295,7 @@ try {
     // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
     K.migr = Array.isArray(j.migr) ? j.migr : [];
     // 前の初期値の順番リストのままなら、新しい初期値に更新（瓶づめは前エフェクト→ハプニングへ）
-    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']]]) {
+    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']]]) {
       const b = K.bands.find((x) => x.from === from);
       if (b && JSON.stringify(b.list) === JSON.stringify(old)) b.list = DEFAULT_BANDS.find((x) => x.from === from).list.slice();
     }
@@ -307,6 +320,7 @@ try {
       }
     }
     if (Array.isArray(j.requests)) K.requests = j.requests.slice(0, 100);
+    if (j.reqLog && typeof j.reqLog === 'object' && Array.isArray(j.reqLog.items)) K.reqLog = { day: String(j.reqLog.day || ''), items: j.reqLog.items.slice(-300) };
     K.lines = sanitizeList(j.lines, 100, DEFAULT_LINES); K.twisters = sanitizeList(j.twisters, 100, DEFAULT_TWISTERS); K.penalties = sanitizeList(j.penalties, 100, DEFAULT_PENALTIES);
     K.teamLines = sanitizeList(j.teamLines, 100, DEFAULT_TEAM_LINES, 160);
     try { if (OLD_TEAM_LINES_FP.includes(require('crypto').createHash('sha1').update(JSON.stringify(K.teamLines)).digest('hex'))) K.teamLines = DEFAULT_TEAM_LINES.slice(); } catch (e) {}
@@ -332,7 +346,7 @@ function stateMsg() {
     type: 'state', serverNow: Date.now(),
     settings: K.settings, bands: K.bands.map((b) => Object.assign({}, b, { next: nextOf(b) })), style: K.style,
     team: { value: Math.round(K.team.value), max: K.settings.teamMax, label: K.settings.teamLabel },
-    slots: K.slots, requests: K.requests,
+    slots: K.slots, requests: K.requests, reqLog: reqLogToday(),
     challenge: K.challenge, lists: { lines: K.lines, teamLines: K.teamLines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
@@ -504,7 +518,7 @@ function processGift({ user, giftName, coins, count, test }) {
         Object.assign(S.cur, { bandId: key, user, fx, ico: b.ico, short: b.short, link: b.link || '', end: S.cur.end + b.min * 60000 * count });
       } else ext = slotAdd(b.slot, { bandId: key, user, fx, ico: b.ico, short: b.short, link: b.link || '', min: b.min, count });
     }
-    if (b.req) for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, at: Date.now() });
+    if (b.req) { for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, song: '', at: Date.now() }); reqLogWrite(); }
     if (b.link && !b.slot) linkOn(b.link, 9000);
     if (b.use === 'happen' && item) for (let i = 0; i < Math.min(count, 5); i++) happenQueue(item, !!b.link);
     if (b.use === 'challenge') { K.challenge.q.push({ id: 'c' + Date.now().toString(36) + (seq++), user, phrase: item || '生麦生米生卵', test: !!test }); if (!K.challenge.cur) chStartNext(); }
@@ -636,8 +650,20 @@ wss.on('connection', (ws) => {
         if (m.penalties) K.penalties = sanitizeList(m.penalties, 100, DEFAULT_PENALTIES);
         if (m.teamLines) K.teamLines = sanitizeList(m.teamLines, 100, DEFAULT_TEAM_LINES, 160);
         pushState(); break;
-      case 'reqDone': K.requests = K.requests.filter((r) => r.id !== m.id); pushState(); break;
-      case 'reqClear': K.requests = []; pushState(); break;
+      case 'reqDone': case 'reqCancel': { // 弾いた／取り消し → 今日の記録へ
+        const r = K.requests.find((x) => x.id === m.id);
+        K.requests = K.requests.filter((x) => x.id !== m.id);
+        if (r && r.kind !== 'TEAM達成') reqLogAdd(Object.assign({}, r, { st: m.type === 'reqDone' ? '弾いた' : '取り消し', doneAt: Date.now() }));
+        pushState(); break;
+      }
+      case 'reqSong': { const r = K.requests.find((x) => x.id === m.id); if (r) { r.song = str(m.song, 60, '').trim(); if (typeof m.kind === 'string' && ['サビ', 'フル', '弾き語り'].includes(m.kind)) r.kind = m.kind; reqLogWrite(); pushState(); } break; }
+      case 'reqAdd': { // コメントでもらったリクエストを手で追加
+        const kind = ['サビ', 'フル', '弾き語り'].includes(m.kind) ? m.kind : 'サビ';
+        K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user: str(m.user, 30, '').trim() || 'コメント', kind, song: str(m.song, 60, '').trim(), at: Date.now(), manual: true });
+        reqLogWrite(); pushState(); break;
+      }
+      case 'reqMove': { const i = K.requests.findIndex((x) => x.id === m.id), j = i + (m.dir < 0 ? -1 : 1); if (i >= 0 && j >= 0 && j < K.requests.length) { const t = K.requests[i]; K.requests[i] = K.requests[j]; K.requests[j] = t; pushState(); } break; }
+      case 'reqClear': for (const r of K.requests) if (r.kind !== 'TEAM達成') reqLogAdd(Object.assign({}, r, { st: '取り消し', doneAt: Date.now() }), true); K.requests = []; reqLogWrite(); pushState(); break;
       case 'setLayout': {
         const mode = m.mode === 'game' ? 'game' : 'avatar';
         if (LAYOUT_IDS.includes(m.id)) { const v = sanitizeLayoutItem(m); if (v) { K.layout[mode][m.id] = v; pushState(); } }
@@ -1385,6 +1411,11 @@ async function obsSetup() {
     inn = ((await obsReq('GetSceneItemList', { sceneName: inner })).data.sceneItems || []);
     await obsReq('SetSceneItemIndex', { sceneName: inner, sceneItemId: iid('ハプニング手前'), sceneItemIndex: idx(av) + 1 });
   }
+  if (avIt) { // 石化・氷づけ用の色フィルター（ふだんはOFF）
+    const r = await obsReq('CreateSourceFilter', { sourceName: av, filterName: 'NANA色', filterKind: 'color_filter_v2', filterSettings: {} });
+    await obsReq('SetSourceFilterEnabled', { sourceName: av, filterName: 'NANA色', filterEnabled: false });
+    void r;
+  }
   if (await obsFindWrap()) {
     await obsReq('SetCurrentProgramScene', { sceneName: OBS_WRAP });
     if (!avIt) obsSetStatus('ok', '「NANA ハプニング」を作りました。つぎに、リモコンでアバターのソースを選んで、もう一度「OBS を準備する」を押してください');
@@ -1430,10 +1461,21 @@ async function obsAnimStart(name, at) {
     const t = (Date.now() - at) / 1000;
     if (t > HAPPEN.H[name].len) { obsAnimStop(); return; }
     obsSetT(HAPPEN.kf(name, t));
+    obsTint(HAPPEN.tint(name, t));
     if (HQ.clones.length && (n++ % 2 === 0)) { const c = HAPPEN.clones(name, t) || []; HQ.clones.forEach((id, i) => c[i] && obsSetT(c[i], id)); }
   }, 33);
 }
+// 石化＝灰色、氷づけ＝水色（アバターのソースの「NANA色」フィルター）
+const OBS_TINTS = { stone: { saturation: -1, brightness: -0.08, contrast: 0.25, gamma: 0 }, ice: { saturation: -0.5, brightness: 0.08, contrast: 0.05, color_multiply: 0xffffd8a8 } };
+function obsTint(name) {
+  if (HQ.tint === (name || null) || !OBS.av) return;
+  HQ.tint = name || null;
+  const src = K.settings.obs.avatar;
+  if (name) obsReq('SetSourceFilterSettings', { sourceName: src, filterName: 'NANA色', filterSettings: OBS_TINTS[name], overlay: false });
+  obsReq('SetSourceFilterEnabled', { sourceName: src, filterName: 'NANA色', filterEnabled: !!name });
+}
 function obsAnimStop(quiet) {
+  if (HQ.tint) obsTint(null);
   if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; if (!quiet) obsRestore(); }
   for (const id of HQ.clones || []) obsReq('RemoveSceneItem', { sceneName: OBS.inner, sceneItemId: id });
   HQ.clones = [];
