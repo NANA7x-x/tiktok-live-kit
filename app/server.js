@@ -388,12 +388,12 @@ function poolOf(b) {
 // 「さくら色#ffb7d5」のような色指定は、表示では色コードを消す
 const itemLabel = (x) => (typeof x === 'string' ? (x.replace(/\s*#[0-9a-f]{6}\b/i, '').trim() || x) : x);
 function nextOf(b) { const p = poolOf(b); return p && p.length ? itemLabel(p[(K.idx[b.id] || 0) % p.length]) : null; }
-function takeItem(b) {
+function takeItem(b, pick) {
   const p = poolOf(b);
   if (!p || !p.length) return { fx: b.fx.replace('{x}', ''), item: null };
-  const i = (K.idx[b.id] || 0) % p.length;
-  K.idx[b.id] = i + 1;
-  const item = p[i];
+  let item;
+  if (pick && p.includes(pick)) item = pick; // テストで狙った項目（順番は進めない）
+  else { const i = (K.idx[b.id] || 0) % p.length; K.idx[b.id] = i + 1; item = p[i]; }
   return { fx: b.fx.includes('{x}') ? b.fx.replace('{x}', itemLabel(item)) : b.fx, item };
 }
 
@@ -497,7 +497,7 @@ function rankView() {
 function rankReset() { K.rank = { gift: {}, like: {} }; }
 
 // TikTok（またはリモコンのテスト）からのギフトを処理する。count = 連投の個数
-function processGift({ user, giftName, coins, count, test }) {
+function processGift({ user, giftName, coins, count, test, pick }) {
   user = String(user || 'だれか').slice(0, 30);
   giftName = String(giftName || 'ギフト').slice(0, 30);
   count = Math.max(1, Math.min(999, Math.floor(Number(count) || 1)));
@@ -507,7 +507,7 @@ function processGift({ user, giftName, coins, count, test }) {
   let ext = false;
   let fx = b ? b.fx : '', item = null;
   if (b) {
-    ({ fx, item } = takeItem(b));
+    ({ fx, item } = takeItem(b, test ? pick : null));
     if (b.slot) {
       // 同じ段・同じ項目が発動中なら延長。同じ段の別の項目なら切り替え＋時間を足す
       const key = b.id + (item ? ':' + item : '');
@@ -631,7 +631,7 @@ wss.on('connection', (ws) => {
       case 'setBands': { const b = sanitizeBands(m.bands); if (b) { K.bands = b; pushState(); } break; }
       case 'resetBands': K.bands = sanitizeBands(DEFAULT_BANDS); pushState(); break;
       case 'setStyle': K.style = sanitizeStyle(m.style); pushState(); break;
-      case 'testGift': processGift({ user: testName(m.user), giftName: str(m.giftName, 30, '') || 'テストギフト', coins: m.coins, count: m.count, test: true }); break;
+      case 'testGift': processGift({ user: testName(m.user), giftName: str(m.giftName, 30, '') || 'テストギフト', coins: m.coins, count: m.count, test: true, pick: typeof m.pick === 'string' ? m.pick : null }); break;
       case 'testEvent': {
         const u = testName(m.user);
         if (m.kind === 'like') { broadcast({ type: 'ev', kind: 'like', count: 50, test: true }); rankAddLike(u, 50); teamAdd(50 * K.settings.teamW.like, true); }
