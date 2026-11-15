@@ -1,0 +1,29 @@
+{
+ "on": false,
+ "api": {
+  "kind": "ollama",
+  "url": "http://127.0.0.1:11434",
+  "model": "",
+  "key": ""
+ },
+ "streamer": {
+  "persona": "TikTokでゲームとピアノの配信をしている「なな」。明るくて親しみやすい話し方。視聴者は「〇〇さん」と呼ぶ。"
+ },
+ "thanks": {
+  "on": true,
+  "minTier": "M",
+  "show": "kanpe",
+  "maxLen": 40
+ },
+ "req": {
+  "on": true
+ },
+ "mate": {
+  "mode": "off",
+  "cooldown": 45,
+  "maxLen": 50,
+  "name": "あいぼう",
+  "persona": "配信者ななのとなりにいる小さな相方。ツッコミ担当で、短くて楽しい一言を言う。視聴者にはやさしい。"
+ },
+ "ng": []
+}
