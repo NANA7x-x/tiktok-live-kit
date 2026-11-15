@@ -107,6 +107,8 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
     <details data-k="test"><summary>🎁 テスト送信</summary><div class="body">
       <div class="row"><label>名前 <input id="tName" value="テストさん" style="width:140px"></label><label>個数 <input id="tCount" type="number" min="1" value="1" style="width:70px"></label></div>
       <div class="gb" id="testBtns"></div>
+      <div class="row" style="margin-top:10px"><b>🎯 狙ってテスト</b><select id="pkBand" style="min-width:220px"></select><span class="note">押した中身だけが出ます（順番は進みません）</span></div>
+      <div class="row" id="pkItems" style="flex-wrap:wrap;gap:6px"></div>
       <div class="row"><input id="tCoins" type="number" min="1" value="250" style="width:110px"><button id="tGo">好きなコイン数で送る</button></div>
       <div class="row"><button data-ev="like">❤️ いいね+50</button><button data-ev="comment">💬 コメント</button><button data-ev="follow">➕ フォロー</button><button data-ev="share">🔗 シェア</button></div>
       <div class="note">テストでも、変身・リクエスト・TEAMゲージは実際に動きます（確認が終わったら上の「発動中・リクエスト」で消してください）。DiscordやVRChatには流れません。</div>
@@ -377,8 +379,16 @@ $("tGo").onclick=()=>{const c=Math.max(1,+$("tCoins").value||1);send({type:"test
 
 /* テスト送信ボタン（ギフト表の各段） */
 let tbKey="";
-function renderTestBtns(){const k=JSON.stringify(S.bands);if(k===tbKey)return;tbKey=k;
+function renderTestBtns(){const k=JSON.stringify(S.bands)+(S.bgFiles||[]).join("|");if(k===tbKey)return;tbKey=k;renderPick();
   $("testBtns").innerHTML=S.bands.map(b=>`<button data-coins="${b.from}" data-gname="${b.from}コインのギフト">${esc(b.ico)} ${b.from.toLocaleString()}コイン<small>${b.tier} → ${esc(b.fx)}${b.min?" "+b.min+"分":""}</small></button>`).join("");}
+
+// ===== 狙ってテスト：段と中身を選んで、その1つだけを出す（順番は進めない） =====
+const pickPool=b=>{if(!b)return[];const l=(b.list||[]).slice();if(b.bg)for(const f of (S.bgFiles||[])){const n=f.replace(/\.[^.]+$/,"").slice(0,30);if(!l.includes(n))l.push(n);}return l;};
+function renderPick(){const sel=$("pkBand"),cur=sel.value,bs=S.bands.filter(b=>pickPool(b).length);
+  sel.innerHTML=bs.map(b=>`<option value="${b.from}">${esc(b.ico)} ${b.from.toLocaleString()}コイン：${esc(b.short||b.fx)}</option>`).join("");if(bs.some(b=>String(b.from)===cur))sel.value=cur;renderPickItems();}
+$("pkBand").onchange=()=>renderPickItems();
+function renderPickItems(){const b=S.bands.find(x=>String(x.from)===$("pkBand").value);$("pkItems").innerHTML=pickPool(b).map(n=>`<button class="sm" data-pick="${esc(n)}">${esc(n.replace(/\s*#[0-9a-f]{6}\b/i,""))}</button>`).join("");}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-pick]");if(!b)return;send({type:"testGift",coins:+$("pkBand").value,giftName:$("pkBand").value+"コインのギフト",pick:b.dataset.pick});});
 
 /* ===== 見た目 ===== */
 const PRESETS={
