@@ -28,6 +28,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+const HAPPEN = require('./happen.js');
 const dgram = require('dgram');
 const { TikTokLiveConnection, WebcastEvent } = require('tiktok-live-connector');
 
@@ -70,15 +71,15 @@ const DEFAULT_BANDS = [
   { from: 20, tier: 'M', ico: '✏️', fx: 'お名前であいうえお作文', short: 'あいうえお作文' },
   { from: 30, tier: 'M', ico: '🎭', fx: '{x}でしゃべる', min: 5, slot: 'voice', short: 'しゃべり方', list: ['関西弁', 'お嬢様口調', '執事口調', 'ツンデレ', '一人称「俺」', '実況アナウンサー風', '博多弁'] },
   { from: 50, tier: 'M', ico: '🎙️', fx: 'マイク：{x}', min: 2, slot: 'vfx', short: 'マイクエフェクト', list: ['ロボ声', 'ヘリウム声', '低音ボイス', 'エコー', 'ラジオ風', 'メガホン'] },
-  { from: 88, tier: 'M', ico: '✨', fx: '前エフェクト：{x}', min: 2, slot: 'deco', short: '前エフェクト', list: ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ'] },
+  { from: 88, tier: 'M', ico: '✨', fx: '前エフェクト：{x}', min: 2, slot: 'deco', short: '前エフェクト', list: ['桜ふる', 'ふんわり', 'バラの花びら', '雪ふる', 'モザイク', '葉っぱ', '水の中', '炭酸のコップ'] },
   { from: 100, tier: 'L', ico: '🫧', fx: 'ゆらめき：{x}', min: 2, slot: 'scene', short: 'ゆらめき', list: ['ピンク', 'ラベンダー', 'ミント', '水色', 'ゴールド', 'ピーチ', 'ブルー', 'ローズ'] },
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
-  { from: 199, tier: 'L', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
-  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる'] },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
+  { from: 2000, tier: 'XL', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
   { from: 5000, tier: 'XL', ico: '🎤', fx: 'ピアノ弾き語り1曲', req: '弾き語り', short: '弾き語り', link: 'vts:rainbow vts:grow' },
 ];
 // セリフ集・早口言葉・罰ゲーム（リモコンで編集できる）
@@ -105,6 +106,7 @@ const DEFAULT_SETTINGS = {
   sound: { on: true, volume: 0.5, theme: 'arcade', map: {} },
   chainSec: 10,
   vts: { on: false, port: 8001 },  // VTube Studio 連携
+  obs: { on: false, port: 4455 },  // OBS 連携（ハプニングで配信画面ごと動かす）。パスワードは 設定/obs_password.txt
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
@@ -205,6 +207,7 @@ function sanitizeSettings(s, base) {
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
   if (typeof s.likeHearts === 'boolean') o.likeHearts = s.likeHearts;
+  if (s.obs && typeof s.obs === 'object') { if (typeof s.obs.on === 'boolean') o.obs.on = s.obs.on; o.obs.port = Math.round(clamp(s.obs.port, 1, 65535, o.obs.port)); }
   if (s.vts && typeof s.vts === 'object') { if (typeof s.vts.on === 'boolean') o.vts.on = s.vts.on; o.vts.port = Math.round(clamp(s.vts.port, 1, 65535, o.vts.port)); }
   if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
   if (s.atmo && typeof s.atmo === 'object') {
@@ -245,7 +248,7 @@ function sanitizeLayout(o) {
 let K = {
   settings: sanitizeSettings(null),
   bands: sanitizeBands(DEFAULT_BANDS),
-  migr: ['deco1', 'happen1'],
+  migr: ['deco1', 'happen1', 'cam2000'],
   style: sanitizeStyle(null),
   team: { value: 0 },
   slots: { voice: { cur: null, q: [] }, cam: { cur: null, q: [] }, vfx: { cur: null, q: [] }, scene: { cur: null, q: [] }, deco: { cur: null, q: [] } },
@@ -278,6 +281,17 @@ try {
     }
     // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
     K.migr = Array.isArray(j.migr) ? j.migr : [];
+    // 前の初期値の順番リストのままなら、新しい初期値に更新（瓶づめは前エフェクト→ハプニングへ）
+    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']]]) {
+      const b = K.bands.find((x) => x.from === from);
+      if (b && JSON.stringify(b.list) === JSON.stringify(old)) b.list = DEFAULT_BANDS.find((x) => x.from === from).list.slice();
+    }
+    // 手元カメラは 199 → 2000 コインへ（前の初期値のままなら一度だけ動かす）
+    if (!K.migr.includes('cam2000')) {
+      K.migr.push('cam2000');
+      const c = K.bands.find((b) => b.from === 199 && b.slot === 'cam');
+      if (c && !K.bands.some((b) => b.from === 2000)) { c.from = 2000; c.tier = 'XL'; K.bands = sanitizeBands(K.bands) || K.bands; }
+    }
     for (const [tag, from] of [['deco1', 88], ['happen1', 400]]) {
       if (K.migr.includes(tag)) continue;
       K.migr.push(tag);
@@ -322,6 +336,8 @@ function stateMsg() {
     challenge: K.challenge, lists: { lines: K.lines, teamLines: K.teamLines, twisters: K.twisters, penalties: K.penalties },
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
+    obs: { status: OBS.status, ready: OBS.ready, hasPass: !!OBS.pass, scene: OBS.wrapScene, msg: OBS.msg },
+    happen: HQ.cur ? { name: HQ.cur.name, at: HQ.cur.at } : null,
     sfxFiles,
     bgFiles,
     vrc: { enabled: vrcEnabled },
@@ -490,7 +506,7 @@ function processGift({ user, giftName, coins, count, test }) {
     }
     if (b.req) for (let i = 0; i < Math.min(count, 10); i++) K.requests.push({ id: 'r' + Date.now().toString(36) + (seq++), user, kind: b.req, at: Date.now() });
     if (b.link && !b.slot) linkOn(b.link, 9000);
-    if (b.use === 'happen' && item && HAPPEN_VTS[item] && !b.link) { try { setTimeout(() => vtsAction(HAPPEN_VTS[item], 0, true), 800); } catch (e) { /* VTS が無くても画面の演出は出る */ } }
+    if (b.use === 'happen' && item) for (let i = 0; i < Math.min(count, 5); i++) happenQueue(item, !!b.link);
     if (b.use === 'challenge') { K.challenge.q.push({ id: 'c' + Date.now().toString(36) + (seq++), user, phrase: item || '生麦生米生卵', test: !!test }); if (!K.challenge.cur) chStartNext(); }
   }
   broadcast({
@@ -516,6 +532,8 @@ const PAGES = {
   '/': 'overlay.html', '/overlay.html': 'overlay.html', '/front.html': 'overlay.html', '/back.html': 'overlay.html',
   '/transparent.html': 'overlay.html', // 旧URL（OBSの設定をそのまま使えるように）
   '/remote.html': 'remote.html',
+  '/happen-back.html': 'overlay.html', '/happen-front.html': 'overlay.html', // OBS の「NANA ハプニング」シーン用
+  '/happen.js': 'happen.js',
 };
 function kitFileStamp(rel) { try { return Math.floor(fs.statSync(path.join(__dirname, rel)).mtimeMs); } catch (e) { return 0; } }
 function kitVersion(file) { return kitFileStamp(file) + '.' + kitFileStamp('server.js'); }
@@ -561,6 +579,7 @@ const httpServer = http.createServer((req, res) => {
   if (!name) { res.writeHead(404); res.end('not found'); return; }
   fs.readFile(path.join(__dirname, name), (err, data) => {
     if (err) { res.writeHead(500); res.end('file not found: ' + name); return; }
+    if (name.endsWith('.js')) { res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(data); return; }
     let html = data.toString('utf8');
     const stampScript = '<script>window.__kitVersion="' + kitVersion(name) + '";</script>';
     html = html.includes('<head>') ? html.replace('<head>', '<head>' + stampScript) : stampScript + html;
@@ -590,7 +609,7 @@ wss.on('connection', (ws) => {
     if (!m || typeof m.type !== 'string') return;
     switch (m.type) {
       case 'hello': try { ws.send(JSON.stringify(stateMsg())); } catch (e) { /* ignore */ } break;
-      case 'setSettings': { const was = JSON.stringify(K.settings.vts); K.settings = sanitizeSettings(m.settings, K.settings); if (JSON.stringify(K.settings.vts) !== was) { vtsClose(); vtsConnect(); } pushState(); break; }
+      case 'setSettings': { const was = JSON.stringify(K.settings.vts), wo = JSON.stringify(K.settings.obs); K.settings = sanitizeSettings(m.settings, K.settings); if (JSON.stringify(K.settings.vts) !== was) { vtsClose(); vtsConnect(); } if (JSON.stringify(K.settings.obs) !== wo) { obsClose(); obsConnect(); } pushState(); break; }
       case 'setBands': { const b = sanitizeBands(m.bands); if (b) { K.bands = b; pushState(); } break; }
       case 'resetBands': K.bands = sanitizeBands(DEFAULT_BANDS); pushState(); break;
       case 'setStyle': K.style = sanitizeStyle(m.style); pushState(); break;
@@ -631,6 +650,11 @@ wss.on('connection', (ws) => {
       case 'bgRescan': scanBg(); pushState(); break;
       case 'vtsTest': if (typeof m.action === 'string') linkOn('vts:' + m.action.slice(0, 60), 6000); break;
       case 'vtsReconnect': vtsClose(); vtsConnect(); break;
+      case 'obsPass': OBS.pass = str(m.pass, 200, ''); try { fs.writeFileSync(OBS_PASS_FILE, OBS.pass); } catch (e) { /* ignore */ } obsClose(); obsConnect(); pushState(); break;
+      case 'obsReconnect': obsClose(); obsConnect(); break;
+      case 'obsSetup': obsSetup(); break;
+      case 'happenTest': if (typeof m.name === 'string' && HAPPEN.H[m.name]) happenQueue(m.name, false); break;
+      case 'happenStop': HQ.q = []; happenEnd(); break;
       default: break;
     }
   });
@@ -1137,7 +1161,7 @@ function vtsTint(name) {
   vtsSend('ColorTintRequest', { colorTint: { colorR: c ? c[0] : 255, colorG: c ? c[1] : 255, colorB: c ? c[2] : 255, colorA: 255, jeb_: !!(c && c[3]) }, artMeshMatcher: { tintAll: true } });
 }
 // ハプニングのとき VTube Studio のアバターを動かす（連携ONのときだけ。最後は必ず元の位置に戻す）
-const HAPPEN_VTS = { '川に流される': 'river', '海に出ていく': 'sea', '化け物に連れ去られる': 'abduct', 'UFOにさらわれる': 'ufo' };
+const HAPPEN_VTS = { '川に流される': 'river', '海に出ていく': 'sea', '化け物に連れ去られる': 'abduct', 'UFOにさらわれる': 'ufo', 'いきなり踊らされる': 'dance' };
 function vtsAction(act, hold, on) {
   if (!VTS.ready) return;
   const later = (ms, f) => setTimeout(f, ms);
@@ -1166,11 +1190,157 @@ function vtsAction(act, hold, on) {
     case 'sea': later(1500, () => vtsMove(3, { size: -45, positionY: 0.35 })); later(4600, () => vtsMove(0.4, { positionX: 0.06 })); later(5100, () => vtsMove(0.4, { positionX: -0.06 })); later(6400, () => vtsMove(1.2, { size: 45, positionY: -0.35 })); break;
     case 'abduct': later(2600, () => vtsMove(0.15, { rotation: 20 })); later(2800, () => vtsMove(0.6, { positionX: -3, positionY: 0.6 })); later(6000, () => vtsMove(0.01, { positionX: 6 })); later(6100, () => vtsMove(1.1, { positionX: -3, positionY: -0.6, rotation: -20 })); break;
     case 'ufo': later(1900, () => vtsMove(2.4, { positionY: 3, rotation: 30 })); later(6200, () => vtsMove(1.3, { positionY: -3, rotation: -30 })); break;
+    case 'dance': for (let i = 0; i < 22; i++) later(500 + i * 455, () => vtsMove(0.2, { rotation: i % 2 ? -24 : 24, positionY: i % 2 ? 0.04 : -0.04 })); later(500 + 22 * 455, () => vtsMove(0.2, { rotation: 12, positionY: 0.02 })); break;
     case 'fly': vtsMove(0.35, { positionX: 3 }); later(1300, () => vtsMove(0.01, { positionX: -6 })); later(1350, () => vtsMove(0.5, { positionX: 3 })); break;
     default: break;
   }
 }
 if (K.settings.vts.on) setTimeout(vtsConnect, 1500);
+
+// ============================================================
+// ハプニング：順番に1つずつ。OBS 連携ができていれば配信画面ごと動かす
+// ============================================================
+const HQ = { q: [], cur: null, timer: null, anim: null };
+function happenQueue(name, hasLink) { if (!HAPPEN.H[name]) return; HQ.q.push({ name, hasLink }); if (!HQ.cur) happenNext(2000); else pushState(); }
+function happenNext(delay) {
+  const x = HQ.q.shift();
+  if (!x) { HQ.cur = null; pushState(); return; }
+  const len = HAPPEN.H[x.name].len * 1000;
+  HQ.cur = { name: x.name, at: Date.now() + (delay || 600) };
+  broadcast({ type: 'ev', kind: 'happen', name: x.name, at: HQ.cur.at });
+  pushState();
+  setTimeout(() => {
+    if (!HQ.cur || HQ.cur.name !== x.name) return;
+    // OBS で動かせないときは、VTube Studio のアバターを動かす（踊りは OBS があっても動かす）
+    const v = HAPPEN_VTS[x.name];
+    if (v && !x.hasLink && (!OBS.ready || v === 'dance')) { try { vtsAction(v, 0, true); } catch (e) { /* ignore */ } }
+    if (OBS.ready) obsAnimStart(x.name, HQ.cur.at);
+  }, Math.max(0, HQ.cur.at - Date.now() - 600));
+  clearTimeout(HQ.timer);
+  HQ.timer = setTimeout(happenEnd, HQ.cur.at - Date.now() + len);
+}
+function happenEnd() { clearTimeout(HQ.timer); obsAnimStop(); if (HQ.cur) broadcast({ type: 'ev', kind: 'happen', name: null, at: 0 }); HQ.cur = null; happenNext(1500); }
+
+// --- OBS（obs-websocket v5。OBS の「ツール → WebSocketサーバー設定」でONにする） ---
+const OBS_PASS_FILE = path.join(CONF_DIR, 'obs_password.txt');
+const OBS_WRAP = 'NANA ハプニング', OBS_BLOOM = 'NANA ふんわり', OBS_MOSAIC = 'NANA モザイク';
+const OBS = { ws: null, ready: false, status: 'off', msg: '', pass: '', n: 0, cb: {}, retry: null, wrapScene: '', itemId: 0, W: 1080, H: 1920 };
+try { OBS.pass = fs.readFileSync(OBS_PASS_FILE, 'utf8').trim(); } catch (e) { /* 無ければなし */ }
+function obsSetStatus(st, msg) { if (OBS.status !== st || OBS.msg !== (msg || '')) { OBS.status = st; OBS.msg = msg || ''; pushState(); } }
+function obsReq(type, data) {
+  return new Promise((res) => {
+    if (!OBS.ws || OBS.ws.readyState !== 1) return res({ ok: false, code: 0, data: {} });
+    const id = 'r' + (++OBS.n);
+    OBS.cb[id] = res;
+    setTimeout(() => { if (OBS.cb[id]) { delete OBS.cb[id]; res({ ok: false, code: -1, data: {} }); } }, 5000);
+    try { OBS.ws.send(JSON.stringify({ op: 6, d: { requestType: type, requestId: id, requestData: data || {} } })); } catch (e) { delete OBS.cb[id]; res({ ok: false, code: 0, data: {} }); }
+  });
+}
+function obsClose() { clearTimeout(OBS.retry); if (OBS.ws) { try { OBS.ws.close(); } catch (e) { /* ignore */ } } OBS.ws = null; OBS.ready = false; obsSetStatus(K.settings.obs.on ? 'connecting' : 'off'); }
+function obsRetry() { clearTimeout(OBS.retry); OBS.ws = null; OBS.retry = setTimeout(obsConnect, 10000); }
+function obsConnect() {
+  if (!K.settings.obs.on || !WSClient || OBS.ws) { if (!K.settings.obs.on) obsSetStatus('off'); return; }
+  obsSetStatus('connecting');
+  let ws;
+  try { ws = new WSClient(`ws://127.0.0.1:${K.settings.obs.port}`); } catch (e) { obsRetry(); return; }
+  OBS.ws = ws;
+  ws.addEventListener('message', (ev) => {
+    if (OBS.ws !== ws) return;
+    let m; try { m = JSON.parse(String(ev.data)); } catch (e) { return; }
+    if (m.op === 0) {
+      const d = { rpcVersion: 1, eventSubscriptions: 0 };
+      const a = m.d && m.d.authentication;
+      if (a) {
+        if (!OBS.pass) { obsSetStatus('needpass', 'OBS の WebSocket にパスワードがかかっています'); return; }
+        const sha = (x) => require('crypto').createHash('sha256').update(x).digest('base64');
+        d.authentication = sha(sha(OBS.pass + a.salt) + a.challenge);
+      }
+      ws.send(JSON.stringify({ op: 1, d }));
+    } else if (m.op === 2) { obsSetStatus('ok'); console.log('[obs] OBS 連携: OK'); obsFindWrap(); }
+    else if (m.op === 7) { const d = m.d || {}, f = OBS.cb[d.requestId]; if (f) { delete OBS.cb[d.requestId]; const st = d.requestStatus || {}; f({ ok: !!st.result, code: st.code, comment: st.comment, data: d.responseData || {} }); } }
+  });
+  ws.addEventListener('close', (ev) => {
+    if (OBS.ws !== ws) return; // 古い接続の close は無視
+    OBS.ws = null; OBS.ready = false;
+    if (!K.settings.obs.on) return;
+    if (ev && ev.code === 4009) obsSetStatus('badpass', 'パスワードがちがいます'); else if (OBS.status !== 'needpass') obsSetStatus('connecting');
+    obsRetry();
+  });
+  ws.addEventListener('error', () => { /* close で再接続 */ });
+}
+// 「NANA ハプニング」シーンの中の、配信画面（シーン）を見つける
+async function obsFindWrap() {
+  OBS.ready = false;
+  const v = await obsReq('GetVideoSettings');
+  if (v.ok) { OBS.W = v.data.baseWidth || 1080; OBS.H = v.data.baseHeight || 1920; }
+  const l = await obsReq('GetSceneItemList', { sceneName: OBS_WRAP });
+  if (!l.ok) { OBS.wrapScene = ''; obsSetStatus('ok', 'リモコンの「ハプニング用シーンを作る」を押してください'); return false; }
+  const it = (l.data.sceneItems || []).find((x) => x.sourceType === 'OBS_SOURCE_TYPE_SCENE' && x.sourceName !== OBS_BLOOM && x.sourceName !== OBS_MOSAIC);
+  if (!it) { obsSetStatus('ok', '「NANA ハプニング」に配信画面のシーンが入っていません（もう一度「作る」を押してください）'); return false; }
+  OBS.wrapScene = OBS_WRAP; OBS.itemId = it.sceneItemId; OBS.inner = it.sourceName; OBS.ready = true;
+  OBS.fxIds = {}; OBS.fxOn = null;
+  for (const [k, n] of [['ふんわり', OBS_BLOOM], ['モザイク', OBS_MOSAIC]]) { const x = (l.data.sceneItems || []).find((y) => y.sourceName === n); if (x) OBS.fxIds[k] = x.sceneItemId; }
+  obsSetStatus('ok', `準備OK（「${OBS_WRAP}」の中の「${it.sourceName}」を動かします）`);
+  obsSetT({ x: 0, y: 0, s: 1, r: 0, moving: true });
+  return true;
+}
+async function obsSetup() {
+  if (!OBS.ws || OBS.status !== 'ok') { obsSetStatus(OBS.status, '先に OBS とつないでください'); return; }
+  const v = await obsReq('GetVideoSettings');
+  const W = (v.data && v.data.baseWidth) || 1080, H = (v.data && v.data.baseHeight) || 1920;
+  const cur = await obsReq('GetCurrentProgramScene');
+  let inner = cur.data && (cur.data.sceneName || cur.data.currentProgramSceneName);
+  if (!inner) { obsSetStatus('ok', '今のシーンがわかりませんでした'); return; }
+  if (inner === OBS_WRAP) { if (await obsFindWrap()) return; obsSetStatus('ok', 'いったんふだんの配信シーンに切り替えてから「作る」を押してください'); return; }
+  await obsReq('CreateScene', { sceneName: OBS_WRAP }); // もうあれば何もしない
+  const items = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
+  const url = (p) => `http://localhost:${PORT}${p}`;
+  if (!items.some((x) => x.sourceName === 'ハプニング奥')) await obsReq('CreateInput', { sceneName: OBS_WRAP, inputName: 'ハプニング奥', inputKind: 'browser_source', inputSettings: { url: url('/happen-back.html'), width: W, height: H, fps: 30 } });
+  if (!items.some((x) => x.sourceName === inner)) await obsReq('CreateSceneItem', { sceneName: OBS_WRAP, sourceName: inner });
+  if (!items.some((x) => x.sourceName === 'ハプニング手前')) await obsReq('CreateInput', { sceneName: OBS_WRAP, inputName: 'ハプニング手前', inputKind: 'browser_source', inputSettings: { url: url('/happen-front.html'), width: W, height: H, fps: 30 } });
+  // ふんわり（ブルーム）とモザイク：配信画面を入れた別シーンに OBS の標準フィルターをかけて、上に重ねる（ふだんは非表示）
+  for (const [sc, filters] of [[OBS_BLOOM, [['ぼかし', 'scale_filter', { resolution: '135x240', sampling: 'bilinear' }], ['光', 'color_filter_v2', { brightness: 0.06, contrast: 0.35, gamma: -0.25, opacity: 0.55 }]]],
+    [OBS_MOSAIC, [['モザイク', 'scale_filter', { resolution: '45x80', sampling: 'point' }]]]]) {
+    await obsReq('CreateScene', { sceneName: sc });
+    const its = ((await obsReq('GetSceneItemList', { sceneName: sc })).data.sceneItems || []);
+    if (!its.some((x) => x.sourceName === inner)) await obsReq('CreateSceneItem', { sceneName: sc, sourceName: inner });
+    for (const [fn, kind, set] of filters) { const r = await obsReq('CreateSourceFilter', { sourceName: sc, filterName: fn, filterKind: kind, filterSettings: set }); if (!r.ok) await obsReq('SetSourceFilterSettings', { sourceName: sc, filterName: fn, filterSettings: set }); }
+    if (!items.some((x) => x.sourceName === sc)) await obsReq('CreateSceneItem', { sceneName: OBS_WRAP, sourceName: sc, sceneItemEnabled: false });
+  }
+  // 重なり順：奥（下）→ 配信画面 → ふんわり・モザイク → 手前（上）
+  const now = ((await obsReq('GetSceneItemList', { sceneName: OBS_WRAP })).data.sceneItems || []);
+  const id = (n) => (now.find((x) => x.sourceName === n) || {}).sceneItemId;
+  for (const [n, i] of [['ハプニング奥', 0], [inner, 1], [OBS_BLOOM, 2], [OBS_MOSAIC, 3], ['ハプニング手前', 4]]) if (id(n)) await obsReq('SetSceneItemIndex', { sceneName: OBS_WRAP, sceneItemId: id(n), sceneItemIndex: i });
+  if (id(OBS_BLOOM)) await obsReq('SetSceneItemBlendMode', { sceneName: OBS_WRAP, sceneItemId: id(OBS_BLOOM), sceneItemBlendMode: 'OBS_BLEND_SCREEN' });
+  if (await obsFindWrap()) {
+    await obsReq('SetCurrentProgramScene', { sceneName: OBS_WRAP });
+    obsSetStatus('ok', `準備OK：「${OBS_WRAP}」を作って、今の配信画面（${inner}）を入れました。配信はこのシーンのまま使ってください`);
+  }
+}
+function obsSetT(k) {
+  if (!OBS.ready) return;
+  const W = OBS.W, H = OBS.H, pos = { alignment: 0, positionX: W / 2 + k.x * W, positionY: H / 2 + k.y * H, rotation: ((k.r % 360) + 360) % 360 };
+  obsReq('SetSceneItemTransform', { sceneName: OBS.wrapScene, sceneItemId: OBS.itemId, sceneItemTransform: Object.assign({ boundsType: 'OBS_BOUNDS_NONE', scaleX: k.s, scaleY: k.s }, pos) });
+  // ふんわり・モザイクは小さくした画面を引きのばして重ねるので、枠の大きさで合わせる
+  for (const id of Object.values(OBS.fxIds || {})) if (k.moving || OBS.fxOn) obsReq('SetSceneItemTransform', { sceneName: OBS.wrapScene, sceneItemId: id, sceneItemTransform: Object.assign({ boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: Math.max(1, W * k.s), boundsHeight: Math.max(1, H * k.s) }, pos) });
+}
+// 前エフェクトの「ふんわり」「モザイク」を OBS 側でON/OFF
+function obsFxSync() {
+  if (!OBS.ready || !OBS.fxIds) return;
+  const c = K.slots.deco && K.slots.deco.cur, name = c && c.end > Date.now() ? String(c.bandId || '').split(':').slice(1).join(':') : null;
+  const want = OBS.fxIds[name] ? name : null;
+  if (want === OBS.fxOn) return;
+  OBS.fxOn = want;
+  if (want) obsSetT(Object.assign({ x: 0, y: 0, s: 1, r: 0 }, HQ.lastK || {}));
+  for (const [k, id] of Object.entries(OBS.fxIds)) obsReq('SetSceneItemEnabled', { sceneName: OBS.wrapScene, sceneItemId: id, sceneItemEnabled: k === want });
+}
+setInterval(obsFxSync, 500);
+function obsAnimStart(name, at) {
+  obsAnimStop();
+  HQ.anim = setInterval(() => { const t = (Date.now() - at) / 1000; if (t > HAPPEN.H[name].len) { obsAnimStop(); return; } HQ.lastK = HAPPEN.kf(name, t); obsSetT(HQ.lastK); }, 33);
+}
+function obsAnimStop() { if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; } HQ.lastK = null; obsSetT({ x: 0, y: 0, s: 1, r: 0, moving: true }); }
+if (K.settings.obs.on) setTimeout(obsConnect, 1500);
 
 // --- VRChat のアバターパラメーター（OSC。vrc_osc.txt で連携ONのときだけ） ---
 function oscParamPacket(name, v) {
