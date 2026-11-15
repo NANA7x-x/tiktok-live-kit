@@ -89,7 +89,7 @@ const DEFAULT_BANDS = [
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
-  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '巨大化', '化け物に振り回される', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '化け物にかわいがられる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる'] },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '巨大化', '化け物に振り回される', '人面魚になって海へ', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '化け物にかわいがられる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
   { from: 2000, tier: 'XL', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
@@ -297,7 +297,7 @@ try {
     // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
     K.migr = Array.isArray(j.migr) ? j.migr : [];
     // 前の初期値の順番リストのままなら、新しい初期値に更新（瓶づめは前エフェクト→ハプニングへ）
-    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '巨大化', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる']]]) {
+    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '巨大化', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる']], [400, ['川に流される', '巨大化', '化け物に振り回される', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '化け物にかわいがられる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる']]]) {
       const b = K.bands.find((x) => x.from === from);
       if (b && JSON.stringify(b.list) === JSON.stringify(old)) b.list = DEFAULT_BANDS.find((x) => x.from === from).list.slice();
     }
@@ -1415,6 +1415,9 @@ async function obsSetup() {
   if (avIt) { // 石化・氷づけ用の色フィルター（ふだんはOFF）
     const r = await obsReq('CreateSourceFilter', { sourceName: av, filterName: 'NANA色', filterKind: 'color_filter_v2', filterSettings: {} });
     await obsReq('SetSourceFilterEnabled', { sourceName: av, filterName: 'NANA色', filterEnabled: false });
+    // 石・氷・ぬれた感じの質感（アバターの形のままかかる。OBS 標準の「イメージマスク/ブレンド」）
+    await obsReq('CreateSourceFilter', { sourceName: av, filterName: 'NANA質感', filterKind: 'mask_filter_v2', filterSettings: { type: 'blend_mul_filter.effect', image_path: path.join(__dirname, 'tex', 'stone.png') } });
+    await obsReq('SetSourceFilterEnabled', { sourceName: av, filterName: 'NANA質感', filterEnabled: false });
     void r;
   }
   if (await obsFindWrap()) {
@@ -1468,6 +1471,7 @@ async function obsAnimStart(name, at) {
     if (t > HAPPEN.H[name].len) { obsAnimStop(); return; }
     obsSetT(HAPPEN.kf(name, t, happenCtx()));
     obsTint(HAPPEN.tint(name, t));
+    obsSkin(HAPPEN.skin(name, t));
     if (HQ.clones.length && (n++ % 2 === 0)) { const c = HAPPEN.clones(name, t, happenCtx()) || []; HQ.clones.forEach((id, i) => c[i] && obsSetT(c[i], id)); }
   }, 33);
 }
@@ -1480,8 +1484,18 @@ function obsTint(name) {
   if (name) obsReq('SetSourceFilterSettings', { sourceName: src, filterName: 'NANA色', filterSettings: OBS_TINTS[name], overlay: false });
   obsReq('SetSourceFilterEnabled', { sourceName: src, filterName: 'NANA色', filterEnabled: !!name });
 }
+// 質感：石（かける）・氷／ぬれ（たす）
+const OBS_SKINS = { stone: 'blend_mul_filter.effect', stone_crack: 'blend_mul_filter.effect', ice: 'blend_add_filter.effect', ice_crack: 'blend_add_filter.effect', wet: 'blend_add_filter.effect' };
+function obsSkin(name) {
+  if (HQ.skin === (name || null) || !OBS.av) return;
+  HQ.skin = name || null;
+  const src = K.settings.obs.avatar;
+  if (name) obsReq('SetSourceFilterSettings', { sourceName: src, filterName: 'NANA質感', filterSettings: { type: OBS_SKINS[name], image_path: path.join(__dirname, 'tex', name + '.png'), color: 0xffffffff, opacity: 100 } });
+  obsReq('SetSourceFilterEnabled', { sourceName: src, filterName: 'NANA質感', filterEnabled: !!name });
+}
 function obsAnimStop(quiet) {
   if (HQ.tint) obsTint(null);
+  if (HQ.skin) obsSkin(null);
   if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; if (!quiet) obsRestore(); }
   for (const id of HQ.clones || []) obsReq('RemoveSceneItem', { sceneName: OBS.inner, sceneItemId: id });
   HQ.clones = [];
