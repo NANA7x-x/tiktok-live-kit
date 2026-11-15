@@ -164,7 +164,7 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="note"><b>背景ムービー（200コイン）</b>：キットの<b>「背景」フォルダ</b>に 動画（mp4 / webm / mov）か 画像（jpg / png / gif / webp）を入れるだけで、順番に追加されます（15秒くらいで自動で反映）。ファイル名がそのまま名前になります（例：<code>夜の海.mp4</code> →「背景ムービー：夜の海」）。動画は音なし・くり返し再生、画像はゆっくりズームします。</div>
       <div class="row"><button id="bgScan">↻ いますぐ更新</button><span class="note" id="bgCount"></span></div>
       <div class="note" id="bgList"></div>
-      <div class="note"><b>前エフェクト（88コイン）</b>：アバターの前に重なる飾り。レアカード／金の縁取り／メタル／桜ふる／雪ふる／水の中／炭酸のコップ。<b>ハプニング（400コイン）</b>：川に流される／海に出ていく／化け物に連れ去られる／UFOにさらわれる／網でつかまる／瓶づめ／投獄／いきなり踊らされる／巨人の料理にされる。「🎬 OBS 連携」をすると配信画面ごと動きます（つないでいないときは、VTube Studio 連携でアバターだけ動きます）。ゆらめき・背景ムービー・前エフェクトは、別の段のギフトが来てもその場で切り替わって時間が足されます。</div>
+      <div class="note"><b>前エフェクト（88コイン）</b>：アバターの前に重なる飾り。桜ふる／ふんわり／バラの花びら／雪ふる／モザイク／葉っぱ／水の中／炭酸のコップ。<b>ハプニング（400コイン）</b>：川に流される／海に出ていく／化け物に連れ去られる／UFOにさらわれる／増殖／瓶づめ／投獄／いきなり踊らされる／巨人の料理にされる。「🎬 OBS 連携」でアバターのソースを選ぶと、アバターだけが動きます（つないでいないときは VTube Studio 連携で動きます）。ゆらめき・背景ムービー・前エフェクトは、別の段のギフトが来てもその場で切り替わって時間が足されます。</div>
       <div class="note"><b>ゆらめき（100コイン）</b>：下の「ギフト表」の 100 の段の「順番リスト」に色を足せます。使える色の名前：ピンク／ラベンダー／ミント／水色／ゴールド／ピーチ／ブルー／ローズ／ホワイト／レッド／グリーン／オレンジ／パープル／シアン。好きな色にしたいときは <code>さくら色#ffb7d5</code> のように名前のうしろに色コードをつけます（画面には「さくら色」とだけ出ます）。</div>
     </div></details>
 
@@ -319,7 +319,7 @@ function renderSfx(){const files=S.sfxFiles||[],map=S.settings.sound.map||{},k=J
 document.addEventListener("click",e=>{const t=e.target.closest("[data-th]");if(t)setS({sound:{theme:t.dataset.th}});const p=e.target.closest("[data-play]");if(p){const f=document.querySelector(`[data-sfx="${p.dataset.play}"]`).value;if(f){const a=new Audio("/sfx/"+encodeURIComponent(f));a.volume=.6;a.play().catch(()=>{});}}});
 $("sfxScan").onclick=()=>send({type:"sfxRescan"});
 const OBSN={off:"OFF",connecting:"接続中…",ok:"接続OK",needpass:"パスワードが必要",badpass:"パスワードがちがう"};
-const HAPN=["川に流される","海に出ていく","化け物に連れ去られる","UFOにさらわれる","網でつかまる","瓶づめ","投獄","いきなり踊らされる","巨人の料理にされる"];
+const HAPN=["川に流される","海に出ていく","化け物に連れ去られる","UFOにさらわれる","増殖","瓶づめ","投獄","いきなり踊らされる","巨人の料理にされる"];
 $("hapBtns").innerHTML="<b>ためす</b>"+HAPN.map(n=>`<button class="sm" data-hap="${n}">${n}</button>`).join("");
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hap]");if(b)send({type:"happenTest",name:b.dataset.hap});});
 $("hapStop").onclick=()=>send({type:"happenStop"});

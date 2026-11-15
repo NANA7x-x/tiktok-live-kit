@@ -76,7 +76,7 @@ const DEFAULT_BANDS = [
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
-  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる'] },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
   { from: 2000, tier: 'XL', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
@@ -282,7 +282,7 @@ try {
     // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
     K.migr = Array.isArray(j.migr) ? j.migr : [];
     // 前の初期値の順番リストのままなら、新しい初期値に更新（瓶づめは前エフェクト→ハプニングへ）
-    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']]]) {
+    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']]]) {
       const b = K.bands.find((x) => x.from === from);
       if (b && JSON.stringify(b.list) === JSON.stringify(old)) b.list = DEFAULT_BANDS.find((x) => x.from === from).list.slice();
     }
@@ -337,7 +337,7 @@ function stateMsg() {
     conn: { auto: ttAuto, live: liveSessionActive, user: username },
     vts: { status: VTS.status, hotkeys: VTS.hotkeys },
     obs: { status: OBS.status, ready: OBS.ready, hasPass: !!OBS.pass, scene: OBS.wrapScene, msg: OBS.msg, sources: OBS.sources || [], avatar: OBS.av ? OBS.avRect : null },
-    happen: HQ.cur ? { name: HQ.cur.name, at: HQ.cur.at } : null,
+    happen: HQ.cur ? { name: HQ.cur.name, at: HQ.cur.at, wait: HQ.q.length } : null,
     sfxFiles,
     bgFiles,
     vrc: { enabled: vrcEnabled },
@@ -1206,7 +1206,28 @@ if (K.settings.vts.on) setTimeout(vtsConnect, 1500);
 // ハプニング：順番に1つずつ。OBS 連携ができていれば配信画面ごと動かす
 // ============================================================
 const HQ = { q: [], cur: null, timer: null, anim: null };
-function happenQueue(name, hasLink) { if (!HAPPEN.H[name]) return; HQ.q.push({ name, hasLink }); if (!HQ.cur) happenNext(2000); else pushState(); }
+function happenQueue(name, hasLink) { if (!HAPPEN.H[name]) return; HQ.q.push({ name, hasLink }); if (!HQ.cur) happenNext(2000); else { happenHurry(); pushState(); } }
+// つぎが待っているときは、今のハプニングを最低 HAPPEN_MIN 秒は見せてから、しめくくりまで早送りする（連続で来ても全部ちゃんと出る）
+const HAPPEN_MIN = 3.5;
+function happenHurry() {
+  const c = HQ.cur;
+  if (!c || !HQ.q.length || c.hurried) return;
+  const h = HAPPEN.H[c.name], out = h.out || h.len;
+  const t = (Date.now() - c.at) / 1000;
+  if (t >= out) return;
+  c.hurried = true;
+  setTimeout(() => {
+    if (HQ.cur !== c) return;
+    const t2 = (Date.now() - c.at) / 1000;
+    if (t2 >= out) return;
+    c.at = Date.now() - out * 1000;
+    broadcast({ type: 'ev', kind: 'happen', name: c.name, at: c.at });
+    clearTimeout(HQ.timer);
+    HQ.timer = setTimeout(happenEnd, c.at + h.len * 1000 - Date.now());
+    if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = setInterval(() => { const tt = (Date.now() - c.at) / 1000; if (tt > h.len) { obsAnimStop(); return; } obsSetT(HAPPEN.kf(c.name, tt)); }, 33); }
+    pushState();
+  }, Math.max(0, (HAPPEN_MIN - Math.max(0, t)) * 1000));
+}
 function happenNext(delay) {
   const x = HQ.q.shift();
   if (!x) { HQ.cur = null; pushState(); return; }
@@ -1223,6 +1244,7 @@ function happenNext(delay) {
   }, Math.max(0, HQ.cur.at - Date.now() - 600));
   clearTimeout(HQ.timer);
   HQ.timer = setTimeout(happenEnd, HQ.cur.at - Date.now() + len);
+  happenHurry();
 }
 function happenEnd() { clearTimeout(HQ.timer); obsAnimStop(); if (HQ.cur) broadcast({ type: 'ev', kind: 'happen', name: null, at: 0 }); HQ.cur = null; happenNext(1500); }
 
@@ -1369,14 +1391,14 @@ async function obsSetup() {
   }
 }
 // ハプニング中：アバターのソースだけを動かす（画面全体は動かさない）
-function obsSetT(k) {
+function obsSetT(k, itemId) {
   const a = OBS.av;
   if (!OBS.ready || !a) return;
   const b = a.base, sx = k.s * (k.fx || 1), sy = k.s * (k.fy || 1);
   const t = { alignment: 0, positionX: a.cx + k.x * OBS.W, positionY: a.cy + k.y * OBS.H, rotation: ((((b.rotation || 0) + k.r) % 360) + 360) % 360 };
   if (a.bounds) Object.assign(t, { boundsWidth: Math.max(1, a.w * sx), boundsHeight: Math.max(1, a.h * sy) });
   else Object.assign(t, { scaleX: (b.scaleX || 1) * sx, scaleY: (b.scaleY || 1) * sy });
-  obsReq('SetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: a.id, sceneItemTransform: t });
+  obsReq('SetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: itemId || a.id, sceneItemTransform: t });
 }
 function obsRestore() {
   const a = OBS.av;
@@ -1399,9 +1421,23 @@ async function obsAnimStart(name, at) {
   obsAnimStop(true);
   await obsFindAvatar(); // 配信前にアバターの位置を変えていても、そのときの位置から動かす
   if (!OBS.av) return;
-  HQ.anim = setInterval(() => { const t = (Date.now() - at) / 1000; if (t > HAPPEN.H[name].len) { obsAnimStop(); return; } obsSetT(HAPPEN.kf(name, t)); }, 33);
+  // 増殖：アバターのソースを一時的に複製して分身にする（終わったら消す）
+  HQ.clones = [];
+  const cl = HAPPEN.clones(name, 0);
+  if (cl) for (let i = 0; i < cl.length; i++) { const r = await obsReq('DuplicateSceneItem', { sceneName: OBS.inner, sceneItemId: OBS.av.id }); if (r.ok && r.data.sceneItemId) { HQ.clones.push(r.data.sceneItemId); obsSetT({ x: 0, y: 0, s: 0.001, r: 0 }, r.data.sceneItemId); } }
+  let n = 0;
+  HQ.anim = setInterval(() => {
+    const t = (Date.now() - at) / 1000;
+    if (t > HAPPEN.H[name].len) { obsAnimStop(); return; }
+    obsSetT(HAPPEN.kf(name, t));
+    if (HQ.clones.length && (n++ % 2 === 0)) { const c = HAPPEN.clones(name, t) || []; HQ.clones.forEach((id, i) => c[i] && obsSetT(c[i], id)); }
+  }, 33);
 }
-function obsAnimStop(quiet) { if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; if (!quiet) obsRestore(); } }
+function obsAnimStop(quiet) {
+  if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = null; if (!quiet) obsRestore(); }
+  for (const id of HQ.clones || []) obsReq('RemoveSceneItem', { sceneName: OBS.inner, sceneItemId: id });
+  HQ.clones = [];
+}
 if (K.settings.obs.on) setTimeout(obsConnect, 1500);
 
 // --- VRChat のアバターパラメーター（OSC。vrc_osc.txt で連携ONのときだけ） ---
