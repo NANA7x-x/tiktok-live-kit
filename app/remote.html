@@ -189,6 +189,8 @@ td input.n{width:84px}td input.ic{width:52px;text-align:center}td input.m{width:
       <div class="row"><label>パスワード <input id="obsPass" type="password" style="width:200px" placeholder="なしなら空のまま"></label><button id="obsPassSave">保存して接続</button><span class="note" id="obsHasPass"></span></div>
       <div class="row"><b>アバターのソース</b><select id="obsAv" style="min-width:200px"></select><button class="sm" id="obsAvRe">↻ 一覧</button></div>
       <div class="row"><button class="pri" id="obsSetup">OBS を準備する</button></div>
+      <div class="row" style="margin-top:8px"><b>アバターの位置合わせ</b><button id="abOn">ON/OFF</button><span class="note">ハプニングの絵（お皿・瓶・風船など）と動きの中心を、アバターが実際に映っている場所に合わせます。動かすと配信画面に緑の点線の枠が6秒出ます</span></div>
+      <div class="row"><label>横 <input type="range" id="abX" min="0" max="100" step="0.5"></label><label>縦 <input type="range" id="abY" min="0" max="100" step="0.5"></label><label>大きさ <input type="range" id="abH" min="10" max="120" step="0.5"></label></div>
       <div class="note" id="obsMsg"></div>
       <div class="row" id="hapBtns"></div>
       <div class="row"><button class="sm danger" id="hapStop">ハプニングを止める</button></div>
@@ -337,11 +339,12 @@ function renderSfx(){const files=S.sfxFiles||[],map=S.settings.sound.map||{},k=J
 document.addEventListener("click",e=>{const t=e.target.closest("[data-th]");if(t)setS({sound:{theme:t.dataset.th}});const p=e.target.closest("[data-play]");if(p){const f=document.querySelector(`[data-sfx="${p.dataset.play}"]`).value;if(f){const a=new Audio("/sfx/"+encodeURIComponent(f));a.volume=.6;a.play().catch(()=>{});}}});
 $("sfxScan").onclick=()=>send({type:"sfxRescan"});
 const OBSN={off:"OFF",connecting:"接続中…",ok:"接続OK",needpass:"パスワードが必要",badpass:"パスワードがちがう"};
-const HAPN=["川に流される","巨大化","海に出ていく","ちっちゃくなる","化け物に連れ去られる","ガチャガチャのカプセル","UFOにさらわれる","風船で飛ばされる","増殖","石化","瓶づめ","ブラックホール","投獄","ロケットで発射","いきなり踊らされる","氷づけ","紙ふぶきで胴上げ","ペラペラになる","巨人の料理にされる"];
+const HAPN=["川に流される","巨大化","化け物に振り回される","化け物にかわいがられる","海に出ていく","ちっちゃくなる","化け物に連れ去られる","ガチャガチャのカプセル","UFOにさらわれる","風船で飛ばされる","増殖","石化","瓶づめ","ブラックホール","投獄","ロケットで発射","いきなり踊らされる","氷づけ","紙ふぶきで胴上げ","ペラペラになる","巨人の料理にされる"];
 $("hapBtns").innerHTML="<b>ためす</b>"+HAPN.map(n=>`<button class="sm" data-hap="${n}">${n}</button>`).join("");
 document.addEventListener("click",e=>{const b=e.target.closest("[data-hap]");if(b)send({type:"happenTest",name:b.dataset.hap});});
 $("hapStop").onclick=()=>send({type:"happenStop"});
-function renderObs(){const av=$("obsAv"),src=(S.obs&&S.obs.sources)||[],cur=(S.settings.obs&&S.settings.obs.avatar)||"",key=src.join("|")+"#"+cur;
+function renderObs(){const ab=S.settings.avBox||{};$("abOn").classList.toggle("on",!!ab.on);$("abOn").textContent=ab.on?"ON":"OFF";for(const [id,v] of [["abX",ab.cx],["abY",ab.cy],["abH",ab.h]])if(document.activeElement!==$(id)&&v!=null)$(id).value=v*100;
+const av=$("obsAv"),src=(S.obs&&S.obs.sources)||[],cur=(S.settings.obs&&S.settings.obs.avatar)||"",key=src.join("|")+"#"+cur;
   if(av.dataset.k!==key&&document.activeElement!==av){av.dataset.k=key;av.innerHTML=`<option value="">（選んでください）</option>`+src.concat(cur&&!src.includes(cur)?[cur]:[]).map(n=>`<option ${n===cur?"selected":""}>${esc(n)}</option>`).join("");}
 const o=S.obs||{},st=S.settings.obs||{};$("obsOn").classList.toggle("on",!!st.on);$("obsOn").textContent=st.on?"ON":"OFF";
   $("obsSt").textContent=(OBSN[o.status]||"-")+(o.ready?"・準備OK":"");$("obsMsg").textContent=o.msg||"";$("obsHasPass").textContent=o.hasPass?"（パスワード保存ずみ）":"";
@@ -349,7 +352,10 @@ const o=S.obs||{},st=S.settings.obs||{};$("obsOn").classList.toggle("on",!!st.on
 $("obsOn").onclick=()=>setS({obs:{on:!(S.settings.obs&&S.settings.obs.on),port:+$("obsPort").value||4455}});
 $("obsPort").onchange=()=>setS({obs:{on:!!(S.settings.obs&&S.settings.obs.on),port:+$("obsPort").value||4455}});
 $("obsPassSave").onclick=()=>{send({type:"obsPass",pass:$("obsPass").value});$("obsPass").value="";};
-$("obsRe").onclick=()=>send({type:"obsReconnect"});$("obsAv").onchange=()=>send({type:"obsAvatar",name:$("obsAv").value});$("obsAvRe").onclick=()=>send({type:"obsSources"});$("obsSetup").onclick=()=>send({type:"obsSetup"});
+$("obsRe").onclick=()=>send({type:"obsReconnect"});
+const abGet=()=>({on:!!(S.settings.avBox&&S.settings.avBox.on),cx:+$("abX").value/100,cy:+$("abY").value/100,h:+$("abH").value/100});
+$("abOn").onclick=()=>{const b=abGet();b.on=!b.on;setS({avBox:b});};
+for(const id of ["abX","abY","abH"])$(id).oninput=()=>{const b=abGet();b.on=true;setS({avBox:b});};$("obsAv").onchange=()=>send({type:"obsAvatar",name:$("obsAv").value});$("obsAvRe").onclick=()=>send({type:"obsSources"});$("obsSetup").onclick=()=>send({type:"obsSetup"});
 $("bgScan").onclick=()=>send({type:"bgRescan"});
 let bgKey="";function renderBg(){const f=S.bgFiles||[],k=f.join("|");if(k===bgKey)return;bgKey=k;$("bgCount").textContent=`背景フォルダのファイル：${f.length}件`;$("bgList").textContent=f.length?f.join("　/　"):"（まだありません）";}
 $("sfxSave").onclick=()=>{const map={};document.querySelectorAll("[data-sfx]").forEach(sel=>{if(sel.value)map[sel.dataset.sfx]=sel.value;});setS({sound:{map}});$("sfxSave").textContent="保存しました ✓";setTimeout(()=>$("sfxSave").textContent="効果音を保存",1500);};

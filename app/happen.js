@@ -29,6 +29,21 @@
       if (t < 6.8) { const k = Eout((t - 5.8) / 1); return { x: L(-0.15, 0, k), y: L(-0.1, 0, k) - Math.sin(k * Math.PI) * 0.18, s: L(0.3, 1, k), r: 0, fx: Math.max(0.06, Math.abs(Math.cos(k * Math.PI * 3))), z: Math.sin(k * Math.PI) }; }
       if (t < 9.5) { const k = (t - 6.8) / 2.7; return { x: Math.sin(t * 40) * 0.006 * Math.max(0, 1 - k * 1.5), y: -Math.abs(Math.sin(k * Math.PI * 3)) * 0.02 * (1 - k), s: 1, r: Math.sin(t * 30) * 3 * Math.max(0, 1 - k * 1.5), fy: 1 - Math.abs(Math.sin(k * Math.PI * 3)) * 0.06 * (1 - k) }; }
       return ID; } },
+    '化け物に振り回される': { len: 9, out: 6.4, kf(t) {
+      if (t < 1.8) return { x: Math.sin(t * 50) * 0.004 * E(t / 1.5), y: 0, s: 1, r: Math.sin(t * 31) * 1.2 * E(t / 1.5) };
+      if (t < 2.2) { const k = E((t - 1.8) / 0.4); return { x: -0.05 * k, y: -0.06 * k, s: L(1, 0.7, k), r: 10 * k }; }
+      if (t < 4.6) { const k = (t - 2.2) / 2.4, th = Ein(k) * Math.PI * 6 + Math.PI * 0.5; return { x: -0.05 + Math.cos(th) * 0.2, y: -0.06 + Math.sin(th) * 0.1, s: 0.7, r: (th * 180 / Math.PI) % 360, fx: 1 - 0.3 * Math.abs(Math.sin(th)), z: 0.6 }; }
+      if (t < 5.4) { const k = Eout((t - 4.6) / 0.8); return { x: L(-0.05, 1.4, k), y: L(0.04, -0.5, k), s: 0.7, r: 90 + k * 720, z: 1 }; }
+      if (t < 6.2) return { x: 1.4, y: -1.2, s: 0.7, r: 0 };
+      if (t < 7.6) { const k = (t - 6.2) / 1.4; return { x: 0, y: L(-1.1, 0, Bnc(k)), s: L(0.7, 1, E(k)), r: Math.sin(k * 30) * 10 * (1 - k), z: 1 - Bnc(k) }; }
+      if (t < 8.8) { const k = (t - 7.6) / 1.2; return { x: Math.sin(t * 6) * 0.01 * (1 - k), y: 0, s: 1, r: Math.sin(t * 6) * 8 * (1 - k) }; }
+      return ID; } },
+    '化け物にかわいがられる': { len: 9.5, out: 6.6, kf(t) {
+      if (t < 1.2) return ID;
+      if (t < 2) { const k = E((t - 1.2) / 0.8); return { x: 0, y: -0.05 * k, s: L(1, 0.85, k), r: 0, z: 0.4 * k }; }
+      if (t < 6.6) { const c = Math.sin((t - 2) * Math.PI * 1.6); return { x: c * 0.035, y: -0.05 + Math.abs(c) * 0.005, s: 0.85, r: c * 7, fx: 1 - Math.abs(c) * 0.18, fy: 1 + Math.abs(c) * 0.04, z: 0.4 }; }
+      if (t < 7.8) { const k = E((t - 6.6) / 1.2); return { x: 0, y: L(-0.05, 0, k), s: L(0.85, 1, k), r: 0, z: 0.4 * (1 - k) }; }
+      return ID; } },
     'UFOにさらわれる': { len: 9.5, out: 6.1, kf(t) {
       if (t < 2) return ID;
       if (t < 4.5) { const k = Ein((t - 2) / 2.5); return { x: 0, y: L(0, -0.38, k), s: L(1, 0.02, k), r: 90 * k, fx: Math.max(0.06, Math.abs(Math.cos(k * Math.PI * 5))), z: k }; }

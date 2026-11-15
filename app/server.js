@@ -89,7 +89,7 @@ const DEFAULT_BANDS = [
   { from: 150, tier: 'L', ico: '👅', fx: '早口言葉チャレンジ', use: 'challenge', short: '早口言葉' },
   { from: 200, tier: 'L', ico: '🌌', fx: '背景ムービー：{x}', min: 2, slot: 'scene', bg: true, short: '背景ムービー', list: ['星空', 'オーロラ', '夕暮れ', '雨の窓', '桜吹雪', '雪', 'ホタル', 'ネオン'] },
   { from: 299, tier: 'L', ico: '🦵', fx: 'スクワット10回', short: 'スクワット', link: 'vts:jump' },
-  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '巨大化', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる'] },
+  { from: 400, tier: 'L', ico: '🌊', fx: 'ハプニング：{x}', use: 'happen', short: 'ハプニング', list: ['川に流される', '巨大化', '化け物に振り回される', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '化け物にかわいがられる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる'] },
   { from: 500, tier: 'L', ico: '🎹', fx: 'ピアノ サビだけ1曲', req: 'サビ', short: 'サビだけ' },
   { from: 1000, tier: 'XL', ico: '🎹', fx: 'ピアノ フルで1曲', req: 'フル', short: 'フルで1曲', link: 'vts:rainbow vts:spin' },
   { from: 2000, tier: 'XL', ico: '🎥', fx: '手元カメラON', min: 10, slot: 'cam', short: '手元カメラ' },
@@ -119,7 +119,8 @@ const DEFAULT_SETTINGS = {
   sound: { on: true, volume: 0.5, theme: 'arcade', map: {} },
   chainSec: 10,
   vts: { on: false, port: 8001 },  // VTube Studio 連携
-  obs: { on: false, port: 4455, avatar: '' },  // OBS 連携（ハプニングで配信画面ごと動かす）。パスワードは 設定/obs_password.txt
+  obs: { on: false, port: 4455, avatar: '' },
+  avBox: { on: false, cx: 0.5, cy: 0.55, h: 0.55 }, // アバターが実際に映っている場所（画面に対する割合）。ハプニングの絵と動きの中心  // OBS 連携（ハプニングで配信画面ごと動かす）。パスワードは 設定/obs_password.txt
   fxLevel: 'normal',  // 演出の強さ: normal（ふつう）/ dopa（ドパドパ）
   look: 'panel',      // パネルの見せ方: panel（しっかり）/ airy（すっきり・アバター重視）
   // ランキング表示（その日の配信ぶん）。showCoins は初期OFF（金額を画面に出さない）
@@ -220,6 +221,7 @@ function sanitizeSettings(s, base) {
   if (s.fxLevel === 'normal' || s.fxLevel === 'dopa') o.fxLevel = s.fxLevel;
   if (s.look === 'panel' || s.look === 'airy') o.look = s.look;
   if (typeof s.likeHearts === 'boolean') o.likeHearts = s.likeHearts;
+  if (s.avBox && typeof s.avBox === 'object') { if (typeof s.avBox.on === 'boolean') o.avBox.on = s.avBox.on; o.avBox.cx = clamp(s.avBox.cx, 0, 1, o.avBox.cx); o.avBox.cy = clamp(s.avBox.cy, 0, 1, o.avBox.cy); o.avBox.h = clamp(s.avBox.h, 0.1, 1.5, o.avBox.h); }
   if (s.obs && typeof s.obs === 'object') { if (typeof s.obs.on === 'boolean') o.obs.on = s.obs.on; o.obs.port = Math.round(clamp(s.obs.port, 1, 65535, o.obs.port)); if (typeof s.obs.avatar === 'string') o.obs.avatar = s.obs.avatar.slice(0, 120); }
   if (s.vts && typeof s.vts === 'object') { if (typeof s.vts.on === 'boolean') o.vts.on = s.vts.on; o.vts.port = Math.round(clamp(s.vts.port, 1, 65535, o.vts.port)); }
   if (s.rank && typeof s.rank === 'object') for (const k of ['on', 'showCoins', 'likes', 'mvp']) if (typeof s.rank[k] === 'boolean') o.rank[k] = s.rank[k];
@@ -295,7 +297,7 @@ try {
     // 新しく増えた段（前エフェクト88・ハプニング400）を、まだ入れていなければ一度だけ足す
     K.migr = Array.isArray(j.migr) ? j.migr : [];
     // 前の初期値の順番リストのままなら、新しい初期値に更新（瓶づめは前エフェクト→ハプニングへ）
-    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']]]) {
+    for (const [from, old] of [[88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ', '瓶づめ']], [88, ['レアカード', '金の縁取り', 'メタル', '桜ふる', '雪ふる', '水の中', '炭酸のコップ']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '網でつかまる', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '海に出ていく', '化け物に連れ去られる', 'UFOにさらわれる', '増殖', '瓶づめ', '投獄', 'いきなり踊らされる', '巨人の料理にされる']], [400, ['川に流される', '巨大化', '海に出ていく', 'ちっちゃくなる', '化け物に連れ去られる', 'ガチャガチャのカプセル', 'UFOにさらわれる', '風船で飛ばされる', '増殖', '石化', '瓶づめ', 'ブラックホール', '投獄', 'ロケットで発射', 'いきなり踊らされる', '氷づけ', '紙ふぶきで胴上げ', 'ペラペラになる', '巨人の料理にされる']]]) {
       const b = K.bands.find((x) => x.from === from);
       if (b && JSON.stringify(b.list) === JSON.stringify(old)) b.list = DEFAULT_BANDS.find((x) => x.from === from).list.slice();
     }
@@ -1425,7 +1427,10 @@ function obsSetT(k, itemId) {
   const a = OBS.av;
   if (!OBS.ready || !a) return;
   const b = a.base, sx = k.s * (k.fx || 1), sy = k.s * (k.fy || 1);
-  const t = { alignment: 0, positionX: a.cx + k.x * OBS.W, positionY: a.cy + k.y * OBS.H, rotation: ((((b.rotation || 0) + k.r) % 360) + 360) % 360 };
+  // 大きさ・回転の中心は「アバターが実際に映っている場所」（位置合わせしてあれば）。ソースの中心からのずれも一緒に回す
+  const bx = K.settings.avBox, px = bx.on ? bx.cx * OBS.W : a.cx, py = bx.on ? bx.cy * OBS.H : a.cy;
+  const rad = (k.r || 0) * Math.PI / 180, dx = (a.cx - px) * sx, dy = (a.cy - py) * sy;
+  const t = { alignment: 0, positionX: px + dx * Math.cos(rad) - dy * Math.sin(rad) + k.x * OBS.W, positionY: py + dx * Math.sin(rad) + dy * Math.cos(rad) + k.y * OBS.H, rotation: ((((b.rotation || 0) + k.r) % 360) + 360) % 360 };
   if (a.bounds) Object.assign(t, { boundsWidth: Math.max(1, a.w * sx), boundsHeight: Math.max(1, a.h * sy) });
   else Object.assign(t, { scaleX: (b.scaleX || 1) * sx, scaleY: (b.scaleY || 1) * sy });
   obsReq('SetSceneItemTransform', { sceneName: OBS.inner, sceneItemId: itemId || a.id, sceneItemTransform: t });
