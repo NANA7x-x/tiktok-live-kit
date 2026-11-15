@@ -1251,7 +1251,7 @@ function happenHurry() {
     broadcast({ type: 'ev', kind: 'happen', name: c.name, at: c.at });
     clearTimeout(HQ.timer);
     HQ.timer = setTimeout(happenEnd, c.at + h.len * 1000 - Date.now());
-    if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = setInterval(() => { const tt = (Date.now() - c.at) / 1000; if (tt > h.len) { obsAnimStop(); return; } obsSetT(HAPPEN.kf(c.name, tt)); }, 33); }
+    if (HQ.anim) { clearInterval(HQ.anim); HQ.anim = setInterval(() => { const tt = (Date.now() - c.at) / 1000; if (tt > h.len) { obsAnimStop(); return; } obsSetT(HAPPEN.kf(c.name, tt, happenCtx())); }, 33); }
     pushState();
   }, Math.max(0, (HAPPEN_MIN - Math.max(0, t)) * 1000));
 }
@@ -1423,6 +1423,8 @@ async function obsSetup() {
   }
 }
 // ハプニング中：アバターのソースだけを動かす（画面全体は動かさない）
+// アバターの中心（画面に対する割合）：位置合わせ → OBS のソース → まん中
+function happenCtx() { const b = K.settings.avBox; if (b && b.on) return { ax: b.cx, ay: b.cy }; if (OBS.avRect) return { ax: OBS.avRect.cx / 1080, ay: OBS.avRect.cy / 1920 }; return { ax: 0.5, ay: 0.52 }; }
 function obsSetT(k, itemId) {
   const a = OBS.av;
   if (!OBS.ready || !a) return;
@@ -1458,15 +1460,15 @@ async function obsAnimStart(name, at) {
   if (!OBS.av) return;
   // 増殖：アバターのソースを一時的に複製して分身にする（終わったら消す）
   HQ.clones = [];
-  const cl = HAPPEN.clones(name, 0);
+  const cl = HAPPEN.clones(name, 0, happenCtx());
   if (cl) for (let i = 0; i < cl.length; i++) { const r = await obsReq('DuplicateSceneItem', { sceneName: OBS.inner, sceneItemId: OBS.av.id }); if (r.ok && r.data.sceneItemId) { HQ.clones.push(r.data.sceneItemId); obsSetT({ x: 0, y: 0, s: 0.001, r: 0 }, r.data.sceneItemId); } }
   let n = 0;
   HQ.anim = setInterval(() => {
     const t = (Date.now() - at) / 1000;
     if (t > HAPPEN.H[name].len) { obsAnimStop(); return; }
-    obsSetT(HAPPEN.kf(name, t));
+    obsSetT(HAPPEN.kf(name, t, happenCtx()));
     obsTint(HAPPEN.tint(name, t));
-    if (HQ.clones.length && (n++ % 2 === 0)) { const c = HAPPEN.clones(name, t) || []; HQ.clones.forEach((id, i) => c[i] && obsSetT(c[i], id)); }
+    if (HQ.clones.length && (n++ % 2 === 0)) { const c = HAPPEN.clones(name, t, happenCtx()) || []; HQ.clones.forEach((id, i) => c[i] && obsSetT(c[i], id)); }
   }, 33);
 }
 // 石化＝灰色、氷づけ＝水色（アバターのソースの「NANA色」フィルター）
