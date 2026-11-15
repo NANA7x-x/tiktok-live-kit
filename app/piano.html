@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ピアノ動画の演出</title>
+<style>
+:root{--bg:#0c0b14;--panel:#16142a;--line:#2c2850;--txt:#ece9ff;--sub:#a49fd0;--acc:#8fd3ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 "Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;display:flex;height:100vh;overflow:hidden}
+#view{flex:1;display:flex;flex-direction:column;min-width:0}
+#stageWrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0}
+#stage{position:relative;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+#stage.chk{background:repeating-conic-gradient(#2a2838 0 25%,#1e1c2a 0 50%) 0 0/32px 32px}
+#stage.blk{background:#000}
+#stage.dim{background:linear-gradient(#2b2440,#120f1f)}
+#sil{position:absolute;left:50%;bottom:22%;width:34%;aspect-ratio:3/4;transform:translateX(-50%);opacity:.22;pointer-events:none;
+  background:radial-gradient(circle at 50% 22%,#cfc8ff 0 17%,transparent 17.5%),radial-gradient(ellipse 50% 55% at 50% 95%,#cfc8ff 0 99%,transparent 100%)}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+#bar{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
+#bar input[type=range]{flex:1}
+#side{width:330px;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:14px}
+h1{font-size:16px;margin:0 0 10px}
+h2{font-size:13px;color:var(--sub);margin:16px 0 6px;font-weight:600}
+label{display:flex;align-items:center;gap:8px;margin:5px 0}
+label span{width:108px;color:var(--sub);flex:none}
+label input[type=range]{flex:1}
+select,button,input[type=number]{background:#221f3d;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+button.pri{background:linear-gradient(135deg,#5b8cff,#b46bff);border:0;font-weight:700}
+.seg{display:flex;gap:4px;flex-wrap:wrap}.seg button.on{border-color:var(--acc);color:var(--acc)}
+.note{color:var(--sub);font-size:12px}
+#prog{height:8px;background:#221f3d;border-radius:8px;overflow:hidden;margin:8px 0}#prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b8cff,#b46bff)}
+#empty{padding:30px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div id="view">
+  <div id="stageWrap"><div id="stage" class="chk"><div id="sil"></div><canvas id="cv"></canvas></div></div>
+  <div id="bar"><button id="play">▶ 再生</button><span id="tm">0:00 / 0:00</span><input id="seek" type="range" min="0" max="1000" value="0"></div>
+</div>
+<div id="side">
+  <h1>🎹 ピアノ動画の演出</h1>
+  <label><span>曲</span><select id="song" style="flex:1"></select></label>
+  <div class="note" id="info"></div>
+
+  <h2>画面</h2>
+  <div class="seg" id="fmtSeg"><button data-v="h">横 1920×1080</button><button data-v="v">縦 1080×1920</button></div>
+  <label><span>プレビュー背景</span><select id="bgSel"><option value="chk">透明（チェック）</option><option value="blk">黒</option><option value="dim">夜っぽい色</option></select></label>
+  <label><span>アバターの目安</span><input type="checkbox" id="silOn" checked></label>
+
+  <h2>光のパネル</h2>
+  <label><span>上下の位置</span><input type="range" id="py" min="30" max="95" value="72"></label>
+  <label><span>はば</span><input type="range" id="pw" min="30" max="100" value="80"></label>
+  <label><span>奥行き</span><input type="range" id="tilt" min="0" max="100" value="55"></label>
+  <label><span>パネルの見え方</span><input type="range" id="pa" min="0" max="100" value="45"></label>
+
+  <h2>色</h2>
+  <div class="seg" id="colSeg"><button data-v="rainbow">音の高さで虹色</button><button data-v="grad">2色グラデ</button><button data-v="mono">1色</button></div>
+  <label><span>色1</span><input type="color" id="c1" value="#7fd8ff"><span style="width:auto">色2</span><input type="color" id="c2" value="#c79bff"></label>
+
+  <h2>演出</h2>
+  <label><span>波紋の大きさ</span><input type="range" id="rs" min="30" max="200" value="100"></label>
+  <label><span>光の強さ</span><input type="range" id="gl" min="20" max="200" value="100"></label>
+  <label><span>光の柱</span><input type="checkbox" id="pil" checked></label>
+  <label><span>舞い上がる粒</span><input type="checkbox" id="par" checked></label>
+  <label><span>音とのずれ</span><input type="number" id="ofs" value="0" step="10" style="width:90px"><span class="note" style="width:auto">ミリ秒（＋で光が遅れる）</span></label>
+
+  <h2>書き出し</h2>
+  <label><span>なめらかさ</span><select id="fps"><option>30</option><option>60</option></select></label>
+  <label><span>形式</span><select id="ofmt"><option value="png">連番 PNG（軽い・おすすめ）</option><option value="mov">透明つき MOV（ProRes 4444・とても重い）</option></select></label>
+  <label><span>範囲</span><select id="rng"><option value="all">曲ぜんぶ</option><option value="test">いまの位置から10秒（おためし）</option></select></label>
+  <div style="display:flex;gap:6px;margin-top:8px"><button class="pri" id="exp" style="flex:1">透明動画を書き出す</button><button id="stop" disabled>中止</button></div>
+  <div id="prog"><i></i></div>
+  <div class="note" id="expMsg">DaVinci Resolve では、連番 PNG のフォルダをメディアプールにドラッグすると1本のクリップになります。アバターや手元の映像の上のトラックに置くだけで、透明なところが抜けて重なります（MOV はファイルがとても大きくなります）。</div>
+</div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const cv=$("cv"),g=cv.getContext("2d"),au=new Audio();
+let D=null,name=new URLSearchParams(location.search).get("name")||"",W=1920,H=1080,playing=false,T=0,exporting=false,stopReq=false;
+// ===== 設定（このブラウザに覚えておく） =====
+const DEF={fmt:"h",bg:"chk",sil:true,py:72,pw:80,tilt:55,pa:45,col:"rainbow",c1:"#7fd8ff",c2:"#c79bff",rs:100,gl:100,pil:true,par:true,ofs:0,fps:"30",ofmt:"png"};
+let C=Object.assign({},DEF);try{Object.assign(C,JSON.parse(localStorage.getItem("pianoFx")||"{}"));}catch(e){}
+const save=()=>{try{localStorage.setItem("pianoFx",JSON.stringify(C));}catch(e){}};
+function bindUI(){
+  for(const k of ["py","pw","tilt","pa","rs","gl"]){$(k).value=C[k];$(k).oninput=()=>{C[k]=+$(k).value;save();redraw();};}
+  for(const k of ["c1","c2"]){$(k).value=C[k];$(k).oninput=()=>{C[k]=$(k).value;save();redraw();};}
+  for(const k of ["pil","par"]){$(k).checked=C[k];$(k).onchange=()=>{C[k]=$(k).checked;save();redraw();};}
+  $("silOn").checked=C.sil;$("silOn").onchange=()=>{C.sil=$("silOn").checked;save();applyStage();};
+  $("ofs").value=C.ofs;$("ofs").oninput=()=>{C.ofs=+$("ofs").value||0;save();redraw();};
+  $("bgSel").value=C.bg;$("bgSel").onchange=()=>{C.bg=$("bgSel").value;save();applyStage();};
+  $("fps").value=C.fps;$("fps").onchange=()=>{C.fps=$("fps").value;save();};
+  $("ofmt").value=C.ofmt;$("ofmt").onchange=()=>{C.ofmt=$("ofmt").value;save();};
+  const seg=(id,key,after)=>{const el=$(id);const upd=()=>el.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===C[key]));
+    el.onclick=e=>{const b=e.target.closest("button");if(!b)return;C[key]=b.dataset.v;save();upd();after&&after();redraw();};upd();};
+  seg("fmtSeg","fmt",applyStage);seg("colSeg","col");
+}
+function applyStage(){W=C.fmt==="v"?1080:1920;H=C.fmt==="v"?1920:1080;cv.width=W;cv.height=H;
+  const st=$("stage"),wrap=$("stageWrap"),k=Math.min((wrap.clientWidth-32)/W,(wrap.clientHeight-32)/H);
+  st.style.width=W*k+"px";st.style.height=H*k+"px";st.className=C.bg;$("sil").style.display=C.sil?"":"none";redraw();}
+addEventListener("resize",applyStage);
+
+// ===== 曲のデータ =====
+let N=[],GROUP=[],dur=0;
+function prep(d){dur=d.duration||0;const ped=(d.pedals||[]).slice().sort((a,b)=>a.on-b.on);
+  N=(d.notes||[]).map((n,i)=>{let off=n.off;for(const p of ped){if(p.on<=off&&p.off>off){off=p.off;break;}} // ペダルを踏んでいる間はのばす
+    return{p:n.p,on:n.on,off:n.off,offE:Math.max(off,n.on+.08),v:n.v,i,seed:hash(i*7919+n.p),u:Math.min(1,Math.max(0,(n.p-21)/87))};}).sort((a,b)=>a.on-b.on);
+  // 同時に3音以上 → 和音として目立たせる
+  GROUP=[];let s=0;for(let i=1;i<=N.length;i++){if(i===N.length||N[i].on-N[s].on>.035){if(i-s>=3){const gr=N.slice(s,i);GROUP.push({on:N[s].on,u:gr.reduce((a,n)=>a+n.u,0)/gr.length,v:Math.max(...gr.map(n=>n.v)),n:gr.length,seed:hash(s*31+7)});}s=i;}}
+  dur=Math.max(dur,N.length?N[N.length-1].offE+1:0);}
+function hash(x){x=(x^61)^(x>>>16);x=x+(x<<3);x=x^(x>>>4);x=Math.imul(x,0x27d4eb2d);x=x^(x>>>15);return(x>>>0)/4294967296;}
+function rnd(seed,k){return hash(Math.floor(seed*1e9)+k*977);}
+const lb=(arr,t)=>{let a=0,b=arr.length;while(a<b){const m=(a+b)>>1;if(arr[m].on<t)a=m+1;else b=m;}return a;};
+
+// ===== 色 =====
+const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+function colOf(n){if(C.col==="mono")return hex(C.c1);
+  if(C.col==="grad"){const a=hex(C.c1),b=hex(C.c2),u=n.u;return a.map((x,i)=>Math.round(x+(b[i]-x)*u));}
+  const h=((n.p%12)*30+190)%360;return hsl(h,.85,.68);}
+function hsl(h,s,l){const f=k=>{const kk=(k+h/30)%12,a=s*Math.min(l,1-l);return Math.round(255*(l-a*Math.max(-1,Math.min(kk-3,9-kk,1))));};return[f(0),f(8),f(4)];}
+const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${Math.max(0,Math.min(1,a))})`;
+
+// ===== 光のパネル（台形の面。奥ほどせまく見える） =====
+function geo(){const cy=H*C.py/100,nw=W*C.pw/100,tl=C.tilt/100,dh=H*(.025+.09*tl),fw=nw*(1-.32*tl);return{cy,nw,fw,dh,yF:cy-dh,yN:cy+dh,flat:.18+.5*(1-tl)*.4+.12};}
+function at(G,u,v){const w=G.fw+(G.nw-G.fw)*v;return[W/2+(u-.5)*w,G.yF+(G.yN-G.yF)*v,w/G.nw];}
+const easeOut=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3);
+
+function draw(t){
+  g.clearRect(0,0,W,H);if(!N.length)return;
+  t-=C.ofs/1000;const G=geo(),S=Math.min(W,H)/1080,glow=C.gl/100,rsz=C.rs/100;
+  // 盛り上がり（直近の音の強さ）でパネルが明るくなる
+  let en=0;for(let i=lb(N,t-1.2);i<N.length&&N[i].on<=t;i++)en+=N[i].v/127*(1-(t-N[i].on)/1.2);en=Math.min(1,en/6);
+  const base=hex(C.col==="mono"?C.c1:C.col==="grad"?C.c1:"#8fd3ff"),base2=hex(C.col==="grad"?C.c2:C.col==="mono"?C.c1:"#c79bff"),pa=C.pa/100;
+  g.save();g.globalCompositeOperation="lighter";
+  // 面
+  if(pa>0){g.beginPath();g.moveTo(W/2-G.fw/2,G.yF);g.lineTo(W/2+G.fw/2,G.yF);g.lineTo(W/2+G.nw/2,G.yN);g.lineTo(W/2-G.nw/2,G.yN);g.closePath();
+    const fg=g.createLinearGradient(0,G.yF,0,G.yN);fg.addColorStop(0,rgba(base,(.02+.05*en)*pa));fg.addColorStop(1,rgba(base2,(.07+.12*en)*pa));g.fillStyle=fg;g.fill();
+    // 細い格子（電子っぽさ）
+    g.lineWidth=1*S;for(let k=0;k<=6;k++){const v=k/6,[x0,y]=at(G,0,v),[x1]=at(G,1,v);g.strokeStyle=rgba(base,(.03+.06*v)*pa*(1+en));g.beginPath();g.moveTo(x0,y);g.lineTo(x1,y);g.stroke();}
+    for(let k=0;k<=24;k++){const u=k/24,[xa,ya]=at(G,u,0),[xb,yb]=at(G,u,1);g.strokeStyle=rgba(base,.04*pa*(1+en));g.beginPath();g.moveTo(xa,ya);g.lineTo(xb,yb);g.stroke();}
+    // 手前のふち
+    const [xl,yl]=at(G,0,1),[xr]=at(G,1,1);const eg=g.createLinearGradient(xl,0,xr,0);eg.addColorStop(0,rgba(base,0));eg.addColorStop(.5,rgba(base2,(.35+.5*en)*pa));eg.addColorStop(1,rgba(base,0));
+    g.strokeStyle=eg;g.lineWidth=3*S;g.shadowColor=rgba(base2,.8);g.shadowBlur=18*S*glow;g.beginPath();g.moveTo(xl,yl);g.lineTo(xr,yl);g.stroke();g.shadowBlur=0;}
+  // 押さえている音：触れている所がほんのり光り続ける
+  for(let i=lb(N,t-25);i<N.length&&N[i].on<=t;i++){const n=N[i];if(n.offE<=t)continue;const held=t-n.on,fade=Math.min(1,(n.offE-t)/.25);
+    const [x,y,sc]=at(G,n.u,.35+.3*n.seed),c=colOf(n),r=(18+n.v*.18)*S*sc;const a=(.18+.25*n.v/127)*Math.exp(-held*.35)*fade*glow;
+    const rg=g.createRadialGradient(x,y,0,x,y,r*2.2);rg.addColorStop(0,rgba(c,a*1.6));rg.addColorStop(1,rgba(c,0));g.fillStyle=rg;g.beginPath();g.ellipse(x,y,r*2.2,r*2.2*G.flat,0,0,7);g.fill();}
+  // 弾いた瞬間：波紋・光の柱・粒
+  for(let i=lb(N,t-2.4);i<N.length&&N[i].on<=t;i++){const n=N[i],a=t-n.on,c=colOf(n),vv=n.v/127,[x,y,sc]=at(G,n.u,.35+.3*n.seed);
+    // 波紋（2〜3重）
+    for(let k=0;k<(vv>.6?3:2);k++){const ak=a-k*.12;if(ak<0||ak>1.6)continue;const p=ak/1.6,r=(30+170*vv)*rsz*S*sc*easeOut(p),al=Math.pow(1-p,1.6)*(.35+.65*vv)*glow*(1-k*.3);
+      g.strokeStyle=rgba(c,al);g.lineWidth=(3.2-k)*S*(1-p*.6);g.shadowColor=rgba(c,1);g.shadowBlur=12*S*glow;g.beginPath();g.ellipse(x,y,r,r*G.flat,0,0,7);g.stroke();}
+    g.shadowBlur=0;
+    // 触れた瞬間の光
+    if(a<.35){const p=a/.35,r=(26+40*vv)*S*sc*(1+p*.6),rg=g.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,rgba([255,255,255],(1-p)*.9*glow));rg.addColorStop(.35,rgba(c,(1-p)*.8*glow));rg.addColorStop(1,rgba(c,0));
+      g.fillStyle=rg;g.beginPath();g.ellipse(x,y,r,r*.6,0,0,7);g.fill();}
+    // 光の柱（強い音）
+    if(C.pil&&vv>.55&&a<1){const p=a,hgt=(160+380*vv)*S*sc*easeOut(p/.5),al=(1-p)*(vv-.45)*1.4*glow,w=(10+14*vv)*S*sc;const lg=g.createLinearGradient(0,y,0,y-hgt);lg.addColorStop(0,rgba(c,al));lg.addColorStop(1,rgba(c,0));
+      g.fillStyle=lg;g.beginPath();g.moveTo(x-w,y);g.lineTo(x+w,y);g.lineTo(x+w*.3,y-hgt);g.lineTo(x-w*.3,y-hgt);g.closePath();g.fill();}
+    // 舞い上がる粒
+    if(C.par&&a<2.4){const cnt=2+Math.round(vv*5);for(let k=0;k<cnt;k++){const r1=rnd(n.seed,k),r2=rnd(n.seed,k+50),r3=rnd(n.seed,k+99);const life=1.2+r3*1.2;if(a>life)continue;const p=a/life;
+      const px=x+(r1-.5)*120*S*sc*p+Math.sin(a*3+k)*8*S,py=y-(60+r2*260)*S*sc*easeOut(p),al=(1-p)*(.5+.5*vv)*glow,sz=(1.5+r3*2.5)*S;
+      g.fillStyle=rgba(c,al);g.beginPath();g.arc(px,py,sz,0,7);g.fill();if(r3>.6){g.fillStyle=rgba([255,255,255],al*.8);g.beginPath();g.arc(px,py,sz*.45,0,7);g.fill();}}}}
+  // 和音：大きな光の輪と、粒の噴き上がり
+  for(let i=lb(GROUP,t-2.2);i<GROUP.length&&GROUP[i].on<=t;i++){const q=GROUP[i],a=t-q.on;if(a>2.2)continue;const p=a/2.2,vv=q.v/127,[x,y,sc]=at(G,q.u,.5),c=colOf({p:60,u:q.u});
+    const r=(220+260*vv)*rsz*S*sc*easeOut(p);g.strokeStyle=rgba(c,Math.pow(1-p,2)*.55*glow);g.lineWidth=5*S*(1-p);g.shadowColor=rgba(c,1);g.shadowBlur=24*S*glow;g.beginPath();g.ellipse(x,y,r,r*G.flat,0,0,7);g.stroke();g.shadowBlur=0;
+    if(C.par)for(let k=0;k<6+q.n*2;k++){const r1=rnd(q.seed,k),r2=rnd(q.seed,k+40);const px=x+(r1-.5)*(300+200*vv)*S*sc,py=y-(120+r2*500)*S*sc*easeOut(p);g.fillStyle=rgba(k%3?c:[255,255,255],(1-p)*.7*glow);g.beginPath();g.arc(px,py,(1.8+r2*2.4)*S,0,7);g.fill();}}
+  g.restore();}
+
+// ===== 再生 =====
+const fmtT=s=>{s=Math.max(0,s);return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");};
+function redraw(){if(!playing&&!exporting){draw(T);showT();}}
+function showT(){$("tm").textContent=fmtT(T)+" / "+fmtT(dur);if(!seeking)$("seek").value=dur?Math.round(T/dur*1000):0;}
+let seeking=false;
+$("seek").oninput=()=>{seeking=true;T=$("seek").value/1000*dur;if(playing)au.currentTime=T;draw(T);showT();};
+$("seek").onchange=()=>{seeking=false;};
+$("play").onclick=()=>{if(exporting)return;playing=!playing;$("play").textContent=playing?"⏸ 止める":"▶ 再生";if(playing){au.currentTime=T;au.play().catch(()=>{});loop();}else au.pause();};
+au.onended=()=>{playing=false;$("play").textContent="▶ 再生";};
+function loop(){if(!playing)return;T=au.currentTime||T;draw(T);showT();requestAnimationFrame(loop);}
+
+// ===== 書き出し：1コマずつ描いて PNG にして、キットのサーバー経由で ffmpeg に渡す =====
+$("exp").onclick=async()=>{if(exporting||!N.length)return;playing=false;au.pause();$("play").textContent="▶ 再生";
+  const fps=+C.fps,t0=$("rng").value==="test"?T:0,t1=$("rng").value==="test"?Math.min(dur,T+10):dur,frames=Math.max(1,Math.ceil((t1-t0)*fps));
+  const msg=$("expMsg"),bar=$("prog").firstElementChild;exporting=true;stopReq=false;$("exp").disabled=true;$("stop").disabled=false;
+  const post=(u,b)=>fetch(u,{method:"POST",body:b}).then(r=>r.json().then(j=>{if(!r.ok)throw new Error(j.error||r.status);return j;}));
+  try{await post(`/piano/start?name=${encodeURIComponent(name)}&fps=${fps}&fmt=${$("ofmt").value}`);
+    const st=performance.now();
+    for(let i=0;i<frames;i++){if(stopReq)throw new Error("中止しました");draw(t0+i/fps);
+      const blob=await new Promise(r=>cv.toBlob(r,"image/png"));await post("/piano/frame",blob);
+      if(i%5===0){const el=(performance.now()-st)/1000,left=el/(i+1)*(frames-i-1);bar.style.width=(i/frames*100)+"%";msg.textContent=`書き出し中… ${i+1}/${frames} コマ（のこり 約${fmtT(left)}）`;}}
+    const r=await post("/piano/end");bar.style.width="100%";msg.textContent="できました！ "+r.out;}
+  catch(e){msg.textContent="書き出せませんでした："+e.message;try{await fetch("/piano/end?cancel=1",{method:"POST"});}catch(_){}}
+  exporting=false;$("exp").disabled=false;$("stop").disabled=true;redraw();};
+$("stop").onclick=()=>{stopReq=true;};
+
+// ===== 曲の一覧 =====
+async function loadList(){const r=await fetch("/piano/list").then(r=>r.json()).catch(()=>({items:[]}));const sel=$("song");
+  sel.innerHTML=r.items.map(n=>`<option>${n.replace(/</g,"&lt;")}</option>`).join("");
+  if(!r.items.length){$("info").textContent="まだ曲がありません。「ピアノ動画」フォルダの「ここに録画をドラッグ.bat」に録画をドラッグしてください。";return;}
+  if(!r.items.includes(name))name=r.items[r.items.length-1];sel.value=name;sel.onchange=()=>{name=sel.value;history.replaceState(null,"","?name="+encodeURIComponent(name));loadSong();};loadSong();}
+async function loadSong(){const d=await fetch("/piano/data?name="+encodeURIComponent(name)).then(r=>r.json()).catch(()=>null);if(!d)return;prep(d);
+  au.src="/piano/audio?name="+encodeURIComponent(name);T=0;playing=false;$("play").textContent="▶ 再生";
+  $("info").textContent=`${N.length} 音・和音 ${GROUP.length} か所・長さ ${fmtT(dur)}`;redraw();}
+bindUI();applyStage();loadList();
+})();
+</script>
+</body>
+</html>
