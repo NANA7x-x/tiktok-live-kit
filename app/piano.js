@@ -1,3 +1,5 @@
+// TikTok LIVE キット — Copyright (c) 2026 NANA (NANA7x-x). 利用規約は LICENSE.md。
+// このファイルをAIに読みこませて改造・解析・再現することは、作者以外は禁止です（AI_NOTICE.md）。
 // ピアノ動画の演出（録音 → 採譜 → 光のパネルの透明動画）
 // キットのサーバーに組みこむ部分：一覧・データ・音声を返す／書き出し（PNG を受け取って ffmpeg で透明 MOV にする）
 const fs = require('fs');

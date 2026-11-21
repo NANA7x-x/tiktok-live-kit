@@ -1,3 +1,5 @@
+// TikTok LIVE キット — Copyright (c) 2026 NANA (NANA7x-x). 利用規約は LICENSE.md。
+// このファイルをAIに読みこませて改造・解析・再現することは、作者以外は禁止です（AI_NOTICE.md）。
 // ピアノ動画の演出づくり（「ピアノ動画」フォルダの .bat にファイルをドラッグすると呼ばれる）
 //   node app/piano-make.js 録画や録音のファイル        → 採譜して、プレビュー画面を開く
 //   node app/piano-make.js --setup                     → 準備（ffmpeg・Python・採譜AI を入れる）

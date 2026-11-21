@@ -1,3 +1,5 @@
+// TikTok LIVE キット — Copyright (c) 2026 NANA (NANA7x-x). 利用規約は LICENSE.md。
+// このファイルをAIに読みこませて改造・解析・再現することは、作者以外は禁止です（AI_NOTICE.md）。
 // tiktok-live-kit/app/server.js  (v4)
 // TikTok LIVE のイベントを受けて、オーバーレイ／リモコンへ配るブリッジサーバー。
 //
