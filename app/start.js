@@ -1,8 +1,10 @@
+// TikTok LIVE キット — Copyright (c) 2026 NANA (NANA7x-x). 利用規約は LICENSE.md。
+// このファイルをAIに読みこませて改造・解析・再現することは、作者以外は禁止です（AI_NOTICE.md）。
 // ワンクリック起動用（デスクトップの「NANA LIVE」アイコンから呼ばれる）
 //   1) すでにサーバーが動いていれば → リモコンを開いて終わり
 //   2) 動いていなければ → （初回だけ npm install）→ サーバーを起動 → リモコンを開く
 // 使い方: node app/start.js [@ユーザー名]
-//   ユーザー名を省略すると 設定/tiktok_user.txt の1行目、それも無ければ @7x_x7x_x7x_x7
+//   ユーザー名を省略すると 設定/tiktok_user.txt の1行目。無ければ、はじめての起動で入力する画面が出る
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -38,8 +40,25 @@ function pickUser() {
   try {
     const line = fs.readFileSync(path.join(ROOT, '設定', 'tiktok_user.txt'), 'utf8').split(/\r?\n/).map((s) => s.trim()).find((s) => s && !s.startsWith('#'));
     if (line) return line;
-  } catch (e) { /* 無ければ既定値 */ }
-  return '@7x_x7x_x7x_x7';
+  } catch (e) { /* 無ければ聞く */ }
+  return askUser();
+}
+// はじめての起動：TikTokのユーザー名を聞いて 設定/tiktok_user.txt に保存する（この設定ファイルは GitHub には上がらない）
+function askUser() {
+  let name = '';
+  if (process.platform === 'win32') {
+    const ps = "Add-Type -AssemblyName Microsoft.VisualBasic; [Console]::OutputEncoding=[Text.Encoding]::UTF8; [Microsoft.VisualBasic.Interaction]::InputBox('配信するTikTokのユーザー名（@から始まるID）を入れてください。あとから 設定/tiktok_user.txt で変えられます。', 'TikTok LIVE キット', '@')";
+    try { name = require('child_process').execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).trim(); } catch (e) { name = ''; }
+  } else if (process.stdin.isTTY) {
+    process.stdout.write('配信するTikTokのユーザー名（@から始まるID）: ');
+    const b = Buffer.alloc(200); let n = 0; try { n = fs.readSync(0, b, 0, 200, null); } catch (e) { n = 0; }
+    name = b.toString('utf8', 0, n).trim();
+  }
+  name = name.replace(/\s/g, '');
+  if (!name || name === '@') { console.log('ユーザー名がないので起動をやめます。設定/tiktok_user.txt の1行目に @ID を書いてから、もう一度起動してください。'); process.exit(1); }
+  if (!name.startsWith('@')) name = '@' + name;
+  try { fs.mkdirSync(path.join(ROOT, '設定'), { recursive: true }); fs.writeFileSync(path.join(ROOT, '設定', 'tiktok_user.txt'), `${name}\n# 1行目が配信するTikTokのユーザー名です（変えたいときだけ書き換える）\n`); } catch (e) { /* ignore */ }
+  return name;
 }
 
 // デスクトップに「NANA LIVE」アイコンが無ければ作る（Windowsだけ。.vbs が止められる環境向け）
